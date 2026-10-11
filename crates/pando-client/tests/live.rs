@@ -25,3 +25,21 @@ async fn discovers_and_authenticates_against_a_local_pando() {
         .unwrap_or_else(|e| panic!("{e}"));
     assert!(client.token().is_some());
 }
+
+#[tokio::test]
+#[ignore = "needs a running `pando serve`"]
+async fn connection_service_connects_to_a_local_pando() {
+    use pando_client::{ConnectionOptions, ConnectionService, ConnectionState};
+    let ca = default_ca_path().and_then(|p| load_local_ca(&p).ok().flatten());
+    let svc = ConnectionService::start(ConnectionOptions {
+        discovery: Discovery {
+            root_certificate_pem: ca,
+            ..Discovery::default()
+        },
+        ..ConnectionOptions::default()
+    });
+    let _link = tokio::time::timeout(std::time::Duration::from_secs(10), svc.link())
+        .await
+        .unwrap_or_else(|_| panic!("not connected: {:?}", svc.state()));
+    assert!(matches!(svc.state(), ConnectionState::Connected { .. }));
+}

@@ -4,6 +4,7 @@
 //! - [`error`]: the shared [`Error`] type.
 //! - [`auth`]: local CA, secret store (OS keychain) and Basic-auth prompt hooks.
 //! - [`client`]: [`PandoClient`], the authenticated transport, and [`SseStream`].
+//! - [`connection`]: [`ConnectionService`] (states, health, backoff, version gate).
 //! - [`discovery`]: instance registry, URL policy and `/health` probe.
 //! - [`sse`]: the incremental [`SseParser`].
 //!
@@ -12,6 +13,7 @@
 pub mod auth;
 pub mod client;
 pub mod config;
+pub mod connection;
 pub mod discovery;
 pub mod error;
 pub mod sse;
@@ -21,6 +23,7 @@ pub use auth::KeyringStore;
 pub use auth::{AuthHooks, CredentialPrompt, MemorySecretStore, SecretStore};
 pub use client::{PandoClient, ServerInfo, SseStream};
 pub use config::{BasicAuth, PandoConfig, Token};
+pub use connection::{ConnectionOptions, ConnectionService, ConnectionState, Link, Version};
 pub use discovery::{DiscoveredServer, Discovery};
 pub use error::{Error, Result};
 pub use sse::{SseEvent, SseParser};
