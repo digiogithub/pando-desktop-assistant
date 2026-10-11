@@ -2,14 +2,17 @@
 id: PDA-T-0005
 type: task
 title: Create ui/ facade over gpui-kit with isolation test
-status: todo
+status: done
 parent: PDA-US-0002
 milestone: PDA-M-0001
+assignees: [claude-sonnet]
 author: mcp
 labels: [shell]
 estimate: 3
 created: 2026-10-11T21:47:40Z
-updated: 2026-10-11T22:19:18Z
+updated: 2026-10-11T22:42:42Z
+started: 2026-10-11T22:42:14Z
+closed: 2026-10-11T22:42:42Z
 ---
 
 ## Description

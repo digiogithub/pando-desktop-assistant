@@ -2,14 +2,17 @@
 id: PDA-T-0007
 type: task
 title: Embedded fonts and brand assets
-status: backlog
+status: done
 parent: PDA-US-0002
 milestone: PDA-M-0001
+assignees: [claude-sonnet]
 author: mcp
 labels: [shell, design]
 estimate: 2
 created: 2026-10-11T21:47:40Z
-updated: 2026-10-11T22:02:09Z
+updated: 2026-10-11T22:42:42Z
+started: 2026-10-11T22:42:19Z
+closed: 2026-10-11T22:42:42Z
 ---
 
 ## Description

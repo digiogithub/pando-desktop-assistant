@@ -2,14 +2,16 @@
 id: PDA-T-0009
 type: task
 title: Frameless main window with custom title bar
-status: backlog
+status: in_review
 parent: PDA-US-0002
 milestone: PDA-M-0001
+assignees: [claude-sonnet]
 author: mcp
 labels: [shell]
 estimate: 3
 created: 2026-10-11T21:47:41Z
-updated: 2026-10-11T22:02:09Z
+updated: 2026-10-11T22:42:23Z
+started: 2026-10-11T22:42:19Z
 ---
 
 ## Description
