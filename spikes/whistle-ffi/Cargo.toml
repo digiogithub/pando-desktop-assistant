@@ -1,0 +1,15 @@
+# Spike S1/S2/S5 (PDA-T-0018, PDA-T-0019, PDA-T-0022). Standalone: excluded from the
+# workspace. Build with `--target-dir ../../target/spikes`. Not production code.
+[package]
+name = "whistle-spike"
+version = "0.0.0"
+edition = "2024"
+license = "MIT"
+publish = false
+
+[dependencies]
+hound = "3.5"
+serde_json = "1"
+
+[profile.release]
+debug = "line-tables-only"

@@ -13,3 +13,4 @@ change a decision, write a new ADR and mark the old one `superseded by NNNN`.
 | [0005](0005-sherpa-onnx-single-onnx-runtime.md) | `sherpa-onnx` is the only ONNX Runtime provider | accepted |
 | [0006](0006-tiny-skia-tests-and-fallback-only.md) | Organism renders with GPUI paths; `tiny-skia` only for tests and fallback | accepted |
 | [0007](0007-espeak-ng-gpl-isolated-tts-worker.md) | espeak-ng (GPL-3) only in a dedicated `pando-tts` process; STT in a permissive `pando-stt` worker | proposed |
+| [0008](0008-stt-engines-whistle-default-parakeet-optional.md) | Whistle is the default STT for PTT commands (≤ 5 s segments, keyword bias); Parakeet v3 optional; Whisper dropped | proposed |

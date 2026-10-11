@@ -2,14 +2,16 @@
 id: PDA-T-0018
 type: task
 title: S1 · Whistle FFI + Spanish WER
-status: backlog
+status: in_review
 parent: PDA-US-0006
 milestone: PDA-M-0001
+assignees: [claude-opus]
 author: mcp
 labels: [spike, voice-in]
 estimate: 3
 created: 2026-10-11T21:47:41Z
-updated: 2026-10-11T22:02:23Z
+updated: 2026-10-11T23:22:35Z
+started: 2026-10-11T22:26:51Z
 ---
 
 ## Description

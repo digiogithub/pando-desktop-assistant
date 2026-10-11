@@ -1,0 +1,50 @@
+Oye Pando, abre el proyecto Bitácora.
+Cancela la migración de auth.
+Aprueba el plan de mesnada.
+Lanza los tests de pando client.
+¿Qué tareas tiene gintrack en curso?
+Pausa la tarea del orquestador.
+Reanuda la sesión de pando assistant.
+Muéstrame el último error de Whistle.
+Crea una tarea nueva en gintrack para el bug del micrófono.
+Rechaza el cambio en el fichero de configuración.
+Oye Pando, ¿cuántos agentes están trabajando ahora?
+Resume la conversación con Claude.
+Despliega Bitácora en producción.
+No, no apruebes eso.
+Sí, adelante con la migración.
+Abre el panel de decisiones pendientes.
+Cambia al proyecto pando.
+Lee en voz alta la conclusión de la tarea.
+Para de hablar.
+Repite la última respuesta, por favor.
+Busca en la base de conocimiento el plan de voz.
+Oye Pando, silencia las notificaciones durante una hora.
+Asigna la tarea PDA siete a mesnada.
+Reintenta la tarea fallida del indexador.
+Marca como hecha la historia de wake word.
+¿Qué ha cambiado en el repositorio desde ayer?
+Haz commit de los cambios con el mensaje arreglar el parser.
+Borra la rama de la migración de auth.
+Ejecuta cargo test en el crate organism.
+Abre la especificación del decide.
+¿Cuánto espacio queda en disco?
+Oye Pando, cancela todo.
+Programa una revisión del pull request para mañana a las diez.
+Envía un resumen del día al canal del equipo.
+Activa el modo manos libres.
+Desactiva la escucha continua.
+Cambia la voz a la de Dave.
+Sube el volumen un poco.
+¿Quién tiene asignada la tarea del sidecar de Windows?
+Compara la latencia de Whistle con Parakeet.
+Abre el registro de eventos del orquestador.
+Explícame el error de compilación de gpui kit.
+Aprueba la petición de Claude Code para editar el fichero.
+Deniega el acceso a la carpeta de secretos.
+Oye Pando, ¿está terminada la indexación de bitácora?
+Recuérdame revisar el ADR de sherpa onnx.
+Cierra la sesión de mesnada.
+Guarda esta nota en la base de conocimiento.
+Muestra el estado del milestone cero.
+Gracias Pando, eso es todo.
