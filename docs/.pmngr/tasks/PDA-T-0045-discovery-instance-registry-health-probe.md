@@ -2,14 +2,17 @@
 id: PDA-T-0045
 type: task
 title: "Discovery: instance registry + /health probe"
-status: backlog
+status: done
 parent: PDA-US-0012
 milestone: PDA-M-0003
+assignees: [claude-sonnet]
 author: mcp
 labels: [pando-client]
 estimate: 3
 created: 2026-10-11T21:50:04Z
-updated: 2026-10-11T22:02:51Z
+updated: 2026-10-11T22:25:33Z
+started: 2026-10-11T22:25:22Z
+closed: 2026-10-11T22:25:33Z
 ---
 
 ## Description

@@ -22,3 +22,8 @@ tokio = { workspace = true, features = ["rt", "sync", "time", "macros"] }
 [dev-dependencies]
 axum.workspace = true
 tokio = { workspace = true, features = ["rt-multi-thread", "macros", "net", "sync", "time"] }
+rcgen = "0.14"
+tokio-rustls = "0.26"
+hyper-util = { version = "0.1", features = ["server-auto", "tokio", "service"] }
+tower = { version = "0.5", features = ["util"] }
+tempfile.workspace = true
