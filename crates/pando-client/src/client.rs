@@ -64,6 +64,8 @@ impl std::fmt::Debug for Inner {
 #[derive(Debug, Clone)]
 pub struct PandoClient {
     inner: Arc<Inner>,
+    /// Path prefix (for example a project-child proxy), empty for the server root.
+    prefix: String,
 }
 
 impl PandoClient {
@@ -107,6 +109,7 @@ impl PandoClient {
         .build()
         .map_err(|e| Error::Config(e.to_string()))?;
         Ok(Self {
+            prefix: String::new(),
             inner: Arc::new(Inner {
                 http,
                 stream_http,
@@ -195,11 +198,24 @@ impl PandoClient {
         path: &str,
         body: Option<&B>,
     ) -> Result<SseStream> {
-        let url = format!("{}{}", self.inner.base, path);
-        let builder = match body {
+        self.open_sse_with(path, body, &[]).await
+    }
+
+    /// Like [`PandoClient::open_sse`] with extra request headers (for example `Last-Event-ID`).
+    pub async fn open_sse_with<B: serde::Serialize>(
+        &self,
+        path: &str,
+        body: Option<&B>,
+        headers: &[(&str, &str)],
+    ) -> Result<SseStream> {
+        let url = self.url(path);
+        let mut builder = match body {
             Some(b) => self.inner.stream_http.post(url).json(b),
             None => self.inner.stream_http.get(url),
         };
+        for (k, v) in headers {
+            builder = builder.header(*k, *v);
+        }
         let resp = self
             .send(
                 self.authorize(builder)
@@ -219,9 +235,23 @@ impl PandoClient {
         Ok(SseStream::new(resp))
     }
 
+    /// A client for the same server under `prefix` (for example
+    /// `/api/v1/projects/{id}/web` to reach a project child through the parent). Credentials
+    /// are shared with `self`: the parent proxy injects the child's own token.
+    pub fn with_path_prefix(&self, prefix: &str) -> Self {
+        Self {
+            inner: self.inner.clone(),
+            prefix: format!("{}{}", self.prefix, prefix.trim_end_matches('/')),
+        }
+    }
+
+    fn url(&self, path: &str) -> String {
+        format!("{}{}{}", self.inner.base, self.prefix, path)
+    }
+
     /// A request builder with the standard headers and credentials.
     pub fn request(&self, method: Method, path: &str) -> RequestBuilder {
-        let url = format!("{}{}", self.inner.base, path);
+        let url = self.url(path);
         self.authorize(self.inner.http.request(method, url))
     }
 
@@ -364,7 +394,12 @@ impl PandoClient {
         struct Body {
             token: String,
         }
-        let req = self.request(Method::GET, "/api/v1/token");
+        // Always the parent's token route, even through a project-child prefix.
+        let req = Self {
+            inner: self.inner.clone(),
+            prefix: String::new(),
+        }
+        .request(Method::GET, "/api/v1/token");
         let resp = Box::pin(self.send_with(req, false)).await?;
         let body: Body = resp.json().await.map_err(Error::from_transport)?;
         self.set_token(Some(Token::new(body.token)));

@@ -17,6 +17,7 @@ pub mod connection;
 pub mod discovery;
 pub mod error;
 pub mod sse;
+pub mod stream;
 
 #[cfg(feature = "keyring-store")]
 pub use auth::KeyringStore;
@@ -27,3 +28,4 @@ pub use connection::{ConnectionOptions, ConnectionService, ConnectionState, Link
 pub use discovery::{DiscoveredServer, Discovery};
 pub use error::{Error, Result};
 pub use sse::{SseEvent, SseParser};
+pub use stream::{EventStream, EventStreamConfig, StreamItem};

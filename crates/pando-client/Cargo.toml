@@ -35,3 +35,5 @@ hyper-util = { version = "0.1", features = ["server-auto", "tokio", "service"] }
 tower = { version = "0.5", features = ["util"] }
 tempfile.workspace = true
 tracing-subscriber.workspace = true
+futures-core = "0.3"
+bytes = "1"
