@@ -1,14 +1,16 @@
-//! Decision layer: typed questions and policy.
+//! Decision layer (System One): "the model classifies, the code decides".
+//!
+//! No UI and no network dependency: the HTTP round trip goes through
+//! [`transport::DecisionTransport`], implemented by the app. See
+//! `docs/03-decision-layer.md` and spec `PDA-SP-0008`.
+//!
+//! - [`protocol`]: `/v1/systemone` wire types, validation and answer checks.
+//! - [`transport`]: the transport trait and [`transport::SystemOneClient`].
+//! - [`error`]: typed, fail-open errors.
 
-/// Crate name, used by the skeleton smoke test.
-pub const CRATE_NAME: &str = "decide";
+pub mod error;
+pub mod protocol;
+pub mod transport;
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn crate_name_is_set() {
-        assert_eq!(CRATE_NAME, "decide");
-    }
-}
+pub use error::DecisionError;
+pub use transport::{ClientOptions, DecisionTransport, SystemOneClient};
