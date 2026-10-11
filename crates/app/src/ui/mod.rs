@@ -25,7 +25,7 @@ pub use gpui_kit::{
 };
 pub use gpui_kit::{rgb, rgba};
 
-// TODO(PDA-T-0010): `pub mod theme;` (generated tokens + kit theme) lands under `ui/theme/`.
+pub mod theme;
 
 /// The kit's "cancel" action (Escape in menus and command palettes).
 pub use gpui_kit::base::actions::Cancel as MenuCancel;

@@ -2,14 +2,14 @@
 id: PDA-T-0010
 type: task
 title: "xtask tokens: palette, typography and GPUI Kit theme"
-status: backlog
+status: todo
 parent: PDA-US-0003
 milestone: PDA-M-0001
 author: mcp
 labels: [design, infra]
 estimate: 3
 created: 2026-10-11T21:47:41Z
-updated: 2026-10-11T22:02:09Z
+updated: 2026-10-11T22:19:18Z
 ---
 
 ## Description
