@@ -1,5 +1,6 @@
 //! Pando HTTP + SSE API client.
 //!
+//! - [`conclusion`]: parsers for `<pando:conclusion>` and `[delegated-result]`.
 //! - [`config`]: [`PandoConfig`] (base URL, credentials, timeouts, local CA) and redacted secrets.
 //! - [`error`]: the shared [`Error`] type.
 //! - [`auth`]: local CA, secret store (OS keychain) and Basic-auth prompt hooks.
@@ -14,6 +15,7 @@
 pub mod auth;
 pub mod chat;
 pub mod client;
+pub mod conclusion;
 pub mod config;
 pub mod connection;
 pub mod discovery;
