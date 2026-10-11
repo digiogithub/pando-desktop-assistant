@@ -1,4 +1,4 @@
-schema: 1
+schema: 2
 key: PDA
 name: Pando Desktop Assistant
 timezone: UTC
@@ -39,6 +39,12 @@ workflow:
 id_allocation:
   strategy: scan
   write_counters: true
+  counters:
+    milestone: 11
+    spec: 12
+    epic: 15
+    story: 49
+    task: 170
 priorities:
   - critical
   - high
