@@ -2,14 +2,17 @@
 id: PDA-T-0048
 type: task
 title: Connection chip in header and "sin Pando" screen
-status: backlog
+status: done
 parent: PDA-US-0012
 milestone: PDA-M-0003
+assignees: [claude-sonnet]
 author: mcp
 labels: [pando-client, shell]
 estimate: 2
 created: 2026-10-11T21:50:04Z
-updated: 2026-10-11T22:03:06Z
+updated: 2026-10-11T23:04:15Z
+started: 2026-10-11T23:03:53Z
+closed: 2026-10-11T23:04:15Z
 ---
 
 ## Description

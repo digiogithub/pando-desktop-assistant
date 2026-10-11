@@ -2,14 +2,16 @@
 id: PDA-T-0026
 type: task
 title: S6 · Global hotkey and tray integrated with the GPUI event loop
-status: backlog
+status: in_review
 parent: PDA-US-0007
 milestone: PDA-M-0001
+assignees: [claude-sonnet]
 author: mcp
 labels: [spike, shell]
 estimate: 3
 created: 2026-10-11T21:47:41Z
-updated: 2026-10-11T22:02:37Z
+updated: 2026-10-11T23:03:56Z
+started: 2026-10-11T23:03:53Z
 ---
 
 ## Description
