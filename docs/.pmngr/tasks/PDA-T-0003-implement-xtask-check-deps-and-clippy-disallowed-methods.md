@@ -2,7 +2,7 @@
 id: PDA-T-0003
 type: task
 title: Implement xtask check-deps and clippy disallowed-methods rules
-status: in_progress
+status: in_review
 parent: PDA-US-0001
 milestone: PDA-M-0001
 assignees: [claude-sonnet]
@@ -10,7 +10,7 @@ author: mcp
 labels: [infra]
 estimate: 3
 created: 2026-10-11T21:47:40Z
-updated: 2026-10-11T22:17:34Z
+updated: 2026-10-11T22:17:43Z
 started: 2026-10-11T22:17:34Z
 ---
 
