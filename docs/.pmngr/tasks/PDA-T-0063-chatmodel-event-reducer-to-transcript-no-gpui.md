@@ -2,14 +2,17 @@
 id: PDA-T-0063
 type: task
 title: "ChatModel: event reducer to transcript (no GPUI)"
-status: backlog
+status: done
 parent: PDA-US-0017
 milestone: PDA-M-0004
+assignees: [claude-sonnet]
 author: mcp
 labels: [chat]
 estimate: 5
 created: 2026-10-11T21:51:26Z
-updated: 2026-10-11T22:02:19Z
+updated: 2026-10-11T22:47:17Z
+started: 2026-10-11T22:46:56Z
+closed: 2026-10-11T22:47:17Z
 ---
 
 ## Description
