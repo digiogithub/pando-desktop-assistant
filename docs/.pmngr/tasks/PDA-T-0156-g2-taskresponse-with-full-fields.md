@@ -2,7 +2,7 @@
 id: PDA-T-0156
 type: task
 title: G2 · TaskResponse with full fields
-status: in_progress
+status: in_review
 priority: high
 parent: PDA-US-0046
 milestone: PDA-M-0003
@@ -11,7 +11,7 @@ author: mcp
 labels: [upstream-pando]
 estimate: 3
 created: 2026-10-11T21:56:59Z
-updated: 2026-10-11T22:21:58Z
+updated: 2026-10-11T22:22:06Z
 started: 2026-10-11T22:21:58Z
 ---
 
