@@ -2,14 +2,17 @@
 id: PDA-T-0082
 type: task
 title: Fail-closed approvals ledger
-status: backlog
+status: done
 parent: PDA-US-0024
 milestone: PDA-M-0004
+assignees: [claude-sonnet]
 author: mcp
 labels: [safety]
 estimate: 3
 created: 2026-10-11T21:51:27Z
-updated: 2026-10-11T22:02:51Z
+updated: 2026-10-11T22:42:55Z
+started: 2026-10-11T22:42:46Z
+closed: 2026-10-11T22:42:55Z
 ---
 
 ## Description

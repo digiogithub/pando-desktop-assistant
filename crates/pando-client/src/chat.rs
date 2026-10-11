@@ -43,6 +43,15 @@ pub struct Session {
     /// Completion tokens.
     #[serde(rename = "CompletionTokens")]
     pub completion_tokens: i64,
+    /// Cache read tokens.
+    #[serde(rename = "CacheReadTokens")]
+    pub cache_read_tokens: i64,
+    /// Cache creation tokens.
+    #[serde(rename = "CacheCreationTokens")]
+    pub cache_creation_tokens: i64,
+    /// Reasoning tokens.
+    #[serde(rename = "ReasoningTokens")]
+    pub reasoning_tokens: i64,
     /// Cost in USD.
     #[serde(rename = "Cost")]
     pub cost: f64,

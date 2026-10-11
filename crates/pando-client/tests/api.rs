@@ -96,3 +96,47 @@ async fn project_proxy_rewrites_the_path_and_keeps_headers() {
     assert_eq!(v["client"], "pando-assistant");
     assert_eq!(v["token"], "tk");
 }
+
+#[tokio::test]
+async fn approvals_outbox_is_delivered_to_the_wire() {
+    use axum::Json;
+    use axum::routing::post;
+    use pando_client::approvals::{Approvals, Decision, Origin};
+    use pando_client::chat::PermissionRequest;
+    use std::sync::{Arc, Mutex};
+
+    let seen: Arc<Mutex<Vec<serde_json::Value>>> = Arc::default();
+    let s2 = seen.clone();
+    let app = Router::new().route(
+        "/api/v1/permissions/respond",
+        post(move |Json(v): Json<serde_json::Value>| {
+            let s2 = s2.clone();
+            async move {
+                s2.lock().unwrap_or_else(|e| e.into_inner()).push(v);
+                r#"{"status":"ok"}"#
+            }
+        }),
+    );
+    let srv = spawn_http(app).await;
+    let c = PandoClient::new(PandoConfig::new(srv.base_url())).unwrap_or_else(|e| panic!("{e}"));
+    let mut a = Approvals::default();
+    let req = |id: &str| PermissionRequest {
+        id: id.into(),
+        session_id: "s".into(),
+        ..Default::default()
+    };
+    a.register_permission(req("ok"), std::time::Duration::ZERO);
+    a.register_permission(req("late"), std::time::Duration::ZERO);
+    let _ = a.decide("ok", Decision::Approve, Origin::Explicit);
+    a.deny_all(pando_client::approvals::DenyReason::Quit);
+    assert_eq!(a.deliver(&c).await, 2);
+    assert_eq!(a.deliver(&c).await, 0);
+    let got = seen.lock().unwrap_or_else(|e| e.into_inner()).clone();
+    let action = |id: &str| {
+        got.iter()
+            .find(|v| v["id"] == id)
+            .map(|v| v["action"].clone())
+    };
+    assert_eq!(action("ok"), Some("allow".into()));
+    assert_eq!(action("late"), Some("deny".into()));
+}
