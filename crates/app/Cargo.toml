@@ -1,0 +1,20 @@
+[package]
+name = "app"
+description = "GPUI desktop application pando-assistant (the only crate that uses gpui-kit)."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "pando-assistant"
+path = "src/main.rs"
+
+[dependencies]
+gpui-kit.workspace = true

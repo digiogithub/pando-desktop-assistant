@@ -1,0 +1,13 @@
+[package]
+name = "pando-client"
+description = "Pando HTTP + SSE API client, discovery and chat model."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish = false
+
+[lints]
+workspace = true
