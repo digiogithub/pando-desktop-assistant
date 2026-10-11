@@ -11,6 +11,8 @@ use std::path::{Path, PathBuf};
 use anyhow::{Context, Result, anyhow, bail};
 use serde_json::{Map, Value};
 
+use crate::tokens_organism;
+
 pub const TOKENS: &str = "design-system/tokens.json";
 const PALETTE: &str = "crates/app/src/ui/theme/palette.rs";
 const SCALE: &str = "crates/app/src/ui/theme/scale.rs";
@@ -25,6 +27,7 @@ const OUTPUTS: &[(&str, Generator)] = &[
     (PALETTE, generate_palette),
     (SCALE, generate_scale),
     (KIT_THEME, generate_kit_theme),
+    (tokens_organism::OUTPUT, tokens_organism::generate),
 ];
 
 pub fn run(args: &[String]) -> Result<bool> {
@@ -60,6 +63,31 @@ pub fn check(root: &Path, tokens: &Value) -> Result<bool> {
         }
     }
     Ok(ok)
+}
+
+/// Format generated Rust with the repo's rustfmt config so `cargo fmt` never makes it stale.
+pub fn rustfmt(src: &str) -> Result<String> {
+    use std::io::Write as _;
+    use std::process::{Command, Stdio};
+    let config = repo_root()?.join("rustfmt.toml");
+    let mut child = Command::new("rustfmt")
+        .args(["--edition", "2024", "--emit", "stdout", "--config-path"])
+        .arg(config)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .context("spawning rustfmt")?;
+    child
+        .stdin
+        .take()
+        .ok_or_else(|| anyhow!("no rustfmt stdin"))?
+        .write_all(src.as_bytes())?;
+    let out = child.wait_with_output()?;
+    if !out.status.success() {
+        bail!("rustfmt failed: {}", String::from_utf8_lossy(&out.stderr));
+    }
+    Ok(String::from_utf8(out.stdout)?)
 }
 
 pub fn repo_root() -> Result<PathBuf> {
