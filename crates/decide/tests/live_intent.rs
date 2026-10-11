@@ -78,3 +78,48 @@ fn intent_accuracy_above_90_percent() {
     println!("intent accuracy: {ok}/{} = {acc:.3}", set.len());
     assert!(acc > 0.90, "accuracy {acc:.3} <= 0.90");
 }
+
+#[test]
+#[ignore = "needs a running Ollama with tev1:0.8b"]
+fn log_and_replay_round_trip() {
+    use decide::eval::replay;
+    use decide::log::{DecisionLog, DecisionRecord, read_log};
+    use decide::policy::{PolicyContext, Thresholds, policy};
+
+    let base = std::env::var("DECIDE_BASE_URL").unwrap_or_else(|_| http::DEFAULT_BASE.into());
+    let transport = http::StdHttpTransport::new(&base, None).expect("base url");
+    let mut opts = ClientOptions::new("tev1:0.8b");
+    opts.timeout = http::EVAL_TIMEOUT;
+    let client = SystemOneClient::new(transport, opts);
+    let dir = tempfile::tempdir().expect("tempdir");
+    let log = DecisionLog::in_dir(dir.path());
+    for (_, text) in phrases().iter().step_by(10) {
+        let input = StateInput {
+            transcript: (*text).into(),
+            ..StateInput::default()
+        };
+        let result = block_on(decide::run_cascade(&client, input));
+        let outcome = match &result {
+            Ok(run) => policy(
+                &run.decision,
+                &PolicyContext {
+                    transcript: text,
+                    agents: &[],
+                    pending: &[],
+                    thresholds: Thresholds::default(),
+                },
+            ),
+            Err(_) => decide::Outcome::unavailable(),
+        };
+        log.append(&DecisionRecord::new(0, *text, &result, outcome, false))
+            .expect("append");
+    }
+    let (records, bad) = read_log(log.path()).expect("read");
+    assert_eq!((records.len(), bad), (10, 0));
+    let report = block_on(replay(&records, &client));
+    println!("{}", report.render());
+    // The same model on the same requests must agree with itself.
+    for (name, q) in &report.questions {
+        assert_eq!(q.agree, q.compared, "{name}");
+    }
+}

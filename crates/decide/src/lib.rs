@@ -11,10 +11,14 @@
 //! - [`state`]: the bounded `state` string.
 //! - [`text`]: Spanish-aware normalization.
 //! - [`policy`]: the trust policy (fail-closed; `PDA-SP-0008.R2`).
+//! - [`log`]: `decisions.jsonl` with 10 MB rotation.
+//! - [`eval`]: replay a log against another model and compare.
 //! - [`cascade`]: intent → agent/action → engine/project, asking only what is needed.
 
 pub mod cascade;
 pub mod error;
+pub mod eval;
+pub mod log;
 pub mod policy;
 pub mod protocol;
 pub mod questions;
