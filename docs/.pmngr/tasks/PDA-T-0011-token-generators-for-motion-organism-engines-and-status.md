@@ -2,14 +2,17 @@
 id: PDA-T-0011
 type: task
 title: Token generators for motion, organism, engines and status
-status: backlog
+status: done
 parent: PDA-US-0003
 milestone: PDA-M-0001
+assignees: [claude-sonnet]
 author: mcp
 labels: [design, organism]
 estimate: 2
 created: 2026-10-11T21:47:41Z
-updated: 2026-10-11T22:02:09Z
+updated: 2026-10-11T22:24:11Z
+started: 2026-10-11T22:23:51Z
+closed: 2026-10-11T22:24:11Z
 ---
 
 ## Description
