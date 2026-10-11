@@ -11,3 +11,7 @@ publish = false
 
 [lints]
 workspace = true
+
+[dependencies]
+anyhow.workspace = true
+cargo_metadata.workspace = true

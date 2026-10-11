@@ -13,6 +13,8 @@ authors = ["Pando Assistant contributors"]
 [workspace.dependencies]
 # Exact pins; add real dependencies here as tasks need them.
 gpui-kit = "=0.7.1"
+anyhow = "1"
+cargo_metadata = "0.23"
 
 [workspace.lints.rust]
 unsafe_op_in_unsafe_fn = "deny"

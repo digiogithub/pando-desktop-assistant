@@ -1,0 +1,12 @@
+# A crate-level clippy.toml replaces the workspace one, so the test allowances are repeated.
+allow-unwrap-in-tests = true
+allow-expect-in-tests = true
+allow-dbg-in-tests = true
+
+# GPUI futures never touch tokio directly and the UI thread never blocks.
+# Use the GPUI tokio bridge instead (AGENTS.md section 6).
+disallowed-methods = [
+    { path = "tokio::spawn", reason = "use the GPUI tokio bridge so the task is tied to a GPUI Task" },
+    { path = "tokio::runtime::Runtime::block_on", reason = "never block the GPUI main thread" },
+    { path = "tokio::runtime::Handle::block_on", reason = "never block the GPUI main thread" },
+]
