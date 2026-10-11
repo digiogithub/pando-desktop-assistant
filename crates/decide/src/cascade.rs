@@ -5,6 +5,9 @@
 //! 2. Only for `control`: `agent` + `action` in one request.
 //! 3. Only for `spawn`: `engine` + `project` in one request.
 //!
+//! The `switch_project` intent class ("cambia a bitácora") asks `project` alone instead
+//! of step 2.
+//!
 //! [`Cascade`] is a sans-IO state machine (`next_request` / `feed`) so it is testable
 //! without a transport; [`run`] drives it over a [`SystemOneClient`].
 
@@ -20,6 +23,9 @@ use crate::questions::{
 };
 use crate::state::{StateInput, build_state, state_byte_budget};
 use crate::transport::{DecisionTransport, SystemOneClient};
+
+/// Intent class that routes to the project question (`PDA-SP-0008.R6`).
+pub const SWITCH_PROJECT_CLASS: &str = "switch_project";
 
 /// One answered question: the parsed value, `p(top)` and the ranked options.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -94,6 +100,7 @@ enum Step {
     Intent,
     Target,
     Spawn,
+    Project,
     Done,
 }
 
@@ -190,6 +197,10 @@ impl Cascade {
                     project_question(&self.input.projects),
                 ),
             ],
+            Step::Project => vec![(
+                names::PROJECT.into(),
+                project_question(&self.input.projects),
+            )],
             Step::Done => return None,
         })
     }
@@ -233,12 +244,14 @@ impl Cascade {
                 if intent == Intent::Dictation {
                     self.dictation = Some(self.input.transcript.trim().to_string());
                 }
+                let switch = class == SWITCH_PROJECT_CLASS;
                 self.intent = Some(answered);
                 self.intent_class = Some(class);
-                self.step = if intent == Intent::Control {
-                    Step::Target
-                } else {
-                    Step::Done
+                self.step = match intent {
+                    // "cambia a bitácora": a project question instead of agent/action.
+                    Intent::Control if switch => Step::Project,
+                    Intent::Control => Step::Target,
+                    Intent::Conversation | Intent::Dictation => Step::Done,
                 };
             }
             Step::Target => {
@@ -265,6 +278,14 @@ impl Cascade {
                     DecisionError::Malformed(format!("unknown engine {:?}", e.choice))
                 })?;
                 self.engine = Some(Answered::from_answer(engine, e));
+                self.project = Some(Answered::from_answer(
+                    ProjectChoice::from_key(&choice(p)),
+                    p,
+                ));
+                self.step = Step::Done;
+            }
+            Step::Project => {
+                let p = get(names::PROJECT)?;
                 self.project = Some(Answered::from_answer(
                     ProjectChoice::from_key(&choice(p)),
                     p,
@@ -552,6 +573,24 @@ mod tests {
         assert!(agents.keys().any(|k| k == "agente-37"));
         assert!(cascade.input.projects.len() <= 12);
         assert_eq!(cascade.input.projects[0], "facturas");
+    }
+
+    #[test]
+    fn switch_project_asks_only_the_project() {
+        let c = client(vec![
+            Reply::Answer(vec![("intent", "switch_project", 0.9)]),
+            Reply::Answer(vec![("project", "bitacora", 0.93)]),
+        ]);
+        let run = block_on(run(&c, input("cambia a bitácora"))).unwrap();
+        let d = run.decision;
+        assert_eq!(d.intent.value, Intent::Control);
+        assert!(d.action.is_none() && d.agent.is_none());
+        assert_eq!(
+            d.project.as_ref().map(|p| &p.value),
+            Some(&ProjectChoice::Named("bitacora".into()))
+        );
+        let seen = c.transport().seen_json();
+        assert_eq!(seen[1]["questions"].as_object().unwrap().len(), 1);
     }
 
     #[test]

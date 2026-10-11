@@ -169,6 +169,13 @@ pub enum Outcome {
         /// The command (always `approve`).
         request: ControlRequest,
     },
+    /// Select another project (reversible; drives the header pill).
+    SwitchProject {
+        /// The project.
+        project: ProjectChoice,
+        /// min(p(intent), p(project)).
+        p: f64,
+    },
     /// Insert the text into the composer of the voice target without sending.
     Dictate {
         /// Text to insert.
@@ -199,6 +206,7 @@ impl Outcome {
             Self::Confirm { .. } => "confirm",
             Self::ExplicitOnly { .. } => "explicit_only",
             Self::Dictate { .. } => "dictate",
+            Self::SwitchProject { .. } => "switch_project",
             Self::Conversation { .. } => "conversation",
         }
     }
@@ -252,6 +260,25 @@ pub fn policy(decision: &Decision, ctx: &PolicyContext<'_>) -> Outcome {
 
     // Every question the command depends on, with its probability; the weakest one
     // drives the outcome and provides the buttons.
+    if decision.action.is_none()
+        && decision.intent_class.as_deref() == Some(crate::cascade::SWITCH_PROJECT_CLASS)
+        && let Some(project) = decision.project.as_ref()
+    {
+        // Switching project only changes a selection: reversible.
+        let (pi, pp) = (p_intent, p_of(Some(project)));
+        return if pi.min(pp) < t.reversible {
+            low(if pi <= pp {
+                top2(Some(&decision.intent))
+            } else {
+                top2(Some(project))
+            })
+        } else {
+            Outcome::SwitchProject {
+                project: project.value.clone(),
+                p: pi.min(pp),
+            }
+        };
+    }
     let Some(action_a) = decision.action.as_ref() else {
         return low(top2(Some(&decision.intent)));
     };
@@ -717,6 +744,28 @@ mod tests {
         assert_eq!(run(&d, "x", &[]).label(), "conversation");
         d = control(Action::Status, mig(), 0.99);
         d.agent = None;
+        assert_eq!(run(&d, "x", &[]).label(), "conversation");
+    }
+
+    #[test]
+    fn switch_project_is_reversible() {
+        let mut d = control(Action::Status, AgentTarget::None, 0.9);
+        d.action = None;
+        d.agent = None;
+        d.intent_class = Some("switch_project".into());
+        d.project = Some(ans(ProjectChoice::Named("bitacora".into()), 0.62));
+        assert_eq!(
+            run(&d, "cambia a bitácora", &[]),
+            Outcome::SwitchProject {
+                project: ProjectChoice::Named("bitacora".into()),
+                p: 0.62
+            }
+        );
+        d.project = Some(ans(ProjectChoice::Named("bitacora".into()), 0.4));
+        assert_eq!(run(&d, "cambia a bitácora", &[]).label(), "conversation");
+        // Without the class, a control decision with no action stays conversation.
+        d.intent_class = None;
+        d.project = Some(ans(ProjectChoice::Named("bitacora".into()), 0.99));
         assert_eq!(run(&d, "x", &[]).label(), "conversation");
     }
 
