@@ -2,7 +2,7 @@
 id: PDA-T-0015
 type: task
 title: AGENTS.md / CLAUDE.md and initial ADR log
-status: in_progress
+status: done
 parent: PDA-US-0005
 milestone: PDA-M-0001
 assignees: [claude-opus]
@@ -10,8 +10,9 @@ author: mcp
 labels: [docs]
 estimate: 2
 created: 2026-10-11T21:47:41Z
-updated: 2026-10-11T22:13:55Z
+updated: 2026-10-11T22:20:55Z
 started: 2026-10-11T22:13:55Z
+closed: 2026-10-11T22:20:55Z
 ---
 
 ## Description
