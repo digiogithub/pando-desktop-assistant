@@ -1,0 +1,34 @@
+[package]
+name = "s3-sherpa-tts"
+version = "0.0.0"
+edition = "2024"
+publish = false
+license = "MIT"
+
+[dependencies]
+sherpa-onnx = "=1.13.8"
+
+[workspace]
+
+[features]
+# Link libneedle.a (+ static libc++/libc++abi from LLVM 21) into the same binary.
+# Needs NEEDLE_DIR and LIBCXX_DIR; see docs/spikes/S3-sherpa-onnx-single-runtime.md.
+needle = []
+
+[[bin]]
+name = "s3-sherpa-tts"
+path = "src/main.rs"
+
+[[bin]]
+name = "s3-combo"
+path = "src/combo.rs"
+required-features = ["needle"]
+
+[[bin]]
+name = "s3-ehtest"
+path = "src/ehtest.rs"
+required-features = ["needle"]
+
+[[bin]]
+name = "s3-vadonly"
+path = "src/vadonly.rs"

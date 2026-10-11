@@ -2,14 +2,16 @@
 id: PDA-T-0020
 type: task
 title: "S3 · Single sherpa-onnx: Silero VAD + Piper + Kokoro alongside libneedle"
-status: backlog
+status: in_review
 parent: PDA-US-0006
 milestone: PDA-M-0001
+assignees: [claude-opus]
 author: mcp
 labels: [spike, voice-out]
 estimate: 2
 created: 2026-10-11T21:47:41Z
-updated: 2026-10-11T22:02:23Z
+updated: 2026-10-11T22:43:09Z
+started: 2026-10-11T22:22:20Z
 ---
 
 ## Description
