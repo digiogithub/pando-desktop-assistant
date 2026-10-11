@@ -163,17 +163,24 @@ Cells are removed when their task disappears; fade alpha over 0.6 s and retract 
 
 ## 6. Implementing in GPUI
 
-- Render the organism with `canvas()` (GPUI's immediate-mode element) and a
-  `gpui::Path`/`PathBuilder` per stroke, or rasterise with `tiny-skia` into an `ImageSource`
-  and blit — the prototype is ~5 paths per cell plus the body, so either works. Use a
-  `Model<Organism>` holding the simulation state and request a redraw each frame
-  (`cx.request_animation_frame()` / a 16 ms timer) while the window is visible.
+- Render the organism with `canvas()` (GPUI's immediate-mode element), painting the
+  backend-neutral `DrawList` from `crates/organism` with `PathBuilder` + `window.paint_path`.
+  `tiny-skia` rasterisation is only for golden tests and as a fallback
+  ([ADR 0006](../docs/adr/0006-tiny-skia-tests-and-fallback-only.md)). Hold the simulation
+  in an `Entity<Organism>` (GPUI through `gpui-kit =0.7.1`; `Model<T>` and `ViewContext` are
+  stale APIs) and request the next frame with **`window.request_animation_frame()`** while
+  the window is visible (`window.is_visible()`); stop requesting frames when hidden and
+  reset the clock on show.
 - Keep **simulation** (pure Rust, no GPUI types: `Organism::step(dt, inputs)`) separate from
-  **drawing** (`Organism::paint(&mut PathBuilder…)`), so it can be unit-tested and reused in
+  **drawing** (`Organism::shape(&Scene) -> DrawList`), so it can be unit-tested and reused in
   the mini window at another scale.
 - Inputs per frame: `state`, `mic_rms`, `tts_rms`, `pointer`, `cells: Vec<CellInput>`.
 - Noise helper: `fn noise(a: f32, t: f32, k: f32) -> f32` = Σ wᵢ·sin(fᵢ·a + gᵢ·t + k·cᵢ)
   with the harmonics in tokens; no Perlin needed.
+- GPUI has no path clipping (rect content masks only) and no dash offset: organelle
+  containment is analytic and dashing is done in the organism crate.
+- `cx.reduce_motion()` is not wired to the OS in gpui-pre: the app reads the OS setting and
+  calls `set_reduce_motion`.
 - Hit-testing: nearest cell within 40 px of the pointer. Hover scales the cell 1.25×.
 - Fonts: bundle Space Grotesk, JetBrains Mono and Zen Kaku Gothic New (OFL) in the binary so
   the look is identical on Linux/macOS/Windows.

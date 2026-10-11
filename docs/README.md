@@ -6,15 +6,23 @@ steer — every agent mesnada coordinates.
 
 These notes were written before any code exists. They capture the decisions, the research and
 the facts about the surrounding systems that an implementer (human or Claude Code) needs.
-Verify anything marked **[verify]** against the current Pando source in `../../pando` before
-relying on it.
+They were reconciled with the verified research in [`research/`](research/) on 2026-10-12
+(PDA-T-0016): no **[verify]** is left open in `01`–`06`; what is still unknown is linked to
+a spike or an upstream gap task. Where a note and `research/*.md` disagree, the research wins.
+
+| Research | What it covers |
+|---|---|
+| [research/pando-api.md](research/pando-api.md) | Authoritative Pando API reference, SSE protocol, gaps G1–G17 |
+| [research/voice-stack.md](research/voice-stack.md) | STT, VAD, wake word, TTS, audio, hotkeys, model distribution |
+| [research/bitacora-gpui.md](research/bitacora-gpui.md) | GPUI/GPUI Kit patterns and reusable code from Bitácora |
+| [research/organism-port.md](research/organism-port.md) | Porting the organism to Rust + GPUI |
 
 | Doc | What it covers |
 |---|---|
 | [01-strategy.md](01-strategy.md) | Goals, stack, crate layout, milestones, risks |
-| [02-voice-pipeline.md](02-voice-pipeline.md) | Mic capture → Whistle STT (C FFI) → TTS (ONNX) → playback, barge-in |
+| [02-voice-pipeline.md](02-voice-pipeline.md) | Mic capture → `pando-voice` worker (Whistle STT, sherpa-onnx VAD/TTS) → playback, barge-in |
 | [03-decision-layer.md](03-decision-layer.md) | Jev / System One decision models: command vs. chat, which agent, which project |
-| [04-pando-api.md](04-pando-api.md) | The Pando endpoints the assistant uses (sessions, streams, orchestrator, instances) |
+| [04-pando-api.md](04-pando-api.md) | The Pando endpoints the assistant uses (auth, chat stream, orchestrator, conclusions, events) |
 | [05-claude-code-interop.md](05-claude-code-interop.md) | Talking to Claude Code sessions: ACP, cross-session messaging, channels, hooks |
 | [06-ui-mapping.md](06-ui-mapping.md) | How API events drive the organism (states, cells, engines, statuses) |
 

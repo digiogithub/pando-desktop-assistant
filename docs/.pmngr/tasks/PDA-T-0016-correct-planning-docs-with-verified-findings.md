@@ -2,14 +2,16 @@
 id: PDA-T-0016
 type: task
 title: Correct planning docs with verified findings
-status: backlog
+status: in_progress
 parent: PDA-US-0005
 milestone: PDA-M-0001
+assignees: [claude-opus]
 author: mcp
 labels: [docs]
 estimate: 2
 created: 2026-10-11T21:47:41Z
-updated: 2026-10-11T22:02:23Z
+updated: 2026-10-11T22:13:55Z
+started: 2026-10-11T22:13:55Z
 ---
 
 ## Description

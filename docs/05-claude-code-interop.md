@@ -1,11 +1,15 @@
 # 05 · Talking to Claude Code sessions
 
+> Reviewed on 2026-10-12 (PDA-T-0016): Pando-side facts aligned with
+> [`research/pando-api.md`](research/pando-api.md); the Claude Code facts below were read
+> from code.claude.com on 2026-10-11.
+
 Three kinds of Claude Code processes can appear as cells:
 
 | Kind | Who starts it | How the assistant talks to it | Cell look |
 |---|---|---|---|
 | mesnada task with engine `claude` (CLI, `-p`) | Pando | read-only: task output | spore (dashed) if the engine is text-only; otherwise solid blue |
-| mesnada task with engine `acp-claude` / `warm-acp` | Pando | full session over ACP (`session/prompt`, permissions) via Pando's task API | solid blue nucleus |
+| mesnada task with engine `acp-claude` / `warm-acp` | Pando | ACP is handled inside Pando; over HTTP the assistant sees only the projected `TaskResponse` (no `acp_session_id`, no ACP permission state — gaps G2/G12, PDA-T-0156/PDA-T-0159), so v1 can read output and cancel, not talk or approve | solid blue nucleus |
 | session the user opened in a terminal | user | **cross-session messaging** or **channels** (below) | hollow blue nucleus |
 
 ## Option A — cross-session messaging socket (same machine)
@@ -72,7 +76,8 @@ Experimental, reverse-engineered, reports of undelivered messages. **Do not depe
 
 ## Decision
 
-1. Agents Pando spawns: via Pando's API only (ACP handled inside Pando).
+1. Agents Pando spawns: via Pando's API only (ACP handled inside Pando; see 04 for what the
+   HTTP projection exposes).
 2. User-opened sessions: hooks for discovery/status (v1), socket for one-way nudges (v1,
    Linux/macOS), channel for two-way (v2, feature-flagged).
 3. Pando → Claude Code messages carry the `<pando:conclusion>` convention in the text so a
