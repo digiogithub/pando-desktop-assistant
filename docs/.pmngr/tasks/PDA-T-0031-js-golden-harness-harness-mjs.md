@@ -2,14 +2,16 @@
 id: PDA-T-0031
 type: task
 title: JS golden harness (harness.mjs)
-status: backlog
+status: in_progress
 parent: PDA-US-0009
 milestone: PDA-M-0002
+assignees: [claude-sonnet]
 author: mcp
 labels: [organism, testing]
 estimate: 5
 created: 2026-10-11T21:48:44Z
-updated: 2026-10-11T22:02:37Z
+updated: 2026-10-11T22:29:46Z
+started: 2026-10-11T22:29:46Z
 ---
 
 ## Description
