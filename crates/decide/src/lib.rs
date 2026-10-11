@@ -10,10 +10,12 @@
 //! - [`questions`]: the typed questions and answer enums.
 //! - [`state`]: the bounded `state` string.
 //! - [`text`]: Spanish-aware normalization.
+//! - [`policy`]: the trust policy (fail-closed; `PDA-SP-0008.R2`).
 //! - [`cascade`]: intent → agent/action → engine/project, asking only what is needed.
 
 pub mod cascade;
 pub mod error;
+pub mod policy;
 pub mod protocol;
 pub mod questions;
 pub mod state;
@@ -22,4 +24,5 @@ pub mod transport;
 
 pub use cascade::{Decision, run as run_cascade};
 pub use error::DecisionError;
+pub use policy::{Outcome, PolicyContext, Thresholds, policy};
 pub use transport::{ClientOptions, DecisionTransport, SystemOneClient};
