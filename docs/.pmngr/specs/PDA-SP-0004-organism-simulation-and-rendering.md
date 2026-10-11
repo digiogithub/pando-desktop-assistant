@@ -6,24 +6,69 @@ status: backlog
 author: mcp
 labels: [organism]
 created: 2026-10-11T21:41:32Z
-updated: 2026-10-11T22:03:14Z
+updated: 2026-10-11T22:42:54Z
 requirements:
   R1:
     status: backlog
+    trace:
+      code:
+        - crates/organism/src/sim.rs#Organism::step
+        - crates/organism/src/rng.rs#Mulberry32
+      tests:
+        - crates/organism/tests/golden.rs#simulation_state_matches_reference_at_recorded_frames
+        - crates/organism/tests/properties.rs#no_nan_and_invariants_hold
+        - crates/organism/tests/properties.rs#no_energy_blow_up_at_the_largest_dt
   R2:
     status: backlog
+    trace:
+      code:
+        - crates/organism/src/params.rs#Params
+        - crates/organism/src/params.rs#Extras
+      tests: [crates/organism/tests/params.rs#params_match_tokens_json_exactly]
   R3:
     status: backlog
+    trace:
+      code:
+        - crates/organism/src/state.rs#BodyMachine
+        - crates/organism/src/envelope.rs#Amplitude
+      tests:
+        - crates/organism/src/state.rs#documented_transitions_are_listed
+        - crates/organism/tests/lifecycle.rs#delegating_overlay_lasts_one_and_a_half_seconds_and_returns_to_the_previous_state
   R4:
     status: backlog
+    trace:
+      code: [crates/organism/src/lifecycle.rs#Organism::reconcile]
+      tests:
+        - crates/organism/tests/lifecycle.rs#dying_cell_fades_retracts_and_is_removed_after_the_death_duration
+        - crates/organism/tests/lifecycle.rs#birth_emits_its_own_wave_and_starts_at_the_centre
+        - crates/organism/tests/lifecycle.rs#adding_or_removing_a_cell_does_not_move_the_others_slots
   R5:
     status: backlog
+    trace:
+      code: [crates/organism/src/shape.rs#Organism::shape]
+      tests:
+        - crates/organism/tests/golden.rs#draw_list_matches_reference_draw_calls
   R6:
     status: backlog
   R7:
     status: backlog
+    trace:
+      code:
+        - crates/organism/src/semantics.rs#Organism::semantics
+        - crates/organism/src/semantics.rs#Organism::hit_test
+      tests:
+        - crates/organism/tests/semantics.rs#semantics_match_drawn_positions_within_one_pixel
+        - crates/organism/tests/semantics.rs#hit_test_picks_the_nearest_cell_inside_the_hit_radius
   R8:
     status: backlog
+    trace:
+      code:
+        - crates/organism/src/layout.rs#Scene
+        - crates/organism/src/sim.rs#Organism::step
+      tests:
+        - crates/organism/tests/reduced_motion.rs#small_canvas_drops_labels_and_keeps_strokes_legible
+        - crates/organism/tests/reduced_motion.rs#springs_are_monotone_and_do_not_overshoot
+        - crates/organism/tests/reduced_motion.rs#breathing_noise_and_ripple_are_zero
 ---
 
 ## Purpose

@@ -2,7 +2,7 @@
 id: PDA-T-0035
 type: task
 title: "Lifecycle: stable slots, death, birth and Delegating"
-status: in_progress
+status: done
 parent: PDA-US-0010
 milestone: PDA-M-0002
 assignees: [claude-sonnet]
@@ -10,8 +10,9 @@ author: mcp
 labels: [organism]
 estimate: 5
 created: 2026-10-11T21:48:44Z
-updated: 2026-10-11T22:38:20Z
+updated: 2026-10-11T22:43:44Z
 started: 2026-10-11T22:38:20Z
+closed: 2026-10-11T22:43:44Z
 ---
 
 ## Description

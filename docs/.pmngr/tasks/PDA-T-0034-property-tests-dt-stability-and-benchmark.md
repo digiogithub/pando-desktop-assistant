@@ -2,7 +2,7 @@
 id: PDA-T-0034
 type: task
 title: Property tests, dt stability and benchmark
-status: in_progress
+status: done
 parent: PDA-US-0009
 milestone: PDA-M-0002
 assignees: [claude-sonnet]
@@ -10,8 +10,9 @@ author: mcp
 labels: [organism, testing]
 estimate: 3
 created: 2026-10-11T21:48:44Z
-updated: 2026-10-11T22:35:43Z
+updated: 2026-10-11T22:43:44Z
 started: 2026-10-11T22:35:43Z
+closed: 2026-10-11T22:43:44Z
 ---
 
 ## Description

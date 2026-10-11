@@ -2,7 +2,7 @@
 id: PDA-T-0030
 type: task
 title: rng mulberry32, noise, spring and envelope
-status: in_progress
+status: done
 parent: PDA-US-0009
 milestone: PDA-M-0002
 assignees: [claude-sonnet]
@@ -10,8 +10,9 @@ author: mcp
 labels: [organism]
 estimate: 2
 created: 2026-10-11T21:48:43Z
-updated: 2026-10-11T22:29:15Z
+updated: 2026-10-11T22:43:44Z
 started: 2026-10-11T22:29:15Z
+closed: 2026-10-11T22:43:44Z
 ---
 
 ## Description
