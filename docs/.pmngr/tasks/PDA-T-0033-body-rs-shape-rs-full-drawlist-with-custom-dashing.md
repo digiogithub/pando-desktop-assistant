@@ -2,14 +2,16 @@
 id: PDA-T-0033
 type: task
 title: "body.rs + shape.rs: full DrawList with custom dashing"
-status: backlog
+status: in_progress
 parent: PDA-US-0009
 milestone: PDA-M-0002
+assignees: [claude-sonnet]
 author: mcp
 labels: [organism]
 estimate: 8
 created: 2026-10-11T21:48:44Z
-updated: 2026-10-11T22:02:37Z
+updated: 2026-10-11T22:32:13Z
+started: 2026-10-11T22:32:13Z
 ---
 
 ## Description

@@ -6,6 +6,7 @@
 
 use std::f64::consts::TAU;
 
+use crate::body::BodyCache;
 use crate::envelope::Amplitude;
 use crate::params::{Extras, Params, W_REF};
 use crate::rng::{Mulberry32, hash_unit};
@@ -87,6 +88,7 @@ pub struct Organism {
     pub(crate) selected: Option<CellId>,
     pub(crate) reduced_motion: bool,
     pub(crate) pointer: Option<[f64; 2]>,
+    pub(crate) body: BodyCache,
 }
 
 impl Organism {
@@ -131,6 +133,7 @@ impl Organism {
             selected: None,
             reduced_motion: false,
             pointer: None,
+            body: BodyCache::default(),
         }
     }
 
@@ -205,6 +208,31 @@ impl Organism {
         W_REF * self.params.ring_radius
     }
 
+    /// State that drives the body radius, organelle speed and thinking visuals.
+    pub(crate) fn visual_state(&self) -> BodyState {
+        self.state
+    }
+
+    /// Fade of a cell's bulge (dying cells).
+    pub(crate) fn bulge_fade(&self, _c: &CellSim) -> f64 {
+        1.0
+    }
+
+    /// Alpha multiplier of everything drawn for a cell (dying fade, pending dim).
+    pub(crate) fn cell_fade(&self, _c: &CellSim) -> f64 {
+        1.0
+    }
+
+    /// Pseudopod length factor (`1` normally, `0` when a dying cell has retracted it).
+    pub(crate) fn cell_retract(&self, _c: &CellSim) -> f64 {
+        1.0
+    }
+
+    /// Uniform radius pulse added by the Delegating overlay.
+    pub(crate) fn overlay_extra(&self, _base: f64) -> f64 {
+        0.0
+    }
+
     // --- step --------------------------------------------------------------------------
 
     /// Advance the simulation by `dt` seconds (clamped to [`MAX_DT`]).
@@ -233,6 +261,7 @@ impl Organism {
         self.step_cells(dt, inputs);
         self.step_organelles(dt, state);
         self.step_nucleus(dt);
+        self.refresh_body();
     }
 
     fn step_amplitude(&mut self, dt: f64, inputs: &Inputs<'_>) {

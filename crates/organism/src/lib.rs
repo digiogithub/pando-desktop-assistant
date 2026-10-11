@@ -1,14 +1,21 @@
 //! Pure organism simulation: `step()` and `shape()` produce a `DrawList`.
 
+pub mod body;
+pub mod dash;
+pub mod draw;
 pub mod envelope;
+pub mod layout;
 pub mod noise;
 pub mod params;
 pub mod rng;
+pub mod shape;
 pub mod sim;
 pub mod spring;
 pub mod tokens;
 pub mod types;
 
+pub use draw::{DrawList, Prim};
+pub use layout::Scene;
 pub use params::{Extras, Params, W_REF};
 pub use sim::{Config, Organism};
 pub use types::{BodyState, CellId, CellInput, Engine, Inputs, Status};
