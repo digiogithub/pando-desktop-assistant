@@ -256,6 +256,9 @@ pando-assistant/
 
 ## 6. Engineering rules
 
+- **Architecture decisions** are ADRs in `docs/adr/NNNN-<slug>.md` (template
+  `docs/adr/0000-template.md`, index `docs/adr/README.md`). Follow the accepted ones; to change
+  a decision, write a new ADR that supersedes the old one, never edit an accepted ADR.
 - **Rust 2024**, toolchain pinned in `rust-toolchain.toml`; `cargo fmt`, `cargo clippy
   --workspace -D warnings`; `unwrap/expect/dbg!` denied outside tests.
 - **Dependency rules** (enforced by `cargo xtask check-deps`): only `app` depends on
