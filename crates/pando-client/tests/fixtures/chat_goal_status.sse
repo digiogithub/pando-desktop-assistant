@@ -1,0 +1,9 @@
+event: session
+data: {"sessionId":"af696782-15ff-40c7-93bf-6a7ffd4a20e8","running":true}
+
+event: goal_status
+data: {"goal":null}
+
+event: session
+data: {"running":false,"sessionId":"af696782-15ff-40c7-93bf-6a7ffd4a20e8"}
+

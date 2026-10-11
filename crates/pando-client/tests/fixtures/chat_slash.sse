@@ -1,0 +1,1494 @@
+event: session
+data: {"sessionId":"add84465-1793-42c2-8c97-3c403dd9d2d4","running":true}
+
+event: run
+data: {"runSeq":1,"sessionId":"add84465-1793-42c2-8c97-3c403dd9d2d4"}
+
+event: system_message
+data: {"session_id":"add84465-1793-42c2-8c97-3c403dd9d2d4","text":"\n\n🧠 Context enrichment agent gathering project context...\n"}
+
+event: system_message
+data: {"session_id":"add84465-1793-42c2-8c97-3c403dd9d2d4","text":"✓ Context enrichment done — no additional context found.\n\n"}
+
+event: system_message
+data: {"routing":{"model":"copilot.gpt-6-luna","matched":false,"probability":0.6617687425297256,"confidence":0.43265287287492626,"reason":"no_match","fallbackUsed":false,"routerProvider":"ollama","routerModel":"tev1:0.8b","routerLatencyMs":65,"candidates":["copilot.gpt-6-luna"],"kind":"no_match","notice":"Auto: no confident match (best Analiza p=0.20) → copilot.gpt-6-luna"},"session_id":"add84465-1793-42c2-8c97-3c403dd9d2d4","text":"Auto: no confident match (best Analiza p=0.20) → copilot.gpt-6-luna\n"}
+
+event: thinking_delta
+data: {"text":"**Preparing command assistance**\n\nI"}
+
+event: thinking_delta
+data: {"text":" think"}
+
+event: thinking_delta
+data: {"text":" I"}
+
+event: thinking_delta
+data: {"text":" need"}
+
+event: thinking_delta
+data: {"text":" to"}
+
+event: thinking_delta
+data: {"text":" respond"}
+
+event: thinking_delta
+data: {"text":" to"}
+
+event: thinking_delta
+data: {"text":" the"}
+
+event: thinking_delta
+data: {"text":" user"}
+
+event: thinking_delta
+data: {"text":" by"}
+
+event: thinking_delta
+data: {"text":" offering"}
+
+event: thinking_delta
+data: {"text":" some"}
+
+event: thinking_delta
+data: {"text":" help"}
+
+event: thinking_delta
+data: {"text":" with"}
+
+event: thinking_delta
+data: {"text":" commands"}
+
+event: thinking_delta
+data: {"text":"."}
+
+event: thinking_delta
+data: {"text":" It"}
+
+event: thinking_delta
+data: {"text":" seems"}
+
+event: thinking_delta
+data: {"text":" like"}
+
+event: thinking_delta
+data: {"text":" they"}
+
+event: thinking_delta
+data: {"text":"’re"}
+
+event: thinking_delta
+data: {"text":" looking"}
+
+event: thinking_delta
+data: {"text":" for"}
+
+event: thinking_delta
+data: {"text":" assistance"}
+
+event: thinking_delta
+data: {"text":" with"}
+
+event: thinking_delta
+data: {"text":" P"}
+
+event: thinking_delta
+data: {"text":"ando"}
+
+event: thinking_delta
+data: {"text":" setup"}
+
+event: thinking_delta
+data: {"text":","}
+
+event: thinking_delta
+data: {"text":" so"}
+
+event: thinking_delta
+data: {"text":" I"}
+
+event: thinking_delta
+data: {"text":" should"}
+
+event: thinking_delta
+data: {"text":" provide"}
+
+event: thinking_delta
+data: {"text":" relevant"}
+
+event: thinking_delta
+data: {"text":" help"}
+
+event: thinking_delta
+data: {"text":" related"}
+
+event: thinking_delta
+data: {"text":" to"}
+
+event: thinking_delta
+data: {"text":" the"}
+
+event: thinking_delta
+data: {"text":" command"}
+
+event: thinking_delta
+data: {"text":" line"}
+
+event: thinking_delta
+data: {"text":" interface"}
+
+event: thinking_delta
+data: {"text":"."}
+
+event: thinking_delta
+data: {"text":" The"}
+
+event: thinking_delta
+data: {"text":" user"}
+
+event: thinking_delta
+data: {"text":" might"}
+
+event: thinking_delta
+data: {"text":" just"}
+
+event: thinking_delta
+data: {"text":" need"}
+
+event: thinking_delta
+data: {"text":" to"}
+
+event: thinking_delta
+data: {"text":" use"}
+
+event: thinking_delta
+data: {"text":" the"}
+
+event: thinking_delta
+data: {"text":" /"}
+
+event: thinking_delta
+data: {"text":"help"}
+
+event: thinking_delta
+data: {"text":" command"}
+
+event: thinking_delta
+data: {"text":","}
+
+event: thinking_delta
+data: {"text":" and"}
+
+event: thinking_delta
+data: {"text":" I"}
+
+event: thinking_delta
+data: {"text":"’ll"}
+
+event: thinking_delta
+data: {"text":" need"}
+
+event: thinking_delta
+data: {"text":" to"}
+
+event: thinking_delta
+data: {"text":" make"}
+
+event: thinking_delta
+data: {"text":" sure"}
+
+event: thinking_delta
+data: {"text":" to"}
+
+event: thinking_delta
+data: {"text":" invoke"}
+
+event: thinking_delta
+data: {"text":" that"}
+
+event: thinking_delta
+data: {"text":" setup"}
+
+event: thinking_delta
+data: {"text":" help"}
+
+event: thinking_delta
+data: {"text":" effectively"}
+
+event: thinking_delta
+data: {"text":"."}
+
+event: thinking_delta
+data: {"text":" It"}
+
+event: thinking_delta
+data: {"text":"’s"}
+
+event: thinking_delta
+data: {"text":" important"}
+
+event: thinking_delta
+data: {"text":" that"}
+
+event: thinking_delta
+data: {"text":" I"}
+
+event: thinking_delta
+data: {"text":" give"}
+
+event: thinking_delta
+data: {"text":" them"}
+
+event: thinking_delta
+data: {"text":" the"}
+
+event: thinking_delta
+data: {"text":" right"}
+
+event: thinking_delta
+data: {"text":" support"}
+
+event: thinking_delta
+data: {"text":"!"}
+
+event: tool_call
+data: {"id":"call_pLj2v9MP4NASZw1XzOx44E7g","input":"{\"command\":\"help\"}","kind":"other","locations":null,"name":"pando_setup","status":"in_progress","title":"pando_setup"}
+
+event: token_usage
+data: {"cache_creation_tokens":0,"cache_read_tokens":30970,"completion_tokens":31024,"context_window":400000,"cost":0.0003375,"estimated":false,"prompt_tokens":8,"reasoning_tokens":33,"session_id":"add84465-1793-42c2-8c97-3c403dd9d2d4"}
+
+event: tool_result
+data: {"content":"pando_setup — inspect and steer this Pando instance.\n\nCommands:\n  help       List the commands, or show the usage of one of them\n  config     Read the active configuration (read-only, secrets masked)\n  providers  List the configured provider accounts and their credential state\n  models     List selectable models with their canonical id (e.g. copilot.gpt-5.4)\n  model      Show the model this session runs on, or switch it\n  lsp        List the language servers: installed, installable by Pando, or manual\n  projects   List the projects registered in this Pando instance's project registry\n  session    Show this session's token usage, cost and active modes\n  commands   List the slash commands, marking the ones this tool can activate\n  run        Activate a slash command for this session\n  telemetry  Show or change remote telemetry (opt-in diagnostics shipped to Better Stack)\n  decision-model Show, change, test or list models of the shared decision model (System One router)\n  sandbox    Show the host command sandbox status (read-only)\n\nPass args=\"--help\" to any command for its own usage.\n","is_error":false,"kind":"other","locations":null,"name":"pando_setup","raw_output":{"output":"pando_setup — inspect and steer this Pando instance.\n\nCommands:\n  help       List the commands, or show the usage of one of them\n  config     Read the active configuration (read-only, secrets masked)\n  providers  List the configured provider accounts and their credential state\n  models     List selectable models with their canonical id (e.g. copilot.gpt-5.4)\n  model      Show the model this session runs on, or switch it\n  lsp        List the language servers: installed, installable by Pando, or manual\n  projects   List the projects registered in this Pando instance's project registry\n  session    Show this session's token usage, cost and active modes\n  commands   List the slash commands, marking the ones this tool can activate\n  run        Activate a slash command for this session\n  telemetry  Show or change remote telemetry (opt-in diagnostics shipped to Better Stack)\n  decision-model Show, change, test or list models of the shared decision model (System One router)\n  sandbox    Show the host command sandbox status (read-only)\n\nPass args=\"--help\" to any command for its own usage.\n"},"status":"completed","title":"pando_setup","tool_call_id":"call_pLj2v9MP4NASZw1XzOx44E7g"}
+
+event: token_usage
+data: {"cache_creation_tokens":0,"cache_read_tokens":0,"completion_tokens":31024,"context_window":400000,"cost":0,"estimated":true,"prompt_tokens":283,"reasoning_tokens":0,"session_id":"add84465-1793-42c2-8c97-3c403dd9d2d4"}
+
+event: thinking_delta
+data: {"text":"**Considering command assistance**\n\nIt"}
+
+event: thinking_delta
+data: {"text":" looks"}
+
+event: thinking_delta
+data: {"text":" like"}
+
+event: thinking_delta
+data: {"text":" I"}
+
+event: thinking_delta
+data: {"text":" need"}
+
+event: thinking_delta
+data: {"text":" to"}
+
+event: thinking_delta
+data: {"text":" provide"}
+
+event: thinking_delta
+data: {"text":" some"}
+
+event: thinking_delta
+data: {"text":" help"}
+
+event: thinking_delta
+data: {"text":" by"}
+
+event: thinking_delta
+data: {"text":" showing"}
+
+event: thinking_delta
+data: {"text":" slash"}
+
+event: thinking_delta
+data: {"text":" commands"}
+
+event: thinking_delta
+data: {"text":","}
+
+event: thinking_delta
+data: {"text":" including"}
+
+event: thinking_delta
+data: {"text":" the"}
+
+event: thinking_delta
+data: {"text":" `/"}
+
+event: thinking_delta
+data: {"text":"help"}
+
+event: thinking_delta
+data: {"text":"`"}
+
+event: thinking_delta
+data: {"text":" command"}
+
+event: thinking_delta
+data: {"text":" itself"}
+
+event: thinking_delta
+data: {"text":","}
+
+event: thinking_delta
+data: {"text":" which"}
+
+event: thinking_delta
+data: {"text":" could"}
+
+event: thinking_delta
+data: {"text":" be"}
+
+event: thinking_delta
+data: {"text":" useful"}
+
+event: thinking_delta
+data: {"text":"."}
+
+event: thinking_delta
+data: {"text":" I"}
+
+event: thinking_delta
+data: {"text":" think"}
+
+event: thinking_delta
+data: {"text":" it"}
+
+event: thinking_delta
+data: {"text":" would"}
+
+event: thinking_delta
+data: {"text":" be"}
+
+event: thinking_delta
+data: {"text":" beneficial"}
+
+event: thinking_delta
+data: {"text":" to"}
+
+event: thinking_delta
+data: {"text":" give"}
+
+event: thinking_delta
+data: {"text":" a"}
+
+event: thinking_delta
+data: {"text":" concise"}
+
+event: thinking_delta
+data: {"text":" description"}
+
+event: thinking_delta
+data: {"text":" of"}
+
+event: thinking_delta
+data: {"text":" what"}
+
+event: thinking_delta
+data: {"text":" each"}
+
+event: thinking_delta
+data: {"text":" command"}
+
+event: thinking_delta
+data: {"text":" does"}
+
+event: thinking_delta
+data: {"text":" and"}
+
+event: thinking_delta
+data: {"text":" maybe"}
+
+event: thinking_delta
+data: {"text":" even"}
+
+event: thinking_delta
+data: {"text":" list"}
+
+event: thinking_delta
+data: {"text":" them"}
+
+event: thinking_delta
+data: {"text":" out"}
+
+event: thinking_delta
+data: {"text":" for"}
+
+event: thinking_delta
+data: {"text":" clarity"}
+
+event: thinking_delta
+data: {"text":"."}
+
+event: thinking_delta
+data: {"text":" I'll"}
+
+event: thinking_delta
+data: {"text":" need"}
+
+event: thinking_delta
+data: {"text":" to"}
+
+event: thinking_delta
+data: {"text":" think"}
+
+event: thinking_delta
+data: {"text":" about"}
+
+event: thinking_delta
+data: {"text":" how"}
+
+event: thinking_delta
+data: {"text":" to"}
+
+event: thinking_delta
+data: {"text":" invoke"}
+
+event: thinking_delta
+data: {"text":" these"}
+
+event: thinking_delta
+data: {"text":" commands"}
+
+event: thinking_delta
+data: {"text":" correctly"}
+
+event: thinking_delta
+data: {"text":" to"}
+
+event: thinking_delta
+data: {"text":" make"}
+
+event: thinking_delta
+data: {"text":" everything"}
+
+event: thinking_delta
+data: {"text":" clear"}
+
+event: thinking_delta
+data: {"text":" for"}
+
+event: thinking_delta
+data: {"text":" the"}
+
+event: thinking_delta
+data: {"text":" user"}
+
+event: thinking_delta
+data: {"text":"!"}
+
+event: tool_call
+data: {"id":"call_uuwzVV7E1JbodJw57E1kh3HG","input":"{\"command\":\"commands\"}","kind":"other","locations":null,"name":"pando_setup","status":"in_progress","title":"pando_setup"}
+
+event: token_usage
+data: {"cache_creation_tokens":0,"cache_read_tokens":30975,"completion_tokens":31034,"context_window":400000,"cost":0.0007039500000000001,"estimated":false,"prompt_tokens":272,"reasoning_tokens":38,"session_id":"add84465-1793-42c2-8c97-3c403dd9d2d4"}
+
+event: tool_result
+data: {"content":"## Slash commands\n\n### Runnable with \"run\"\n\n- caveman [lite|full|ultra] — Shorter answers to cut output tokens\n- caveman-finish — Return to normal output length\n- ponytail [lite|full|ultra|off] — Toggle lazy-senior-dev mode\n- superpowers [objective] — Enable the disciplined plan-first, verify-always workflow\n- learning [focus] — Enable learner mode: read the KB more and document discoveries\n- improve-agents-md [guidance] — Create or reinforce AGENTS.md with the mandatory agent rules\n- vulnhunt [scope] — Adversarial security audit from attacker input to sinks\n- vulnhunter-fix [finding] — Test-driven remediation of confirmed vulnerabilities\n- vulnhunt-fix-verify [findings] — Independent read-only verification of claimed security fixes\n\n### User-only\n\n- summarize — Alias for /compact (compaction cannot run inside an active turn)\n- db-compact — Compact the database (VACUUM) and reclaim free space (database maintenance is triggered by the user)\n- learning-finish — Consolidate what was learned into KB/memory and return to normal mode (the closing turn is user-driven so the mode clears only on success)\n- goal — Start goal mode with a persistent objective (goal mode is started by the user)\n- goal-status — Show the status of the current goal (goal mode is started by the user)\n- superpowers-finish — Verify and close the active Superpowers workflow, then return to normal mode (the closing turn is user-driven so the mode clears only on success)\n- autopilot — Alias for /goal (goal mode is started by the user)\n- goal-cancel — Cancel the current goal execution (goal mode is started by the user)\n- compact — Create a manual compact summary for the current session (compaction cannot run inside an active turn)\n","is_error":false,"kind":"other","locations":null,"name":"pando_setup","raw_output":{"output":"## Slash commands\n\n### Runnable with \"run\"\n\n- caveman [lite|full|ultra] — Shorter answers to cut output tokens\n- caveman-finish — Return to normal output length\n- ponytail [lite|full|ultra|off] — Toggle lazy-senior-dev mode\n- superpowers [objective] — Enable the disciplined plan-first, verify-always workflow\n- learning [focus] — Enable learner mode: read the KB more and document discoveries\n- improve-agents-md [guidance] — Create or reinforce AGENTS.md with the mandatory agent rules\n- vulnhunt [scope] — Adversarial security audit from attacker input to sinks\n- vulnhunter-fix [finding] — Test-driven remediation of confirmed vulnerabilities\n- vulnhunt-fix-verify [findings] — Independent read-only verification of claimed security fixes\n\n### User-only\n\n- summarize — Alias for /compact (compaction cannot run inside an active turn)\n- db-compact — Compact the database (VACUUM) and reclaim free space (database maintenance is triggered by the user)\n- learning-finish — Consolidate what was learned into KB/memory and return to normal mode (the closing turn is user-driven so the mode clears only on success)\n- goal — Start goal mode with a persistent objective (goal mode is started by the user)\n- goal-status — Show the status of the current goal (goal mode is started by the user)\n- superpowers-finish — Verify and close the active Superpowers workflow, then return to normal mode (the closing turn is user-driven so the mode clears only on success)\n- autopilot — Alias for /goal (goal mode is started by the user)\n- goal-cancel — Cancel the current goal execution (goal mode is started by the user)\n- compact — Create a manual compact summary for the current session (compaction cannot run inside an active turn)\n"},"status":"completed","title":"pando_setup","tool_call_id":"call_uuwzVV7E1JbodJw57E1kh3HG"}
+
+event: token_usage
+data: {"cache_creation_tokens":0,"cache_read_tokens":0,"completion_tokens":31034,"context_window":400000,"cost":0,"estimated":true,"prompt_tokens":712,"reasoning_tokens":0,"session_id":"add84465-1793-42c2-8c97-3c403dd9d2d4"}
+
+event: thinking_delta
+data: {"text":"**Considering command assistance**\n\nThe"}
+
+event: thinking_delta
+data: {"text":" user"}
+
+event: thinking_delta
+data: {"text":" seems"}
+
+event: thinking_delta
+data: {"text":" to"}
+
+event: thinking_delta
+data: {"text":" be"}
+
+event: thinking_delta
+data: {"text":" looking"}
+
+event: thinking_delta
+data: {"text":" for"}
+
+event: thinking_delta
+data: {"text":" help"}
+
+event: thinking_delta
+data: {"text":" since"}
+
+event: thinking_delta
+data: {"text":" they"}
+
+event: thinking_delta
+data: {"text":" ran"}
+
+event: thinking_delta
+data: {"text":" the"}
+
+event: thinking_delta
+data: {"text":" /"}
+
+event: thinking_delta
+data: {"text":"help"}
+
+event: thinking_delta
+data: {"text":" command"}
+
+event: thinking_delta
+data: {"text":","}
+
+event: thinking_delta
+data: {"text":" so"}
+
+event: thinking_delta
+data: {"text":" they"}
+
+event: thinking_delta
+data: {"text":" likely"}
+
+event: thinking_delta
+data: {"text":" expect"}
+
+event: thinking_delta
+data: {"text":" some"}
+
+event: thinking_delta
+data: {"text":" assistance"}
+
+event: thinking_delta
+data: {"text":" with"}
+
+event: thinking_delta
+data: {"text":" available"}
+
+event: thinking_delta
+data: {"text":" commands"}
+
+event: thinking_delta
+data: {"text":"."}
+
+event: thinking_delta
+data: {"text":" It"}
+
+event: thinking_delta
+data: {"text":" makes"}
+
+event: thinking_delta
+data: {"text":" sense"}
+
+event: thinking_delta
+data: {"text":" to"}
+
+event: thinking_delta
+data: {"text":" mention"}
+
+event: thinking_delta
+data: {"text":" the"}
+
+event: thinking_delta
+data: {"text":" setup"}
+
+event: thinking_delta
+data: {"text":" options"}
+
+event: thinking_delta
+data: {"text":" and"}
+
+event: thinking_delta
+data: {"text":" clarify"}
+
+event: thinking_delta
+data: {"text":" what"}
+
+event: thinking_delta
+data: {"text":" the"}
+
+event: thinking_delta
+data: {"text":" help"}
+
+event: thinking_delta
+data: {"text":" invocation"}
+
+event: thinking_delta
+data: {"text":" does"}
+
+event: thinking_delta
+data: {"text":"."}
+
+event: thinking_delta
+data: {"text":" Since"}
+
+event: thinking_delta
+data: {"text":" the"}
+
+event: thinking_delta
+data: {"text":" user"}
+
+event: thinking_delta
+data: {"text":" used"}
+
+event: thinking_delta
+data: {"text":" a"}
+
+event: thinking_delta
+data: {"text":" slash"}
+
+event: thinking_delta
+data: {"text":" command"}
+
+event: thinking_delta
+data: {"text":" in"}
+
+event: thinking_delta
+data: {"text":" English"}
+
+event: thinking_delta
+data: {"text":","}
+
+event: thinking_delta
+data: {"text":" I"}
+
+event: thinking_delta
+data: {"text":" should"}
+
+event: thinking_delta
+data: {"text":" provide"}
+
+event: thinking_delta
+data: {"text":" a"}
+
+event: thinking_delta
+data: {"text":" summarized"}
+
+event: thinking_delta
+data: {"text":" list"}
+
+event: thinking_delta
+data: {"text":" of"}
+
+event: thinking_delta
+data: {"text":" commands"}
+
+event: thinking_delta
+data: {"text":" and"}
+
+event: thinking_delta
+data: {"text":" their"}
+
+event: thinking_delta
+data: {"text":" uses"}
+
+event: thinking_delta
+data: {"text":"."}
+
+event: thinking_delta
+data: {"text":" I'll"}
+
+event: thinking_delta
+data: {"text":" need"}
+
+event: thinking_delta
+data: {"text":" to"}
+
+event: thinking_delta
+data: {"text":" explain"}
+
+event: thinking_delta
+data: {"text":" that"}
+
+event: thinking_delta
+data: {"text":" the"}
+
+event: thinking_delta
+data: {"text":" user"}
+
+event: thinking_delta
+data: {"text":" can't"}
+
+event: thinking_delta
+data: {"text":" run"}
+
+event: thinking_delta
+data: {"text":" commands"}
+
+event: thinking_delta
+data: {"text":" in"}
+
+event: thinking_delta
+data: {"text":" an"}
+
+event: thinking_delta
+data: {"text":" active"}
+
+event: thinking_delta
+data: {"text":" turn"}
+
+event: thinking_delta
+data: {"text":"."}
+
+event: thinking_delta
+data: {"text":" Keeping"}
+
+event: thinking_delta
+data: {"text":" it"}
+
+event: thinking_delta
+data: {"text":" concise"}
+
+event: thinking_delta
+data: {"text":" and"}
+
+event: thinking_delta
+data: {"text":" clear"}
+
+event: thinking_delta
+data: {"text":" is"}
+
+event: thinking_delta
+data: {"text":" key"}
+
+event: thinking_delta
+data: {"text":"!"}
+
+event: content_delta
+data: {"text":"**"}
+
+event: content_delta
+data: {"text":"P"}
+
+event: content_delta
+data: {"text":"ando"}
+
+event: content_delta
+data: {"text":" help"}
+
+event: content_delta
+data: {"text":"**\n\n"}
+
+event: content_delta
+data: {"text":"-"}
+
+event: content_delta
+data: {"text":" `/"}
+
+event: content_delta
+data: {"text":"c"}
+
+event: content_delta
+data: {"text":"av"}
+
+event: content_delta
+data: {"text":"eman"}
+
+event: content_delta
+data: {"text":" ["}
+
+event: content_delta
+data: {"text":"lite"}
+
+event: content_delta
+data: {"text":"|"}
+
+event: content_delta
+data: {"text":"full"}
+
+event: content_delta
+data: {"text":"|"}
+
+event: content_delta
+data: {"text":"ul"}
+
+event: content_delta
+data: {"text":"tra"}
+
+event: content_delta
+data: {"text":"]"}
+
+event: content_delta
+data: {"text":"`"}
+
+event: content_delta
+data: {"text":" —"}
+
+event: content_delta
+data: {"text":" shorter"}
+
+event: content_delta
+data: {"text":" answers"}
+
+event: content_delta
+data: {"text":";"}
+
+event: content_delta
+data: {"text":" `/"}
+
+event: content_delta
+data: {"text":"c"}
+
+event: content_delta
+data: {"text":"av"}
+
+event: content_delta
+data: {"text":"eman"}
+
+event: content_delta
+data: {"text":"-f"}
+
+event: content_delta
+data: {"text":"inish"}
+
+event: content_delta
+data: {"text":"`"}
+
+event: content_delta
+data: {"text":" turns"}
+
+event: content_delta
+data: {"text":" it"}
+
+event: content_delta
+data: {"text":" off"}
+
+event: content_delta
+data: {"text":".\n"}
+
+event: content_delta
+data: {"text":"-"}
+
+event: content_delta
+data: {"text":" `/"}
+
+event: content_delta
+data: {"text":"pony"}
+
+event: content_delta
+data: {"text":"[t"}
+
+event: content_delta
+data: {"text":"]"}
+
+event: content_delta
+data: {"text":"ail"}
+
+event: content_delta
+data: {"text":" ["}
+
+event: content_delta
+data: {"text":"lite"}
+
+event: content_delta
+data: {"text":"|"}
+
+event: content_delta
+data: {"text":"full"}
+
+event: content_delta
+data: {"text":"|"}
+
+event: content_delta
+data: {"text":"ul"}
+
+event: content_delta
+data: {"text":"tra"}
+
+event: content_delta
+data: {"text":"|"}
+
+event: content_delta
+data: {"text":"off"}
+
+event: content_delta
+data: {"text":"]"}
+
+event: content_delta
+data: {"text":"`"}
+
+event: content_delta
+data: {"text":" —"}
+
+event: content_delta
+data: {"text":" toggle"}
+
+event: content_delta
+data: {"text":" lazy"}
+
+event: content_delta
+data: {"text":"-s"}
+
+event: content_delta
+data: {"text":"en"}
+
+event: content_delta
+data: {"text":"ior"}
+
+event: content_delta
+data: {"text":"-dev"}
+
+event: content_delta
+data: {"text":" mode"}
+
+event: content_delta
+data: {"text":".\n"}
+
+event: content_delta
+data: {"text":"-"}
+
+event: content_delta
+data: {"text":" `/"}
+
+event: content_delta
+data: {"text":"super"}
+
+event: content_delta
+data: {"text":"powers"}
+
+event: content_delta
+data: {"text":" ["}
+
+event: content_delta
+data: {"text":"objective"}
+
+event: content_delta
+data: {"text":"]"}
+
+event: content_delta
+data: {"text":"`"}
+
+event: content_delta
+data: {"text":" —"}
+
+event: content_delta
+data: {"text":" plan"}
+
+event: content_delta
+data: {"text":"-first"}
+
+event: content_delta
+data: {"text":","}
+
+event: content_delta
+data: {"text":" verify"}
+
+event: content_delta
+data: {"text":"-al"}
+
+event: content_delta
+data: {"text":"ways"}
+
+event: content_delta
+data: {"text":" workflow"}
+
+event: content_delta
+data: {"text":".\n"}
+
+event: content_delta
+data: {"text":"-"}
+
+event: content_delta
+data: {"text":" `/"}
+
+event: content_delta
+data: {"text":"learning"}
+
+event: content_delta
+data: {"text":" ["}
+
+event: content_delta
+data: {"text":"focus"}
+
+event: content_delta
+data: {"text":"]"}
+
+event: content_delta
+data: {"text":"`"}
+
+event: content_delta
+data: {"text":" —"}
+
+event: content_delta
+data: {"text":" learner"}
+
+event: content_delta
+data: {"text":" mode"}
+
+event: content_delta
+data: {"text":".\n"}
+
+event: content_delta
+data: {"text":"-"}
+
+event: content_delta
+data: {"text":" `/"}
+
+event: content_delta
+data: {"text":"im"}
+
+event: content_delta
+data: {"text":"prove"}
+
+event: content_delta
+data: {"text":"-ag"}
+
+event: content_delta
+data: {"text":"ents"}
+
+event: content_delta
+data: {"text":"-md"}
+
+event: content_delta
+data: {"text":" ["}
+
+event: content_delta
+data: {"text":"guid"}
+
+event: content_delta
+data: {"text":"ance"}
+
+event: content_delta
+data: {"text":"]"}
+
+event: content_delta
+data: {"text":"`"}
+
+event: content_delta
+data: {"text":" —"}
+
+event: content_delta
+data: {"text":" create"}
+
+event: content_delta
+data: {"text":" or"}
+
+event: content_delta
+data: {"text":" reinforce"}
+
+event: content_delta
+data: {"text":" `"}
+
+event: content_delta
+data: {"text":"AG"}
+
+event: content_delta
+data: {"text":"ENTS"}
+
+event: content_delta
+data: {"text":".md"}
+
+event: content_delta
+data: {"text":"`.\n"}
+
+event: content_delta
+data: {"text":"-"}
+
+event: content_delta
+data: {"text":" `/"}
+
+event: content_delta
+data: {"text":"v"}
+
+event: content_delta
+data: {"text":"ul"}
+
+event: content_delta
+data: {"text":"nh"}
+
+event: content_delta
+data: {"text":"unt"}
+
+event: content_delta
+data: {"text":" ["}
+
+event: content_delta
+data: {"text":"scope"}
+
+event: content_delta
+data: {"text":"]"}
+
+event: content_delta
+data: {"text":"`"}
+
+event: content_delta
+data: {"text":" —"}
+
+event: content_delta
+data: {"text":" security"}
+
+event: content_delta
+data: {"text":" audit"}
+
+event: content_delta
+data: {"text":".\n"}
+
+event: content_delta
+data: {"text":"-"}
+
+event: content_delta
+data: {"text":" `/"}
+
+event: content_delta
+data: {"text":"v"}
+
+event: content_delta
+data: {"text":"ul"}
+
+event: content_delta
+data: {"text":"nh"}
+
+event: content_delta
+data: {"text":"unter"}
+
+event: content_delta
+data: {"text":"-f"}
+
+event: content_delta
+data: {"text":"ix"}
+
+event: content_delta
+data: {"text":" ["}
+
+event: content_delta
+data: {"text":"finding"}
+
+event: content_delta
+data: {"text":"]"}
+
+event: content_delta
+data: {"text":"`"}
+
+event: content_delta
+data: {"text":" —"}
+
+event: content_delta
+data: {"text":" remed"}
+
+event: content_delta
+data: {"text":"iate"}
+
+event: content_delta
+data: {"text":" a"}
+
+event: content_delta
+data: {"text":" confirmed"}
+
+event: content_delta
+data: {"text":" vulnerability"}
+
+event: content_delta
+data: {"text":".\n"}
+
+event: content_delta
+data: {"text":"-"}
+
+event: content_delta
+data: {"text":" `/"}
+
+event: content_delta
+data: {"text":"v"}
+
+event: content_delta
+data: {"text":"ul"}
+
+event: content_delta
+data: {"text":"nh"}
+
+event: content_delta
+data: {"text":"unt"}
+
+event: content_delta
+data: {"text":"-f"}
+
+event: content_delta
+data: {"text":"ix"}
+
+event: content_delta
+data: {"text":"-"}
+
+event: content_delta
+data: {"text":"verify"}
+
+event: content_delta
+data: {"text":" ["}
+
+event: content_delta
+data: {"text":"find"}
+
+event: content_delta
+data: {"text":"ings"}
+
+event: content_delta
+data: {"text":"]"}
+
+event: content_delta
+data: {"text":"`"}
+
+event: content_delta
+data: {"text":" —"}
+
+event: content_delta
+data: {"text":" independently"}
+
+event: content_delta
+data: {"text":" verify"}
+
+event: content_delta
+data: {"text":" fixes"}
+
+event: content_delta
+data: {"text":".\n\n"}
+
+event: content_delta
+data: {"text":"User"}
+
+event: content_delta
+data: {"text":"-only"}
+
+event: content_delta
+data: {"text":" commands"}
+
+event: content_delta
+data: {"text":":"}
+
+event: content_delta
+data: {"text":" `/"}
+
+event: content_delta
+data: {"text":"goal"}
+
+event: content_delta
+data: {"text":"`,"}
+
+event: content_delta
+data: {"text":" `/"}
+
+event: content_delta
+data: {"text":"goal"}
+
+event: content_delta
+data: {"text":"-status"}
+
+event: content_delta
+data: {"text":"`,"}
+
+event: content_delta
+data: {"text":" `/"}
+
+event: content_delta
+data: {"text":"goal"}
+
+event: content_delta
+data: {"text":"-c"}
+
+event: content_delta
+data: {"text":"ancel"}
+
+event: content_delta
+data: {"text":"`,"}
+
+event: content_delta
+data: {"text":" `/"}
+
+event: content_delta
+data: {"text":"aut"}
+
+event: content_delta
+data: {"text":"op"}
+
+event: content_delta
+data: {"text":"ilot"}
+
+event: content_delta
+data: {"text":"`,"}
+
+event: content_delta
+data: {"text":" `/"}
+
+event: content_delta
+data: {"text":"summ"}
+
+event: content_delta
+data: {"text":"ar"}
+
+event: content_delta
+data: {"text":"ize"}
+
+event: content_delta
+data: {"text":"`,"}
+
+event: content_delta
+data: {"text":" `/"}
+
+event: content_delta
+data: {"text":"compact"}
+
+event: content_delta
+data: {"text":"`,"}
+
+event: content_delta
+data: {"text":" `/"}
+
+event: content_delta
+data: {"text":"db"}
+
+event: content_delta
+data: {"text":"-"}
+
+event: content_delta
+data: {"text":"compact"}
+
+event: content_delta
+data: {"text":"`,"}
+
+event: content_delta
+data: {"text":" `/"}
+
+event: content_delta
+data: {"text":"learning"}
+
+event: content_delta
+data: {"text":"-f"}
+
+event: content_delta
+data: {"text":"inish"}
+
+event: content_delta
+data: {"text":"`,"}
+
+event: content_delta
+data: {"text":" `/"}
+
+event: content_delta
+data: {"text":"super"}
+
+event: content_delta
+data: {"text":"powers"}
+
+event: content_delta
+data: {"text":"-f"}
+
+event: content_delta
+data: {"text":"inish"}
+
+event: content_delta
+data: {"text":"`.\n\n"}
+
+event: content_delta
+data: {"text":"For"}
+
+event: content_delta
+data: {"text":" instance"}
+
+event: content_delta
+data: {"text":" settings"}
+
+event: content_delta
+data: {"text":","}
+
+event: content_delta
+data: {"text":" run"}
+
+event: content_delta
+data: {"text":" `"}
+
+event: content_delta
+data: {"text":"p"}
+
+event: content_delta
+data: {"text":"ando"}
+
+event: content_delta
+data: {"text":"_setup"}
+
+event: content_delta
+data: {"text":"`"}
+
+event: content_delta
+data: {"text":" with"}
+
+event: content_delta
+data: {"text":" `"}
+
+event: content_delta
+data: {"text":"config"}
+
+event: content_delta
+data: {"text":"`,"}
+
+event: content_delta
+data: {"text":" `"}
+
+event: content_delta
+data: {"text":"models"}
+
+event: content_delta
+data: {"text":"`,"}
+
+event: content_delta
+data: {"text":" `"}
+
+event: content_delta
+data: {"text":"providers"}
+
+event: content_delta
+data: {"text":"`,"}
+
+event: content_delta
+data: {"text":" `"}
+
+event: content_delta
+data: {"text":"projects"}
+
+event: content_delta
+data: {"text":"`,"}
+
+event: content_delta
+data: {"text":" `"}
+
+event: content_delta
+data: {"text":"session"}
+
+event: content_delta
+data: {"text":"`,"}
+
+event: content_delta
+data: {"text":" `"}
+
+event: content_delta
+data: {"text":"l"}
+
+event: content_delta
+data: {"text":"sp"}
+
+event: content_delta
+data: {"text":"`,"}
+
+event: content_delta
+data: {"text":" `"}
+
+event: content_delta
+data: {"text":"tele"}
+
+event: content_delta
+data: {"text":"metry"}
+
+event: content_delta
+data: {"text":"`,"}
+
+event: content_delta
+data: {"text":" or"}
+
+event: content_delta
+data: {"text":" `"}
+
+event: content_delta
+data: {"text":"sandbox"}
+
+event: content_delta
+data: {"text":"`."}
+
+event: token_usage
+data: {"cache_creation_tokens":0,"cache_read_tokens":31244,"completion_tokens":31580,"context_window":400000,"cost":0.0012270900000000001,"estimated":false,"prompt_tokens":427,"reasoning_tokens":85,"session_id":"add84465-1793-42c2-8c97-3c403dd9d2d4"}
+
+event: goal_status
+data: {"goal":null}
+
+event: done
+data: {}
+
