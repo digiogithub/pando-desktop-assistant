@@ -14,3 +14,9 @@ workspace = true
 
 [dev-dependencies]
 serde_json.workspace = true
+proptest = { version = "1", default-features = false, features = ["std"] }
+criterion = { version = "0.7", default-features = false }
+
+[[bench]]
+name = "step_shape"
+harness = false

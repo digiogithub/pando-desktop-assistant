@@ -107,3 +107,42 @@ impl Organism {
         W_REF * self.params.cell.radius * g * (1.0 + (self.params.cell.hover_scale - 1.0) * c.hover)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::sim::Config;
+    use crate::types::{CellInput, Engine, Inputs, Status};
+
+    #[test]
+    fn bulge_peaks_at_the_cell_angle() {
+        let cs = [CellInput::new("a", Engine::Pando, Status::Working)];
+        let mut org = Organism::new(Config::default());
+        let inputs = Inputs::new(BodyState::Idle, &cs);
+        for _ in 0..300 {
+            org.step(1.0 / 60.0, &inputs);
+        }
+        let c = &org.cells()[0];
+        let theta = (c.spring.y - 320.0).atan2(c.spring.x - 320.0);
+        let here = org.body_radius(theta);
+        let opposite = org.body_radius(theta + std::f64::consts::PI);
+        assert!(here > opposite + 5.0, "{here} vs {opposite}");
+    }
+
+    #[test]
+    fn dead_cells_bulge_less() {
+        let mk = |status| {
+            let cs = [CellInput::new("a", Engine::Pando, status)];
+            let mut org = Organism::new(Config::default());
+            let inputs = Inputs::new(BodyState::Idle, &cs);
+            for _ in 0..300 {
+                org.step(1.0 / 60.0, &inputs);
+            }
+            let c = &org.cells()[0];
+            let theta = (c.spring.y - 320.0).atan2(c.spring.x - 320.0);
+            org.body_radius(theta) - org.body_radius(theta + std::f64::consts::PI)
+        };
+        assert!(mk(Status::Working) > mk(Status::Error) + 3.0);
+        assert!((mk(Status::Done) - mk(Status::Error)).abs() < 0.5);
+    }
+}

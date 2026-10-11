@@ -546,3 +546,53 @@ impl Painter<'_> {
         });
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::sim::Config;
+    use crate::types::{CellInput, Inputs};
+
+    #[test]
+    fn zero_length_pseudopod_does_not_produce_nan() {
+        let cs = [CellInput::new("a", Engine::Pando, Status::Working)];
+        let mut org = Organism::new(Config::default());
+        for _ in 0..600 {
+            org.step(1.0 / 60.0, &Inputs::new(BodyState::Idle, &cs));
+        }
+        // Park the cell exactly where the pseudopod's two ends coincide (angle 0).
+        let r0 = org.body_radius(0.0) - org.extras.pseudopod_start_inset;
+        let cr = org.cell_radius(&org.cells[0]);
+        org.cells[0].spring.x = HALF + r0 + cr - org.extras.pseudopod_end_inset;
+        org.cells[0].spring.y = HALF;
+        let list = org.shape(&Scene::layout(640.0, 1.0));
+        assert!(
+            list.points
+                .iter()
+                .all(|p| p[0].is_finite() && p[1].is_finite())
+        );
+    }
+
+    #[test]
+    fn organelles_stay_inside_the_membrane_when_clipped_analytically() {
+        let cs = [CellInput::new("a", Engine::Cli, Status::Done)];
+        let mut org = Organism::new(Config::default());
+        for _ in 0..200 {
+            org.step(1.0 / 60.0, &Inputs::new(BodyState::Speaking, &cs));
+        }
+        let list = org.shape(&Scene::layout(640.0, 1.0));
+        let mut n = 0;
+        for p in &list.prims {
+            if let Prim::Discs { discs, .. } = p {
+                for d in &list.discs[discs.start as usize..discs.end as usize] {
+                    let ang = f64::from(d[1] - 320.0).atan2(f64::from(d[0] - 320.0));
+                    let dist =
+                        f64::from(d[0] - 320.0).hypot(f64::from(d[1] - 320.0)) + f64::from(d[2]);
+                    assert!(dist <= org.body_radius(ang) + 1e-3);
+                    n += 1;
+                }
+            }
+        }
+        assert_eq!(n, 70);
+    }
+}
