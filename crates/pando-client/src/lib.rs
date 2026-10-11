@@ -9,6 +9,9 @@
 //! - [`chat`]: sessions, history and the chat SSE protocol.
 //! - [`client`]: [`PandoClient`], the authenticated transport, and [`SseStream`].
 //! - [`connection`]: [`ConnectionService`] (states, health, backoff, version gate).
+//! - [`model`]: `ChatModel`, the GPUI-free chat state (transcript, approvals, plan, goal, usage).
+//! - [`steering`]: steering chips and Stop.
+//! - [`usage`]: token/cost accounting.
 //! - [`follow`]: the `run_seq` reattach/replay protocol for resurrected runs.
 //! - [`events`]: notification/config streams and the decision-model config.
 //! - [`discovery`]: instance registry, URL policy and `/health` probe.
@@ -28,8 +31,11 @@ pub mod discovery;
 pub mod error;
 pub mod events;
 pub mod follow;
+pub mod model;
 pub mod sse;
+pub mod steering;
 pub mod stream;
+pub mod usage;
 
 #[cfg(feature = "keyring-store")]
 pub use auth::KeyringStore;
@@ -43,5 +49,6 @@ pub use config::{BasicAuth, PandoConfig, Token};
 pub use connection::{ConnectionOptions, ConnectionService, ConnectionState, Link, Version};
 pub use discovery::{DiscoveredServer, Discovery};
 pub use error::{Error, Result};
+pub use model::{ChatModel, Item, ItemId, ItemKind};
 pub use sse::{SseEvent, SseParser};
 pub use stream::{EventStream, EventStreamConfig, StreamItem};

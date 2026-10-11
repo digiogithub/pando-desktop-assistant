@@ -50,6 +50,29 @@ impl Clock for SystemClock {
     }
 }
 
+/// A clock that only moves when told to (tests, deterministic snapshots).
+#[derive(Debug, Default)]
+pub struct ManualClock(std::sync::atomic::AtomicU64);
+
+impl ManualClock {
+    /// A clock at zero.
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Moves the clock forward.
+    pub fn advance(&self, by: Duration) {
+        let ms = u64::try_from(by.as_millis()).unwrap_or(u64::MAX);
+        self.0.fetch_add(ms, std::sync::atomic::Ordering::SeqCst);
+    }
+}
+
+impl Clock for ManualClock {
+    fn now(&self) -> Duration {
+        Duration::from_millis(self.0.load(std::sync::atomic::Ordering::SeqCst))
+    }
+}
+
 /// What kind of answer a request takes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ApprovalKind {

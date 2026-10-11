@@ -254,6 +254,15 @@ pub enum FoldedItem {
     Image(String),
     /// Finish marker.
     Finish(String),
+    /// Binary attachment.
+    Binary {
+        /// File name.
+        path: String,
+        /// MIME type.
+        mime_type: String,
+    },
+    /// A part this client does not know, preserved.
+    Other(Value),
 }
 
 /// A message after folding tool results into their calls.
@@ -295,7 +304,12 @@ pub fn fold_messages(messages: &[Message]) -> Vec<FoldedMessage> {
                 }),
                 Part::ImageUrl(u) => Some(FoldedItem::Image(u.clone())),
                 Part::Finish { reason, .. } => Some(FoldedItem::Finish(reason.clone())),
-                Part::ToolResult(_) | Part::Binary { .. } | Part::Other(_) => None,
+                Part::Binary { path, mime_type } => Some(FoldedItem::Binary {
+                    path: path.clone(),
+                    mime_type: mime_type.clone(),
+                }),
+                Part::Other(v) => Some(FoldedItem::Other(v.clone())),
+                Part::ToolResult(_) => None,
             })
             .collect();
         out.push(FoldedMessage {

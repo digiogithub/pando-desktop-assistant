@@ -1,0 +1,13 @@
+approval perm-1: Denied(ServerExpired)
+approval q-1: Cancelled(ServerExpired)
+tool edit [Completed] kind=edit input={"file_path":"src/a.rs"} -> ok
+user (steered): also add docs
+notice ConclusionQueued: task t-1 finished
+notice ConclusionInjected: task t-1 finished
+notice Resurrected: delegated result arrived
+json some_future_event: {"x":1}
+notice Error: cancelled
+-- plan: Write tests(in_progress), Ship(pending)
+-- todos: Write tests(in_progress/high)
+-- goal: ship it [active] 1/5 cancel=false
+-- running=false run_seq=2 seen=2

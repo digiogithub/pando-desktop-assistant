@@ -1,0 +1,6 @@
+user: Use the read tool to read hello.txt and quote its single line. Nothing else.
+tool tool_search [Completed] kind= input={"query":"read tool to read file contents"} -> [Response cached: 9 lines, 24063 bytes → cache_id: "59cf918b-3958-4181-863a-b682d326447a" ...
+tool view [Completed] kind= input={"file_path":"/tmp/tmp.Ir1wWgKTUh/project/hello.txt"} -> <file>      1|hello from the fixture project </file> 
+assistant: "hello from the fixture project"
+-- usage: prompt=61 completion=36761 cache_read=36750 cache_creation=0 reasoning=0 cost=0.001605 window=0 estimated=false
+-- running=false run_seq=1 seen=1

@@ -1,0 +1,6 @@
+notice System: 🧠 Context enrichment agent gathering project context...
+notice System: ✓ Context enrichment done — no additional context found.
+notice Routing: Auto: no confident match (best Analiza p=0.19) → copilot.gpt-6-luna
+assistant: pong
+-- usage: prompt=30990 completion=5 cache_read=0 cache_creation=0 reasoning=0 cost=0.003102 window=400000 estimated=false
+-- running=false run_seq=1 seen=1
