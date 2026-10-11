@@ -30,7 +30,7 @@ prototype canvas this was distilled from lives in the Claude Design artifact "Pa
   **Zen Kaku Gothic New** 300 for UI copy (fallback `system-ui`). Light weights by default.
 - Use the provided SVGs in `brand/` (logo, marks, mesnada mark). Do not redraw them.
 
-### Proposed palette extensions (not in brand v1 — needs sign-off)
+### Palette extensions (not in brand v1 — adopted as default, pending product-owner sign-off)
 
 | Token | Hex | Use |
 |---|---|---|
@@ -86,11 +86,15 @@ Rule: **fill = you can address it; colour = who it is.**
 
 | Status | Nucleus | Pseudopod | Badge |
 |---|---|---|---|
-| working | beats (3.2 Hz, +18 %) | vesicles flow outward | — |
-| waiting for user | blinks (5 Hz square) | vesicles flow inward, Marfil | `?` |
+| pending (queued) | still, cell at 60 % alpha | vesicles flow outward | — |
+| working | beats (3.2 rad/s ≈ 0.5 Hz, +18 %) | vesicles flow outward | — |
+| waiting for user | blinks (square on `sin 5t`, ≈ 0.8 Hz) | vesicles flow inward, Marfil | `?` |
 | paused | cell at 35 % alpha | still, 30 % | `II` |
 | done | Marfil 45 % | still | `✓` |
-| error | Bermellón, 18 Hz tremor | still | `!` (Bermellón) |
+| error | Bermellón, tremor 18 rad/s (≈ 2.9 Hz, ±8 %) | still | `!` (Bermellón) |
+
+Paused, done and error cells are "dead" for motion: their pseudopod is still and their
+membrane bulge uses `deadFactor` (0.35).
 
 Status is never colour alone: every status also changes motion or opacity.
 
@@ -100,11 +104,14 @@ Status is never colour alone: every status also changes motion or opacity.
 
 | State | Trigger | Body | Nucleus | Extra |
 |---|---|---|---|---|
-| `idle` | nothing queued | breathes (7 s), ripple every 3.5 s | follows pointer | — |
-| `listening` | push-to-talk held / VAD open | +6 %, membrane trembles with **mic RMS** | +50 % with envelope | ripples 1.8 s |
-| `thinking` | request sent, no first token | −3 % | −20 %, dashed orbit spins, 3 satellites orbit | organelles ×3, vesicles ×2.2 |
-| `speaking` | TTS playing | +8 %, elastic pulse 0.48 s | +80 % with **TTS RMS** | waves at 2.2/s |
-| `delegating` | `orchestrator/tasks` created | bulge toward birth angle | — | **mitosis**: new cell buds from the body |
+| `idle` | nothing queued | breathes (≈ 4.8 s period, `sin 1.3t`) | follows pointer, slow pulse ±4 % | — |
+| `listening` | push-to-talk held / VAD open | +6 %, membrane trembles with **mic RMS** | grows with the envelope (`+0.9·amp`) | — |
+| `thinking` | request sent, no first token | −3 % | `+0.9·amp` (amp 0.18) with a ±12 % pulse at 7 rad/s, dashed orbit spins, 3 satellites orbit | organelles ×3, vesicles ×2.2 |
+| `speaking` | TTS playing | +8 %, membrane ripples with **TTS RMS** | grows with the envelope (`+0.9·amp`) | waves at 2.2/s (Poisson) |
+| `delegating` | a new task appears | bulge toward birth angle | — | **mitosis**: new cell buds from the body |
+
+`delegating` is a 1.5 s overlay on top of the current state: it adds the birth bulge and the
+wave but does not change `bodyRadiusByState`, then the previous state resumes.
 
 The voice envelope in the prototype is synthetic (`tokens.organism.voiceEnvelope`). In the
 app it must be the real RMS of the capture buffer (listening) or of the TTS output buffer
@@ -116,12 +123,13 @@ app it must be the real RMS of the capture buffer (listening) or of the TTS outp
 2. For 2.2 s the membrane bulge toward its angle gets `+1.6` extra, decaying linearly.
 3. The cell's radius grows 0→1 over 1.6 s; its position is a **damped spring** toward its ring slot
    with a softer `k` (2.2 vs 3.5) so it drifts out instead of snapping.
-4. A wave is emitted once.
+4. A wave is emitted once (by the birth itself, not by the state change).
 
 ### Death
 
 Cells are removed when their task disappears; fade alpha over 0.6 s and retract the pseudopod
-(scale its length to 0) before deleting.
+(scale its length to 0) before deleting. Cancelled tasks show as done for 10 s and then die.
+A dying cell that reappears is revived from its current state.
 
 ---
 
@@ -184,3 +192,30 @@ Cells are removed when their task disappears; fade alpha over 0.6 s and retract 
 - Hit-testing: nearest cell within 40 px of the pointer. Hover scales the cell 1.25×.
 - Fonts: bundle Space Grotesk, JetBrains Mono and Zen Kaku Gothic New (OFL) in the binary so
   the look is identical on Linux/macOS/Windows.
+
+---
+
+## 7. Design decisions (README ↔ reference, PDA-T-0017, 2026-10-12)
+
+`reference/organism.html` and this README disagreed in places
+(`docs/research/organism-port.md` §1.19 and §5). Rule applied: **the reference wins**
+unless a decision below says otherwise; `tokens.json` and the reference were updated to
+match. Items marked *(PO)* are recommended defaults awaiting product-owner sign-off.
+
+| # | Question | Decision |
+|---|---|---|
+| 1 | Breathing period 4.8 s (code) vs 7 s (README) | **4.8 s** (`sin 1.3t`), token `membraneNoise.breathRadPerSecond: 1.3` |
+| 2 | Hz vs rad/s | Every angular speed is **rad/s**. `cellBeat.hz` renamed to `cellBeat.radPerSecond` (3.2 ≈ 0.51 Hz); new `cellBlink` (5 rad/s square ≈ 0.8 Hz) and `errorTremor` (18 rad/s ≈ 2.9 Hz) tokens. Visual speed is unchanged |
+| 3 | Nucleus scale per state (+50 % / −20 % / +80 %) | No fixed per-state scale: `nr = nucleusRadius·W·(1 + 0.9·amp + pulse)`, pulse ±12 % at 7 rad/s while thinking, ±4 % at 2 rad/s otherwise (token `nucleusScale`). Real mic/TTS RMS drives `amp` |
+| 4 | Idle ripple every 3.5 s, listening ripples 1.8 s | **Dropped.** Waves are emitted only on entering speaking or delegating, on cell birth, and at 2.2/s while speaking (`waves.emitOn`). Breathing already keeps idle alive; fewer idle wakeups |
+| 5 | "Elastic pulse 0.48 s" while speaking | **Dropped**; speaking motion comes from the TTS RMS ripple |
+| 6 | Cell growth 1.5 s (tokens) vs 1.6 s (code) | **1.6 s**; `motion.durations.cellBirth` = 1.6 |
+| 7 | Error cells not dimmed in the membrane bulge | **Error is dead for the bulge too** (paused, done, error use `deadFactor`). Reference fixed to use `dead()` |
+| 8 | Nucleus follow lerp per frame | Keep 0.08 per 60 Hz frame, applied frame-rate independently: `1-(1-0.08)^(60·dt)` |
+| 9 | Stable slots vs reflow | **Stable slots.** A cell keeps its slot index for life; slot angle `−π/2 + 2π·i/slots + 0.15` with `slots = max(ring.minSlots 6, live cells)`. Gaps left by dead cells are compacted (in `created_at` order) after `ring.compactAfterSeconds` (10 s) without births or deaths; springs make every move smooth |
+| 10 | Maximum cells / overflow *(PO)* | **12 cells on the ring** (`ring.maxCells`). Beyond that, the oldest done/paused cells collapse into one hollow Marfil **`+N` cell** whose card lists them; waiting and error cells are never collapsed |
+| 11 | Constant scaling in the mini window | Pixel constants scale **linearly** with `W / 640`, with floors: strokes ≥ 0.75 device px, halos ≥ 2 px, hit radius ≥ 12 px; labels and badges hidden below 200 px (`organism.scaling`) |
+| 12 | `pending` tasks (docs/06 "dim 60 %") | New `pending` status: cell at 60 % alpha, nucleus still, vesicles flow outward (`status.pending`, `organism.pendingAlpha`) |
+| 13 | Delegating overlay | 1.5 s overlay; adds bulge + wave, does not change `bodyRadiusByState` |
+| 14 | Claude blue `#8FB8DE` and Bermellón `#E5533D` *(PO)* | **Adopted as defaults** (hue and lightness differ from Álamo, so engine and error read without colour vision). Still not part of brand v1: the product owner must sign them off before release; until then they stay flagged in `tokens.json` |
+
