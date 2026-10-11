@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Pando organism — reference simulation</title>
+<style>
+  body{margin:0;background:#0F2A20;color:#F4F1E8;font:300 13px system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;gap:12px;padding:24px}
+  canvas{width:min(640px,92vw);aspect-ratio:1/1;cursor:crosshair}
+  .row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+  button{font:inherit;color:#F4F1E8;background:transparent;border:1px solid rgba(244,241,232,.18);border-radius:999px;padding:8px 16px;cursor:pointer}
+  button.on{border-color:#E9B949;color:#E9B949}
+  small{color:rgba(244,241,232,.62);font-family:ui-monospace,monospace}
+</style>
+</head>
+<body>
+<canvas id="c" width="640" height="640" aria-label="Pando organism"></canvas>
+<div class="row" id="states"></div>
+<div class="row"><button id="spawn">spawn cell (mitosis)</button><button id="kill">remove last cell</button></div>
+<small>click a cell to select · move the pointer: the nucleus follows · parameters come from ../tokens.json (falls back to inline defaults)</small>
+<script>
+// ---------- tokens ----------
+const DEFAULTS = {
+  color:{bosque:{value:'#0F2A20'},marfil:{value:'#F4F1E8'},alamo:{value:'#E9B949'},claudeBlue:{value:'#8FB8DE'},bermellon:{value:'#E5533D'}},
+  organism:{habitatRadius:.47,ringRadius:.36,bodyRadius:.13,bodyRadiusByState:{idle:1,listening:1.06,thinking:.97,speaking:1.08,delegating:1},
+    membraneNoise:{amplitude:.05,breath:.012,harmonics:[[3,.7,.5],[5,-1.1,.3],[8,.45,.2]]},
+    voiceRipple:{amplitude:.16,angular:[11,7],temporal:[14,-9]},
+    bulgeTowardCell:{amount:.16,sigma:.16,deadFactor:.35,birthExtra:1.6,birthSeconds:2.2},
+    nucleusRadius:.028,nucleusFollowMax:.04,
+    organelles:{count:70,sizeMin:.8,sizeMax:2.4,speedByState:{idle:1,thinking:3,speaking:1.8}},
+    pseudopod:{samples:18,wobble:6,wobbleDead:2,wobbleVoiceGain:2.5,vesicles:7,flowSpeed:{working:.28,waiting:-.22,thinkingMultiplier:2.2}},
+    cellRadius:.03,cellHoverScale:1.25,cellNoise:{working:.08,other:.04},cellNucleusRatio:.34,cellBeat:{hz:3.2,amount:.18},
+    waves:{speed:.28,decayPerSecond:.55,speakingRatePerSecond:2.2}},
+  motion:{physics:{cellSpringK:3.5,cellSpringKNewborn:2.2,cellDampingPerSecond:.08,cellPositionGain:4,nucleusFollowLerp:.08,amplitudeLerpPerSecond:12,hoverLerpPerSecond:10}}
+};
+let T = DEFAULTS;
+fetch('../tokens.json').then(r=>r.json()).then(j=>{T=j;}).catch(()=>{});
+
+// ---------- model (what the app would feed in) ----------
+const agents = [
+  {id:'refactor-gpui',engine:'pando',status:'working'},
+  {id:'tests-api',engine:'pando',status:'done'},
+  {id:'migracion-auth',engine:'acp',status:'waiting'},
+  {id:'@api-worker',engine:'external',status:'working'},
+  {id:'cargo build',engine:'cli',status:'working'},
+  {id:'lint-docs',engine:'cli',status:'error'}
+];
+let state='idle', sel='migracion-auth', mouse=null;
+
+// ---------- simulation ----------
+const cv=document.getElementById('c'), ctx=cv.getContext('2d');
+const S={t:0,last:performance.now(),cells:{},amp:0,ampT:0,particles:[],waves:[],lastState:'idle',nx:0,ny:0,W:640,dpr:1};
+for(let i=0;i<70;i++)S.particles.push({a:Math.random()*6.283,r:Math.random(),s:.2+Math.random()*.6,sz:.8+Math.random()*1.6});
+function fit(){const w=cv.clientWidth||640,d=Math.min(2,devicePixelRatio||1);cv.width=w*d;cv.height=w*d;S.W=w;S.dpr=d;}
+fit();addEventListener('resize',fit);
+const noise=(a,t,k)=>T.organism.membraneNoise.harmonics.reduce((s,[f,g,w],i)=>s+w*Math.sin(f*a+g*t+k*[1,2.1,.7][i]),0);
+const dead=a=>a.status==='paused'||a.status==='done'||a.status==='error';
+
+function step(dt){
+  const O=T.organism,Ph=T.motion.physics,W=S.W,C=W/2;
+  let target=.1;
+  if(state==='listening'){S.ampT+=dt;target=.35+.45*Math.abs(Math.sin(S.ampT*6.3)*Math.sin(S.ampT*1.7));}
+  if(state==='speaking'){S.ampT+=dt;target=.3+.5*Math.abs(Math.sin(S.ampT*9.1)*Math.cos(S.ampT*2.3));}
+  if(state==='thinking')target=.18;
+  S.amp+=(target-S.amp)*Math.min(1,dt*Ph.amplitudeLerpPerSecond);
+  if(state!==S.lastState){if(state==='speaking'||state==='delegating')S.waves.push({r:0,life:1});S.lastState=state;}
+  if(state==='speaking'&&Math.random()<dt*O.waves.speakingRatePerSecond)S.waves.push({r:0,life:1});
+  S.waves.forEach(w=>{w.r+=dt*W*O.waves.speed;w.life-=dt*O.waves.decayPerSecond;});S.waves=S.waves.filter(w=>w.life>0);
+  const n=agents.length,RC=W*O.ringRadius;
+  agents.forEach((a,i)=>{
+    const ang=-Math.PI/2+(6.283/n)*i+.15;let c=S.cells[a.id];
+    if(!c){const born=!!a.isNew;c=S.cells[a.id]={x:born?C:C+Math.cos(ang)*RC,y:born?C:C+Math.sin(ang)*RC,vx:0,vy:0,born:born?S.t:-10,phase:Math.random()*6.28,hover:0,flow:[]};for(let k=0;k<O.pseudopod.vesicles;k++)c.flow.push(Math.random());}
+    c.ang=ang;c.a=a;const age=S.t-c.born;const drift=6*Math.sin(S.t*.6+c.phase);
+    const tx=C+Math.cos(ang)*(RC+drift),ty=C+Math.sin(ang)*(RC+drift*.6);
+    const k=age<O.bulgeTowardCell.birthSeconds?Ph.cellSpringKNewborn:Ph.cellSpringK;
+    c.vx+=(tx-c.x)*k*dt;c.vy+=(ty-c.y)*k*dt;c.vx*=Math.pow(Ph.cellDampingPerSecond,dt);c.vy*=Math.pow(Ph.cellDampingPerSecond,dt);
+    c.x+=c.vx*dt*Ph.cellPositionGain;c.y+=c.vy*dt*Ph.cellPositionGain;
+    const spd=(a.status==='working'?O.pseudopod.flowSpeed.working:a.status==='waiting'?O.pseudopod.flowSpeed.waiting:0)*(state==='thinking'?O.pseudopod.flowSpeed.thinkingMultiplier:1);
+    c.flow=c.flow.map(f=>((f+spd*dt)%1+1)%1);
+    const hov=mouse&&Math.hypot(mouse.x-c.x,mouse.y-c.y)<34?1:0;c.hover+=(hov-c.hover)*Math.min(1,dt*Ph.hoverLerpPerSecond);
+  });
+  Object.keys(S.cells).forEach(id=>{if(!agents.find(a=>a.id===id))delete S.cells[id];});
+  const sp=O.organelles.speedByState[state]||1;
+  S.particles.forEach(p=>{p.a+=p.s*dt*.7*sp;p.r+=Math.sin(S.t*.9+p.a*3)*dt*.08;p.r=Math.min(.95,Math.max(.05,p.r));});
+}
+function bodyR(a){
+  const O=T.organism,W=S.W,base=W*O.bodyRadius*(O.bodyRadiusByState[state]||1);
+  let r=base*(1+O.membraneNoise.amplitude*noise(a,S.t,0)+O.membraneNoise.breath*Math.sin(S.t*1.3));
+  r+=base*S.amp*O.voiceRipple.amplitude*Math.sin(O.voiceRipple.angular[0]*a+S.t*O.voiceRipple.temporal[0])*Math.sin(O.voiceRipple.angular[1]*a+S.t*O.voiceRipple.temporal[1]);
+  const B=O.bulgeTowardCell;
+  Object.values(S.cells).forEach(c=>{let d=Math.atan2(c.y-W/2,c.x-W/2)-a;d=Math.atan2(Math.sin(d),Math.cos(d));
+    const age=S.t-c.born,birth=age<B.birthSeconds?(1-age/B.birthSeconds)*B.birthExtra:0;const alive=c.a.status==='paused'||c.a.status==='done'?B.deadFactor:1;
+    r+=base*(B.amount*alive+birth)*Math.exp(-(d*d)/(2*B.sigma*B.sigma));});
+  return r;
+}
+const cellR=c=>{const O=T.organism,age=S.t-c.born,g=age<O.bulgeTowardCell.birthSeconds?Math.min(1,age/1.6):1;return S.W*O.cellRadius*g*(1+(O.cellHoverScale-1)*c.hover);};
+function draw(){
+  const O=T.organism,Ph=T.motion.physics,W=S.W,C=W/2,t=S.t,col=k=>T.color[k].value;
+  const MAR=col('marfil'),GOLD=col('alamo'),BLUE=col('claudeBlue'),RED=col('bermellon');
+  const eng={pando:GOLD,acp:BLUE,external:BLUE,cli:MAR};
+  ctx.setTransform(S.dpr,0,0,S.dpr,0,0);ctx.clearRect(0,0,W,W);
+  ctx.beginPath();ctx.arc(C,C,W*O.habitatRadius,0,6.283);ctx.strokeStyle='rgba(244,241,232,.07)';ctx.lineWidth=1;ctx.stroke();
+  S.waves.forEach(w=>{ctx.beginPath();ctx.arc(C,C,W*O.bodyRadius+w.r,0,6.283);ctx.strokeStyle=`rgba(244,241,232,${.45*w.life})`;ctx.lineWidth=1+w.life;ctx.stroke();});
+  // pseudopods
+  Object.values(S.cells).forEach(c=>{const a=c.a,cl=eng[a.engine],dd=dead(a);const ang=Math.atan2(c.y-C,c.x-C);
+    const r0=bodyR(ang)-2,x0=C+Math.cos(ang)*r0,y0=C+Math.sin(ang)*r0,cr=cellR(c),x1=c.x-Math.cos(ang)*(cr-1),y1=c.y-Math.sin(ang)*(cr-1);
+    const len=Math.hypot(x1-x0,y1-y0),nx=-(y1-y0)/len,ny=(x1-x0)/len,wob=(dd?O.pseudopod.wobbleDead:O.pseudopod.wobble)*(1+S.amp*O.pseudopod.wobbleVoiceGain),N=O.pseudopod.samples,pts=[];
+    for(let i=0;i<=N;i++){const s=i/N,env=Math.sin(s*Math.PI),off=env*wob*(Math.sin(s*9-t*(dd?.6:2.4)+c.phase)+.5*Math.sin(s*17+t*3.1+c.phase));pts.push([x0+(x1-x0)*s+nx*off,y0+(y1-y0)*s+ny*off]);}
+    for(let L=0;L<2;L++){ctx.beginPath();ctx.moveTo(pts[0][0],pts[0][1]);for(let i=1;i<pts.length-1;i++){ctx.quadraticCurveTo(pts[i][0],pts[i][1],(pts[i][0]+pts[i+1][0])/2,(pts[i][1]+pts[i+1][1])/2);}ctx.lineTo(pts[N][0],pts[N][1]);ctx.lineCap='round';
+      if(L===0){ctx.strokeStyle=`rgba(244,241,232,${dd?.07:.14})`;ctx.lineWidth=9;}else{ctx.strokeStyle=a.engine==='cli'?'rgba(244,241,232,.5)':cl;ctx.globalAlpha=dd?.3:.75;ctx.lineWidth=1.6;if(a.engine==='cli')ctx.setLineDash([3,5]);}
+      ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1;}
+    if(!dd)c.flow.forEach(f=>{const i=Math.min(N-1,Math.floor(f*N)),p=pts[i],q=pts[i+1],u=f*N-i;ctx.beginPath();ctx.arc(p[0]+(q[0]-p[0])*u,p[1]+(q[1]-p[1])*u,2+Math.sin(f*Math.PI)*1.2,0,6.283);ctx.fillStyle=a.status==='waiting'?MAR:cl;ctx.globalAlpha=.5+.5*Math.sin(f*Math.PI);ctx.fill();ctx.globalAlpha=1;});
+  });
+  // body
+  ctx.beginPath();for(let i=0;i<=160;i++){const a=i/160*6.283,r=bodyR(a);const x=C+Math.cos(a)*r,y=C+Math.sin(a)*r;i?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.closePath();
+  ctx.fillStyle='rgba(244,241,232,.06)';ctx.fill();ctx.strokeStyle='rgba(244,241,232,.16)';ctx.lineWidth=7;ctx.stroke();ctx.strokeStyle=MAR;ctx.lineWidth=1.5;ctx.globalAlpha=.9;ctx.stroke();ctx.globalAlpha=1;
+  ctx.save();ctx.clip();S.particles.forEach(p=>{const rr=bodyR(p.a)*p.r*.92;ctx.beginPath();ctx.arc(C+Math.cos(p.a)*rr,C+Math.sin(p.a)*rr,p.sz,0,6.283);ctx.fillStyle=`rgba(244,241,232,${.18+.25*p.r})`;ctx.fill();});ctx.restore();
+  // nucleus
+  let nx=C,ny=C;if(mouse){const dx=mouse.x-C,dy=mouse.y-C,d=Math.hypot(dx,dy)||1,m=Math.min(W*O.nucleusFollowMax,d*.12);nx+=dx/d*m;ny+=dy/d*m;}
+  S.nx=(S.nx||C)+(nx-(S.nx||C))*Ph.nucleusFollowLerp;S.ny=(S.ny||C)+(ny-(S.ny||C))*Ph.nucleusFollowLerp;
+  const nr=W*O.nucleusRadius*(1+S.amp*.9+(state==='thinking'?.12*Math.sin(t*7):.04*Math.sin(t*2)));
+  ctx.beginPath();ctx.arc(S.nx,S.ny,nr*1.9,0,6.283);ctx.strokeStyle='rgba(233,185,73,.35)';ctx.lineWidth=1;ctx.setLineDash(state==='thinking'?[3,4]:[]);ctx.lineDashOffset=-t*20;ctx.stroke();ctx.setLineDash([]);
+  ctx.beginPath();ctx.arc(S.nx,S.ny,nr*1.35,0,6.283);ctx.fillStyle='rgba(233,185,73,.18)';ctx.fill();
+  ctx.beginPath();ctx.arc(S.nx,S.ny,nr,0,6.283);ctx.fillStyle=GOLD;ctx.fill();
+  if(state==='thinking')for(let k=0;k<3;k++){const aa=t*2.4+k*2.094;ctx.beginPath();ctx.arc(S.nx+Math.cos(aa)*nr*1.9,S.ny+Math.sin(aa)*nr*1.9,2,0,6.283);ctx.fillStyle=MAR;ctx.fill();}
+  // cells
+  ctx.font='300 11px ui-monospace, monospace';ctx.textAlign='center';
+  Object.values(S.cells).forEach(c=>{const a=c.a,cl=eng[a.engine],cr=cellR(c),dim=a.status==='paused';
+    ctx.beginPath();for(let i=0;i<=48;i++){const aa=i/48*6.283,wig=a.status==='working'?O.cellNoise.working:O.cellNoise.other,r=cr*(1+wig*noise(aa,t*1.4,c.phase));const x=c.x+Math.cos(aa)*r,y=c.y+Math.sin(aa)*r;i?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.closePath();
+    ctx.globalAlpha=dim?.35:1;
+    if(a.engine==='cli'){ctx.fillStyle='rgba(244,241,232,.04)';ctx.fill();ctx.setLineDash([3,4]);ctx.strokeStyle='rgba(244,241,232,.75)';ctx.lineWidth=1.2;ctx.stroke();ctx.setLineDash([]);}
+    else{ctx.fillStyle='rgba(244,241,232,.07)';ctx.fill();ctx.strokeStyle=MAR;ctx.lineWidth=1.3;ctx.stroke();}
+    const beat=a.status==='working'?1+O.cellBeat.amount*Math.max(0,Math.sin(t*O.cellBeat.hz+c.phase))**3:1;let nrr=cr*O.cellNucleusRatio*beat,fill=cl,al=1;
+    if(a.status==='waiting')al=.3+.7*(Math.sin(t*5)>0?1:0);if(a.status==='done')fill='rgba(244,241,232,.45)';if(a.status==='error'){fill=RED;nrr=cr*.38*(1+.08*Math.sin(t*18));}
+    ctx.globalAlpha=(dim?.35:1)*al;ctx.beginPath();ctx.arc(c.x,c.y,nrr,0,6.283);
+    if(a.engine==='external'||a.engine==='cli'){ctx.strokeStyle=fill;ctx.lineWidth=1.5;ctx.stroke();}else{ctx.fillStyle=fill;ctx.fill();}ctx.globalAlpha=1;
+    if(a.id===sel){ctx.beginPath();ctx.arc(c.x,c.y,cr+7+Math.sin(t*2)*1.5,0,6.283);ctx.strokeStyle='rgba(233,185,73,.75)';ctx.lineWidth=1;ctx.stroke();}
+    const badge={done:'✓',waiting:'?',error:'!',paused:'II'}[a.status];
+    if(badge){const bx=c.x+cr*.75,by=c.y-cr*.75;ctx.beginPath();ctx.arc(bx,by,7,0,6.283);ctx.fillStyle=col('bosque');ctx.fill();ctx.strokeStyle=a.status==='error'?RED:MAR;ctx.lineWidth=1;ctx.stroke();ctx.fillStyle=a.status==='error'?RED:MAR;ctx.font='400 9px ui-monospace, monospace';ctx.fillText(badge,bx,by+3);ctx.font='300 11px ui-monospace, monospace';}
+    ctx.fillStyle=`rgba(244,241,232,${.55+.45*c.hover})`;ctx.fillText(a.id,c.x,c.y+cr+16);
+  });
+}
+(function loop(now){const dt=Math.min(.05,(now-S.last)/1000);S.last=now;S.t+=dt;step(dt);draw();requestAnimationFrame(loop);})(performance.now());
+
+// ---------- interaction ----------
+const pt=e=>{const r=cv.getBoundingClientRect();return{x:(e.clientX-r.left)*(S.W/r.width),y:(e.clientY-r.top)*(S.W/r.height)};};
+cv.addEventListener('mousemove',e=>mouse=pt(e));cv.addEventListener('mouseleave',()=>mouse=null);
+cv.addEventListener('click',e=>{const p=pt(e);let b=null,bd=40;Object.values(S.cells).forEach(c=>{const d=Math.hypot(c.x-p.x,c.y-p.y);if(d<bd){bd=d;b=c;}});if(b)sel=b.a.id;});
+const st=document.getElementById('states');
+['idle','listening','thinking','speaking','delegating'].forEach(s=>{const b=document.createElement('button');b.textContent=s;b.className=s===state?'on':'';b.onclick=()=>{state=s;[...st.children].forEach(x=>x.className=x.textContent===s?'on':'');};st.appendChild(b);});
+let n=0;document.getElementById('spawn').onclick=()=>{agents.push({id:'cell-'+(++n),engine:['pando','acp','external','cli'][n%4],status:'working',isNew:true});state='delegating';[...st.children].forEach(x=>x.className=x.textContent==='delegating'?'on':'');};
+document.getElementById('kill').onclick=()=>{agents.pop();};
+</script>
+</body>
+</html>
