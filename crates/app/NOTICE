@@ -1,0 +1,8 @@
+Third-party attribution for the app crate
+
+src/tokio_bridge.rs, src/events.rs, src/ui/mod.rs
+  Patterns adapted from Bitacora (https://github.com/digiogithub/bitacora), MIT licensed,
+  Copyright (c) Digio. The tokio bridge follows the design of the `gpui_tokio` crate of the
+  Zed repository (Apache-2.0); no source code was copied from it.
+
+GPUI and GPUI Kit are licensed under the Apache License 2.0.

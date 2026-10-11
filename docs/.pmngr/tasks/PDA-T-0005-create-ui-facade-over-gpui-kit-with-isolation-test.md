@@ -2,14 +2,14 @@
 id: PDA-T-0005
 type: task
 title: Create ui/ facade over gpui-kit with isolation test
-status: backlog
+status: todo
 parent: PDA-US-0002
 milestone: PDA-M-0001
 author: mcp
 labels: [shell]
 estimate: 3
 created: 2026-10-11T21:47:40Z
-updated: 2026-10-11T22:01:54Z
+updated: 2026-10-11T22:19:18Z
 ---
 
 ## Description

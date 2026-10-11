@@ -1,0 +1,444 @@
+//! Thin facade over GPUI and GPUI Kit (ADR-0001).
+//!
+//! Rule: **only files under `src/ui/` may name the GPUI Kit crate by path**. Every
+//! other module imports GPUI / GPUI Kit types from `crate::ui`. This keeps the
+//! blast radius of GPUI Kit's frequent API churn (it is pre-1.0 and re-pins GPUI
+//! weekly) inside this directory. The rule is enforced by the
+//! `only_ui_names_gpui_kit` test below.
+//!
+//! Upgrade procedure: bump the exact `gpui-kit` pin in the workspace manifest,
+//! fix this facade until the crate compiles, then fix the views.
+//!
+//! The facade deliberately lists its re-exports explicitly instead of
+//! glob-importing the kit root: with `test-support` that glob also pulls in
+//! GPUI's `test` attribute macro, which would shadow Rust's built-in `#[test]`.
+
+pub use gpui_kit::prelude::*;
+pub use gpui_kit::{
+    Action, Anchor, Animation, AnimationExt, AnyElement, AnyView, AnyWindowHandle, App, AppContext,
+    Application, AsyncApp, Bounds, ClickEvent, Context, Div, ElementId, Entity, EntityId,
+    EventEmitter, FocusHandle, Focusable, Global, Hsla, KeyBinding, KeyBindingContextPredicate,
+    KeyDownEvent, KeyUpEvent, Keystroke, NoAction, PathPromptOptions, Pixels, Point, Render, Rgba,
+    ScrollHandle, SharedString, Size, StyledImage, Subscription, Task, TextSystem, TitlebarOptions,
+    WeakEntity, Window, WindowAppearance, WindowBounds, WindowOptions, anchored, deferred, div,
+    point, px, size,
+};
+pub use gpui_kit::{rgb, rgba};
+
+// TODO(PDA-T-0010): `pub mod theme;` (generated tokens + kit theme) lands under `ui/theme/`.
+
+/// The kit's "cancel" action (Escape in menus and command palettes).
+pub use gpui_kit::base::actions::Cancel as MenuCancel;
+
+/// Defines unit actions (re-exported so views never name the kit crate).
+pub use gpui_kit::actions;
+
+/// Styled components used by the shell.
+pub use gpui_kit::component::{
+    ActiveTheme, Disableable, Icon, IconName, Root, Selectable, Sizable, StyledExt, WindowExt,
+    h_flex, v_flex,
+};
+
+/// Frameless-window building blocks (PDA-T-0009): the kit's title bar and window
+/// border, plus the GPUI decoration types needed to branch on the actual window mode.
+pub mod frameless {
+    pub use gpui_kit::component::{InteractiveElementExt, TitleBar, window_border};
+    pub use gpui_kit::{
+        Decorations, MouseButton, ResizeEdge, Tiling, WindowControlArea, WindowControls,
+        WindowDecorations,
+    };
+}
+
+/// Tooltip view for `.tooltip(|window, cx| Tooltip::new(text).build(window, cx))`.
+pub use gpui_kit::component::tooltip::Tooltip;
+
+/// Buttons.
+pub mod button {
+    pub use gpui_kit::component::button::{Button, ButtonVariants};
+}
+
+/// Toggle switch.
+pub mod switch {
+    pub use gpui_kit::component::switch::Switch;
+}
+
+/// Popovers.
+pub mod popover {
+    pub use gpui_kit::component::popover::{Popover, PopoverState};
+}
+
+/// Menus and dropdowns.
+pub mod menu {
+    pub use gpui_kit::component::menu::{DropdownMenu, PopupMenu, PopupMenuItem};
+}
+
+/// Status bar chrome.
+pub mod status_bar {
+    pub use gpui_kit::component::status_bar::StatusBar;
+}
+
+/// Progress bar.
+pub mod progress {
+    pub use gpui_kit::component::progress::Progress;
+}
+
+/// Notification severity used by [`notify`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Level {
+    /// Informational.
+    Info,
+    /// Operation succeeded.
+    Success,
+    /// Something needs attention.
+    Warning,
+    /// Operation failed.
+    Error,
+}
+
+/// Shows a toast in `window` (requires a `Root`, which [`open_main_window`] provides).
+pub fn notify(window: &mut Window, cx: &mut App, level: Level, message: impl Into<SharedString>) {
+    use gpui_kit::component::notification::Notification;
+    let message = message.into();
+    // Windows without a `Root` (headless tests) cannot show toasts; keep the message in the log.
+    if window.root::<Root>().flatten().is_none() {
+        tracing::info!(?level, %message, "notification without a Root window");
+        return;
+    }
+    let note = match level {
+        Level::Info => Notification::info(message),
+        Level::Success => Notification::success(message),
+        Level::Warning => Notification::warning(message),
+        Level::Error => Notification::error(message),
+    };
+    window.push_notification(note, cx);
+}
+
+/// Like [`notify`] but sticky, with one action button; `on_click` runs when the user presses it
+/// (the toast closes itself). Windows without a `Root` only log the message.
+pub fn notify_action(
+    window: &mut Window,
+    cx: &mut App,
+    level: Level,
+    message: impl Into<SharedString>,
+    label: impl Into<SharedString>,
+    on_click: impl Fn(&mut Window, &mut App) + 'static,
+) {
+    use gpui_kit::component::notification::Notification;
+    let message = message.into();
+    if window.root::<Root>().flatten().is_none() {
+        tracing::info!(?level, %message, "action notification without a Root window");
+        return;
+    }
+    let note = match level {
+        Level::Info => Notification::info(message),
+        Level::Success => Notification::success(message),
+        Level::Warning => Notification::warning(message),
+        Level::Error => Notification::error(message),
+    };
+    let label: SharedString = label.into();
+    let on_click = std::rc::Rc::new(on_click);
+    let note = note.action(move |_, _, cx| {
+        let this = cx.entity();
+        let on_click = on_click.clone();
+        button::Button::new("notice-action")
+            .label(label.clone())
+            .on_click(move |_, window, cx| {
+                on_click(window, cx);
+                this.update(cx, |note, cx| note.dismiss(window, cx));
+            })
+    });
+    window.push_notification(note, cx);
+}
+
+/// What to ask in a confirmation dialog.
+#[derive(Debug, Clone)]
+pub struct Confirmation {
+    /// Dialog title.
+    pub title: String,
+    /// Explanation under the title.
+    pub description: String,
+    /// Label of the confirming button.
+    pub ok_text: String,
+    /// Label of the cancelling button.
+    pub cancel_text: String,
+}
+
+/// Opens a confirmation dialog (OK / Cancel); `on_ok` runs only when the user confirms. Returns
+/// `false` without running anything when the window has no `Root` (headless tests), so a
+/// destructive action can never proceed without the question having been shown.
+pub fn confirm(
+    window: &mut Window,
+    cx: &mut App,
+    question: Confirmation,
+    on_ok: impl Fn(&mut Window, &mut App) + 'static,
+) -> bool {
+    if window.root::<Root>().flatten().is_none() {
+        tracing::info!(title = %question.title, "confirmation without a Root window");
+        return false;
+    }
+    let on_ok = std::rc::Rc::new(on_ok);
+    window.open_alert_dialog(cx, move |alert, _, _| {
+        let on_ok = on_ok.clone();
+        alert
+            .confirm()
+            .title(question.title.clone())
+            .description(question.description.clone())
+            .ok_text(question.ok_text.clone())
+            .cancel_text(question.cancel_text.clone())
+            .on_ok(move |_, window, cx| {
+                on_ok(window, cx);
+                true
+            })
+    });
+    true
+}
+
+/// Opens a two-button dialog; `on_ok` runs on the primary button, `on_cancel` on the secondary
+/// one (Escape closes without either). Returns `false` when the window has no `Root`.
+pub fn choose(
+    window: &mut Window,
+    cx: &mut App,
+    question: Confirmation,
+    on_ok: impl Fn(&mut Window, &mut App) + 'static,
+    on_cancel: impl Fn(&mut Window, &mut App) + 'static,
+) -> bool {
+    if window.root::<Root>().flatten().is_none() {
+        tracing::info!(title = %question.title, "dialog without a Root window");
+        return false;
+    }
+    let on_ok = std::rc::Rc::new(on_ok);
+    let on_cancel = std::rc::Rc::new(on_cancel);
+    window.open_alert_dialog(cx, move |alert, _, _| {
+        let (on_ok, on_cancel) = (on_ok.clone(), on_cancel.clone());
+        alert
+            .confirm()
+            .title(question.title.clone())
+            .description(question.description.clone())
+            .ok_text(question.ok_text.clone())
+            .cancel_text(question.cancel_text.clone())
+            .on_ok(move |_, window, cx| {
+                on_ok(window, cx);
+                true
+            })
+            .on_cancel(move |_, window, cx| {
+                on_cancel(window, cx);
+                true
+            })
+    });
+    true
+}
+
+/// One entry of an application menu.
+#[allow(missing_debug_implementations)]
+pub enum MenuEntry {
+    /// An item that dispatches an action.
+    Action(String, Box<dyn Action>),
+    /// A separator line.
+    Separator,
+    /// A nested menu.
+    Submenu(String, Vec<MenuEntry>),
+}
+
+/// One top-level application menu.
+#[allow(missing_debug_implementations)]
+pub struct MenuSpec {
+    /// Menu title.
+    pub name: String,
+    /// Menu entries.
+    pub items: Vec<MenuEntry>,
+}
+
+fn kit_items(entries: Vec<MenuEntry>) -> Vec<gpui_kit::MenuItem> {
+    use gpui_kit::{Menu, MenuItem};
+    entries
+        .into_iter()
+        .map(|entry| match entry {
+            MenuEntry::Action(name, action) => MenuItem::Action {
+                name: name.into(),
+                action,
+                os_action: None,
+                checked: false,
+                disabled: false,
+            },
+            MenuEntry::Separator => MenuItem::separator(),
+            MenuEntry::Submenu(name, items) => MenuItem::submenu(Menu {
+                name: name.into(),
+                items: kit_items(items),
+                disabled: false,
+            }),
+        })
+        .collect()
+}
+
+/// Installs the application menus (the macOS menu bar; platforms without a global menu ignore
+/// them).
+pub fn set_menus(cx: &mut App, menus: Vec<MenuSpec>) {
+    cx.set_menus(
+        menus
+            .into_iter()
+            .map(|menu| gpui_kit::Menu {
+                name: menu.name.into(),
+                items: kit_items(menu.items),
+                disabled: false,
+            })
+            .collect::<Vec<_>>(),
+    );
+}
+
+/// Builds a key binding from raw keymap data (keystrokes, a built action, optional
+/// key context such as `"Workspace"`).
+pub fn key_binding(
+    keystrokes: &str,
+    action: Box<dyn Action>,
+    context: Option<&str>,
+) -> anyhow::Result<KeyBinding> {
+    let predicate = match context {
+        Some(c) => Some(std::rc::Rc::new(KeyBindingContextPredicate::parse(c)?)),
+        None => None,
+    };
+    Ok(KeyBinding::load(
+        keystrokes,
+        action,
+        predicate,
+        false,
+        None,
+        &gpui_kit::DummyKeyboardMapper,
+    )?)
+}
+
+/// Raw asset access for icons that need to be adjusted before they are painted.
+pub mod assets {
+    use gpui_kit::assets::AllAssets;
+    use gpui_kit::gpui::AssetSource as _;
+
+    /// The bytes of an embedded icon (`icons/<lucide-name>.svg`, the full Lucide catalog).
+    #[must_use]
+    pub fn icon_svg(path: &str) -> Option<Vec<u8>> {
+        AllAssets
+            .load(path)
+            .ok()
+            .flatten()
+            .map(std::borrow::Cow::into_owned)
+    }
+}
+
+/// Builds an icon element from a Lucide icon name.
+pub fn icon(name: IconName) -> Icon {
+    Icon::new(name)
+}
+
+/// Starts the platform application with the default GPUI Kit assets (icons).
+pub fn application() -> Application {
+    gpui_kit::application().with_assets(gpui_kit::assets::Assets)
+}
+
+/// Initializes GPUI Kit (themes, component keymaps, global state).
+pub fn init(cx: &mut App) {
+    gpui_kit::init(cx);
+}
+
+/// Opens a window whose root view is GPUI Kit's `Root` wrapping the view built by
+/// `build` (GPUI Kit 0.7 one-window entry point; dialogs/notifications need the `Root`).
+pub fn open_main_window<V: Render>(
+    options: WindowOptions,
+    cx: &mut App,
+    build: impl FnOnce(&mut Window, &mut App) -> Entity<V>,
+) -> anyhow::Result<(AnyWindowHandle, Entity<V>)> {
+    gpui_kit::open_window(options, cx, build)
+}
+
+/// Low-level GPUI text and list APIs for custom elements (chat input, transcript). Kept explicit so the kit churn stays in this file.
+pub mod text_edit {
+    pub use gpui_kit::{
+        AvailableSpace, ClipboardEntry, ClipboardItem, CursorStyle, Element, ElementId,
+        ElementInputHandler, EntityInputHandler, ExternalPaths, Font, FontStyle, FontWeight,
+        GlobalElementId, HighlightStyle, Image, ImageFormat, InspectorElementId, InteractiveText,
+        IntoElement, LayoutId, ListAlignment, ListOffset, ListState, Modifiers, MouseButton,
+        MouseDownEvent, MouseMoveEvent, MouseUpEvent, ObjectFit, PaintQuad, Rgba,
+        StrikethroughStyle, Style, StyledImage, StyledText, TextAlign, TextLayout, TextRun,
+        UTF16Selection, UnderlineStyle, WrappedLine, fill, hsla, img, list, relative, rgba,
+    };
+}
+
+/// Low-level painting and pointer events for the organism canvas (painted with GPUI paths, ADR-0006).
+pub mod canvas {
+    pub use gpui_kit::gpui::{
+        BorderStyle, Corners, Edges, MouseDownEvent, MouseMoveEvent, MouseUpEvent, Path,
+        PathBuilder, ScrollWheelEvent, canvas, quad,
+    };
+}
+
+/// Accessibility roles and states (GPUI exposes them through AccessKit). Elements
+/// need an id and a role to appear in the accessibility tree: `div().id(..).role(Role::Button)
+/// .aria_label(..)`.
+pub mod a11y {
+    pub use gpui_kit::gpui::{Orientation, Role, Toggled};
+}
+
+/// Test helpers (headless windows, simulated input).
+#[cfg(test)]
+pub mod testing {
+    pub use gpui_kit::TestAppContext;
+    pub use gpui_kit::VisualTestContext;
+    /// The GPUI test attribute (`#[ui::testing::gpui_test]`).
+    pub use gpui_kit::test as gpui_test;
+
+    /// A [`gpui_kit::TextSystem`] backed by the real platform font stack (the
+    /// `TestAppContext` one has no fonts), for tests that resolve actual fonts.
+    pub fn platform_text_system() -> gpui_kit::TextSystem {
+        gpui_kit::TextSystem::new(gpui_kit::platform::current_platform(true).text_system())
+    }
+
+    /// Shapes `text` in `run`'s font and returns the glyph ids (0 is the missing-glyph box).
+    pub fn shaped_glyph_ids(
+        system: gpui_kit::TextSystem,
+        text: &str,
+        run: gpui_kit::TextRun,
+    ) -> Vec<u32> {
+        let window = gpui_kit::gpui::WindowTextSystem::new(std::sync::Arc::new(system));
+        let layout = window.layout_line(text, gpui_kit::gpui::px(14.0), &[run], None);
+        layout
+            .runs
+            .iter()
+            .flat_map(|r| r.glyphs.iter().map(|g| g.id.0))
+            .collect()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::path::{Path, PathBuf};
+
+    fn rust_files(dir: &Path, out: &mut Vec<PathBuf>) {
+        let Ok(entries) = std::fs::read_dir(dir) else {
+            return;
+        };
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                rust_files(&path, out);
+            } else if path.extension().is_some_and(|e| e == "rs") {
+                out.push(path);
+            }
+        }
+    }
+
+    #[test]
+    fn only_ui_names_gpui_kit() {
+        let src = Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+        let ui_dir = src.join("ui");
+        let mut files = Vec::new();
+        rust_files(&src, &mut files);
+        assert!(!files.is_empty());
+        // Built from pieces so this very file does not match its own needle.
+        let needle = ["gpui_kit", "::"].concat();
+        let mut offenders = Vec::new();
+        for file in files.iter().filter(|f| !f.starts_with(&ui_dir)) {
+            let text = std::fs::read_to_string(file).unwrap_or_default();
+            if text.contains(&needle) {
+                offenders.push(file.display().to_string());
+            }
+        }
+        assert!(offenders.is_empty(), "outside src/ui: {offenders:?}");
+    }
+}

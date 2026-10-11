@@ -15,6 +15,21 @@ authors = ["Pando Assistant contributors"]
 gpui-kit = "=0.7.1"
 anyhow = "1"
 cargo_metadata = "0.23"
+reqwest = { version = "0.13", default-features = false, features = ["json", "query", "rustls"] }
+axum = "0.8"
+serde_json = { version = "1", features = ["preserve_order"] }
+tokio = { version = "1.53", features = ["rt-multi-thread", "macros", "net", "sync", "time", "signal"] }
+async-channel = "2.5"
+directories = "6"
+rust-i18n = "4.2"
+sys-locale = "0.3"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tracing-appender = "0.2"
+serde = { version = "1", features = ["derive"] }
+thiserror = "2"
+clap = { version = "4", features = ["derive"] }
+tempfile = "3"
 
 [workspace.lints.rust]
 unsafe_op_in_unsafe_fn = "deny"
