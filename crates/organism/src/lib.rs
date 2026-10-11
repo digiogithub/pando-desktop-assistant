@@ -1,6 +1,10 @@
 //! Pure organism simulation: `step()` and `shape()` produce a `DrawList`.
 
+pub mod envelope;
+pub mod noise;
 pub mod params;
+pub mod rng;
+pub mod spring;
 pub mod tokens;
 pub mod types;
 
