@@ -16,6 +16,7 @@ authors = ["Pando Assistant contributors"]
 gpui-kit = "=0.7.1"
 anyhow = "1"
 cargo_metadata = "0.23"
+keyring = "4.2"
 reqwest = { version = "0.13", default-features = false, features = ["json", "query", "rustls"] }
 axum = "0.8"
 serde_json = { version = "1", features = ["preserve_order"] }

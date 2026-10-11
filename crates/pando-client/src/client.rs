@@ -11,6 +11,7 @@ use reqwest::{Method, RequestBuilder, Response, StatusCode};
 use serde::Deserialize;
 use serde::de::DeserializeOwned;
 
+use crate::auth::{AuthHooks, basic_account, decode_basic, encode_basic};
 use crate::config::{BasicAuth, CLIENT_NAME, PandoConfig, Token};
 use crate::error::{Error, Result};
 use crate::sse::{SseEvent, SseParser};
@@ -43,6 +44,11 @@ struct Inner {
     config: PandoConfig,
     token: RwLock<Option<Token>>,
     basic: RwLock<Option<BasicAuth>>,
+    hooks: AuthHooks,
+    /// Serialises token refreshes so a burst of 401s triggers one `GET /api/v1/token`.
+    refresh_lock: tokio::sync::Mutex<()>,
+    /// Serialises credential acquisition so a burst of 401s opens one dialog.
+    basic_lock: tokio::sync::Mutex<()>,
 }
 
 impl std::fmt::Debug for Inner {
@@ -63,6 +69,11 @@ pub struct PandoClient {
 impl PandoClient {
     /// Builds a client from `config`.
     pub fn new(config: PandoConfig) -> Result<Self> {
+        Self::with_hooks(config, AuthHooks::default())
+    }
+
+    /// Builds a client with a credential store and/or login prompt for Basic auth.
+    pub fn with_hooks(config: PandoConfig, hooks: AuthHooks) -> Result<Self> {
         let base = config.base_url.trim().trim_end_matches('/').to_owned();
         if !(base.starts_with("http://") || base.starts_with("https://")) {
             return Err(Error::Config(format!(
@@ -102,6 +113,9 @@ impl PandoClient {
                 base,
                 token: RwLock::new(config.token.clone()),
                 basic: RwLock::new(config.basic_auth.clone()),
+                hooks,
+                refresh_lock: tokio::sync::Mutex::new(()),
+                basic_lock: tokio::sync::Mutex::new(()),
                 config,
             }),
         })
@@ -213,8 +227,12 @@ impl PandoClient {
 
     fn authorize(&self, mut req: RequestBuilder) -> RequestBuilder {
         req = req.header("X-Pando-Client", CLIENT_NAME);
-        if let Some(token) = self.token() {
-            req = req.header("X-Pando-Token", token.expose());
+        if let Some(mut v) = self
+            .token()
+            .and_then(|t| reqwest::header::HeaderValue::from_str(t.expose()).ok())
+        {
+            v.set_sensitive(true);
+            req = req.header("X-Pando-Token", v);
         }
         let basic = self
             .inner
@@ -234,9 +252,61 @@ impl PandoClient {
         resp.json::<T>().await.map_err(Error::from_transport)
     }
 
-    /// Sends and maps non-success statuses to [`Error`].
+    /// Sends the request and maps non-success statuses to [`Error`].
+    ///
+    /// Recovery, at most once each per call: a 401 refetches the ephemeral token from
+    /// `/api/v1/token` (Pando regenerates it at every start) and retries; a
+    /// `basic_auth_required` 401 obtains Basic credentials (keychain, then the login dialog)
+    /// and retries. Requests whose body cannot be cloned are not retried.
     pub async fn send(&self, req: RequestBuilder) -> Result<Response> {
-        let resp = req.send().await.map_err(Error::from_transport)?;
+        self.send_with(req, true).await
+    }
+
+    async fn send_with(&self, req: RequestBuilder, refresh_token: bool) -> Result<Response> {
+        let (http, request) = req.build_split();
+        let request = request.map_err(Error::from_transport)?;
+        let Some(template) = request.try_clone() else {
+            return self.execute(&http, request).await;
+        };
+        let mut refreshed = !refresh_token;
+        let mut basic_tries = 0;
+        let mut request = request;
+        loop {
+            let used_token = self.token();
+            let used_basic = self.current_basic();
+            match self.execute(&http, request).await {
+                Err(Error::Unauthorized) if !refreshed => {
+                    refreshed = true;
+                    match self.refresh_token(used_token).await {
+                        Ok(()) => {}
+                        // The token endpoint is unusable (no such route, bad body): the
+                        // original rejection is the meaningful answer.
+                        Err(
+                            Error::Server { .. }
+                            | Error::NotConfigured(_)
+                            | Error::Decode(_)
+                            | Error::Protocol(_)
+                            | Error::Unauthorized,
+                        ) => return Err(Error::Unauthorized),
+                        Err(e) => return Err(e),
+                    }
+                }
+                Err(Error::BasicAuthRequired) if basic_tries < 2 => {
+                    basic_tries += 1;
+                    self.acquire_basic(used_basic).await?;
+                }
+                other => return other,
+            }
+            let Some(mut next) = template.try_clone() else {
+                return Err(Error::Unauthorized);
+            };
+            self.apply_credentials(&mut next);
+            request = next;
+        }
+    }
+
+    async fn execute(&self, http: &reqwest::Client, request: reqwest::Request) -> Result<Response> {
+        let resp = http.execute(request).await.map_err(Error::from_transport)?;
         let status = resp.status();
         if status.is_success() {
             return Ok(resp);
@@ -244,6 +314,118 @@ impl PandoClient {
         let body = resp.text().await.unwrap_or_default();
         Err(map_status(status, &body))
     }
+
+    fn current_basic(&self) -> Option<BasicAuth> {
+        self.inner
+            .basic
+            .read()
+            .unwrap_or_else(PoisonError::into_inner)
+            .clone()
+    }
+
+    /// Overwrites the credential headers of `request` with the current credentials.
+    fn apply_credentials(&self, request: &mut reqwest::Request) {
+        use reqwest::header::{AUTHORIZATION, HeaderValue};
+        let headers = request.headers_mut();
+        match self
+            .token()
+            .and_then(|t| HeaderValue::from_str(t.expose()).ok())
+        {
+            Some(mut v) => {
+                v.set_sensitive(true);
+                headers.insert("X-Pando-Token", v);
+            }
+            None => {
+                headers.remove("X-Pando-Token");
+            }
+        }
+        match self.current_basic() {
+            Some(b) => {
+                let raw = b64(format!("{}:{}", b.username, b.expose_password()).as_bytes());
+                if let Ok(mut v) = HeaderValue::from_str(&format!("Basic {raw}")) {
+                    v.set_sensitive(true);
+                    headers.insert(AUTHORIZATION, v);
+                }
+            }
+            None => {
+                headers.remove(AUTHORIZATION);
+            }
+        }
+    }
+
+    /// Refetches the token unless another caller already replaced `used`.
+    async fn refresh_token(&self, used: Option<Token>) -> Result<()> {
+        let _guard = self.inner.refresh_lock.lock().await;
+        if self.token() != used {
+            return Ok(());
+        }
+        tracing::debug!(base = %self.inner.base, "pando token rejected, refetching");
+        #[derive(Deserialize)]
+        struct Body {
+            token: String,
+        }
+        let req = self.request(Method::GET, "/api/v1/token");
+        let resp = Box::pin(self.send_with(req, false)).await?;
+        let body: Body = resp.json().await.map_err(Error::from_transport)?;
+        self.set_token(Some(Token::new(body.token)));
+        Ok(())
+    }
+
+    /// Obtains Basic credentials unless another caller already changed them from `used`.
+    async fn acquire_basic(&self, used: Option<BasicAuth>) -> Result<()> {
+        let _guard = self.inner.basic_lock.lock().await;
+        if self.current_basic() != used {
+            return Ok(());
+        }
+        let account = basic_account(&self.inner.base);
+        let store = self.inner.hooks.store.as_ref();
+        if used.is_none() {
+            if let Some(found) = store
+                .and_then(|s| s.get(&account).ok().flatten())
+                .and_then(|raw| decode_basic(&raw))
+            {
+                tracing::debug!(base = %self.inner.base, "using Basic credentials from the keychain");
+                self.set_basic_auth(Some(found));
+                return Ok(());
+            }
+        } else if let Some(s) = store {
+            // The remembered credentials were rejected: forget them before asking again.
+            let _ = s.delete(&account);
+        }
+        let Some(prompt) = self.inner.hooks.prompt.as_ref() else {
+            return Err(Error::BasicAuthRequired);
+        };
+        tracing::debug!(base = %self.inner.base, "asking the user for Basic credentials");
+        let Some(creds) = prompt.prompt(&self.inner.base).await else {
+            return Err(Error::BasicAuthRequired);
+        };
+        if let Some(s) = store
+            && let Err(e) = s.set(&account, &encode_basic(&creds))
+        {
+            tracing::warn!(error = %e, "could not save Basic credentials to the keychain");
+        }
+        self.set_basic_auth(Some(creds));
+        Ok(())
+    }
+}
+
+/// Standard base64 (RFC 4648) for the Basic header.
+fn b64(input: &[u8]) -> String {
+    const T: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let mut out = String::with_capacity(input.len().div_ceil(3) * 4);
+    for c in input.chunks(3) {
+        let n = (u32::from(c[0]) << 16)
+            | (u32::from(*c.get(1).unwrap_or(&0)) << 8)
+            | u32::from(*c.get(2).unwrap_or(&0));
+        for i in 0..4 {
+            if i <= c.len() {
+                out.push(char::from(T[((n >> (18 - 6 * i)) & 63) as usize]));
+            } else {
+                out.push('=');
+            }
+        }
+    }
+    out
 }
 
 fn map_status(status: StatusCode, body: &str) -> Error {

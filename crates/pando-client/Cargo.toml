@@ -12,11 +12,18 @@ publish = false
 [lints]
 workspace = true
 
+[features]
+default = ["keyring-store"]
+# OS keychain backed credential store (macOS Keychain, Windows Credential Manager, Secret Service).
+keyring-store = ["dep:keyring"]
+
 [dependencies]
 reqwest.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
+tracing.workspace = true
+keyring = { workspace = true, optional = true }
 tokio = { workspace = true, features = ["rt", "sync", "time", "macros"] }
 
 [dev-dependencies]
@@ -27,3 +34,4 @@ tokio-rustls = "0.26"
 hyper-util = { version = "0.1", features = ["server-auto", "tokio", "service"] }
 tower = { version = "0.5", features = ["util"] }
 tempfile.workspace = true
+tracing-subscriber.workspace = true
