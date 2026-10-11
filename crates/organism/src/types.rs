@@ -140,7 +140,7 @@ pub struct Inputs<'a> {
     /// Smoothed TTS RMS in `0..=1`; `None` uses the synthetic envelope.
     pub tts_rms: Option<f32>,
     /// Pointer in normalised canvas space (`0..=1`), `None` when it left the canvas.
-    pub pointer: Option<[f32; 2]>,
+    pub pointer: Option<[f64; 2]>,
     pub selected: Option<CellId>,
     pub cells: &'a [CellInput],
     pub reduced_motion: bool,

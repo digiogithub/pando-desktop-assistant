@@ -4,11 +4,13 @@ pub mod envelope;
 pub mod noise;
 pub mod params;
 pub mod rng;
+pub mod sim;
 pub mod spring;
 pub mod tokens;
 pub mod types;
 
 pub use params::{Extras, Params, W_REF};
+pub use sim::{Config, Organism};
 pub use types::{BodyState, CellId, CellInput, Engine, Inputs, Status};
 
 /// Crate name, used by the skeleton smoke test.

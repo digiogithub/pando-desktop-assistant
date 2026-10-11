@@ -2,14 +2,16 @@
 id: PDA-T-0032
 type: task
 title: "sim.rs: Organism::step"
-status: backlog
+status: in_progress
 parent: PDA-US-0009
 milestone: PDA-M-0002
+assignees: [claude-sonnet]
 author: mcp
 labels: [organism]
 estimate: 5
 created: 2026-10-11T21:48:44Z
-updated: 2026-10-11T22:02:37Z
+updated: 2026-10-11T22:30:40Z
+started: 2026-10-11T22:30:40Z
 ---
 
 ## Description
