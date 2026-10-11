@@ -115,14 +115,40 @@ pub struct Cascade {
 }
 
 impl Cascade {
-    /// Start a cascade. `input.projects` should already be pre-filtered
-    /// (see `crate::project::prefilter`); only the first 12 are offered.
+    /// Start a cascade. More than 12 projects are fuzzy pre-filtered, and more than 24
+    /// agents are reordered so the ones closest to the transcript are offered.
     pub fn new(
         input: StateInput,
         model: impl Into<String>,
         keep_alive: Option<String>,
         context_tokens: usize,
     ) -> Self {
+        let mut input = input;
+        // Long lists: keep the candidates closest to what was said (PDA-SP-0008.R6).
+        if input.projects.len() > crate::project::PREFILTER_LIMIT {
+            input.projects = crate::project::prefilter(
+                &input.transcript,
+                &input.projects,
+                crate::project::PREFILTER_LIMIT,
+            )
+            .into_iter()
+            .cloned()
+            .collect();
+        }
+        if input.agents.len() > crate::questions::MAX_AGENT_CRITERIA {
+            let scorer = crate::project::Scorer::new(&input.transcript);
+            let key =
+                |a: &crate::questions::AgentInfo| scorer.score(&a.id).max(scorer.score(&a.name));
+            let mut ranked: Vec<(f64, usize)> = input
+                .agents
+                .iter()
+                .enumerate()
+                .map(|(i, a)| (key(a), i))
+                .collect();
+            ranked.sort_by(|a, b| b.0.total_cmp(&a.0).then(a.1.cmp(&b.1)));
+            let agents = std::mem::take(&mut input.agents);
+            input.agents = ranked.into_iter().map(|(_, i)| agents[i].clone()).collect();
+        }
         let dictation = dictation_trigger(&input.transcript);
         let intent = dictation.as_ref().map(|_| Answered {
             value: Intent::Dictation,
@@ -495,6 +521,37 @@ mod tests {
         let run = block_on(run(&c, input("cancela"))).unwrap();
         assert_eq!(run.decision.intent.value, Intent::Control);
         assert_eq!(run.decision.intent.p, None);
+    }
+
+    #[test]
+    fn long_lists_keep_the_mentioned_candidates() {
+        let mut inp = input("cancela el agente cuarenta y dos de facturas");
+        inp.agents = (0..40)
+            .map(|i| AgentInfo {
+                id: format!("agente-{i}"),
+                name: if i == 37 {
+                    "Facturas".into()
+                } else {
+                    format!("Agente {i}")
+                },
+                status: String::new(),
+            })
+            .collect();
+        inp.projects = (0..30)
+            .map(|i| format!("proyecto-{i}"))
+            .chain(["facturas".into()])
+            .collect();
+        let mut cascade = Cascade::new(inp, "m", None, 2050);
+        let intent =
+            r#"{"answers":{"intent":{"choice":"stop_agent","probabilities":{"stop_agent":0.9}}}}"#;
+        cascade
+            .feed(&serde_json::from_str(intent).unwrap())
+            .unwrap();
+        let req = cascade.next_request().unwrap();
+        let agents = req.question("agent").unwrap();
+        assert!(agents.keys().any(|k| k == "agente-37"));
+        assert!(cascade.input.projects.len() <= 12);
+        assert_eq!(cascade.input.projects[0], "facturas");
     }
 
     #[test]

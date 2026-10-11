@@ -2,14 +2,16 @@
 id: PDA-T-0105
 type: task
 title: Project selection with pre-filtering
-status: backlog
+status: in_progress
 parent: PDA-US-0030
 milestone: PDA-M-0006
+assignees: [claude-opus]
 author: mcp
 labels: [decide]
 estimate: 3
 created: 2026-10-11T21:52:55Z
-updated: 2026-10-11T22:03:24Z
+updated: 2026-10-11T22:42:36Z
+started: 2026-10-11T22:42:36Z
 ---
 
 ## Description
