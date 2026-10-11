@@ -1,0 +1,16 @@
+[package]
+name = "s4-audio-aec"
+version = "0.0.0"
+edition = "2024"
+publish = false
+license = "MIT"
+
+[dependencies]
+cpal = { version = "=0.18.2", features = ["pipewire", "pulseaudio"] }
+rubato = "=5.0.1"
+sonora = "=0.2.0"
+rtrb = "0.4"
+hound = "3"
+audioadapter-buffers = "5.1"
+
+[workspace]
