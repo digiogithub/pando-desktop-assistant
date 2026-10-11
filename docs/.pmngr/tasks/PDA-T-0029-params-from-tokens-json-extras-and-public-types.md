@@ -2,14 +2,16 @@
 id: PDA-T-0029
 type: task
 title: Params from tokens.json + Extras and public types
-status: backlog
+status: in_progress
 parent: PDA-US-0009
 milestone: PDA-M-0002
+assignees: [claude-sonnet]
 author: mcp
 labels: [organism]
 estimate: 2
 created: 2026-10-11T21:48:43Z
-updated: 2026-10-11T22:02:37Z
+updated: 2026-10-11T22:27:06Z
+started: 2026-10-11T22:27:06Z
 ---
 
 ## Description

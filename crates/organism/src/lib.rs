@@ -1,6 +1,11 @@
 //! Pure organism simulation: `step()` and `shape()` produce a `DrawList`.
 
+pub mod params;
 pub mod tokens;
+pub mod types;
+
+pub use params::{Extras, Params, W_REF};
+pub use types::{BodyState, CellId, CellInput, Engine, Inputs, Status};
 
 /// Crate name, used by the skeleton smoke test.
 pub const CRATE_NAME: &str = "organism";
