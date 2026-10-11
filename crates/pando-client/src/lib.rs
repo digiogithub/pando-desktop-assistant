@@ -8,6 +8,7 @@
 //! - [`chat`]: sessions, history and the chat SSE protocol.
 //! - [`client`]: [`PandoClient`], the authenticated transport, and [`SseStream`].
 //! - [`connection`]: [`ConnectionService`] (states, health, backoff, version gate).
+//! - [`events`]: notification/config streams and the decision-model config.
 //! - [`discovery`]: instance registry, URL policy and `/health` probe.
 //! - [`sse`]: the incremental [`SseParser`].
 //!
@@ -22,6 +23,7 @@ pub mod config;
 pub mod connection;
 pub mod discovery;
 pub mod error;
+pub mod events;
 pub mod sse;
 pub mod stream;
 
