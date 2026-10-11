@@ -2,14 +2,16 @@
 id: PDA-T-0001
 type: task
 title: Create workspace Cargo.toml, toolchain, profiles and lints
-status: backlog
+status: in_progress
 parent: PDA-US-0001
 milestone: PDA-M-0001
+assignees: [claude-sonnet]
 author: mcp
 labels: [infra]
 estimate: 2
 created: 2026-10-11T21:47:40Z
-updated: 2026-10-11T22:01:54Z
+updated: 2026-10-11T22:14:03Z
+started: 2026-10-11T22:14:03Z
 ---
 
 ## Description

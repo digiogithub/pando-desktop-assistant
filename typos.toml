@@ -1,0 +1,6 @@
+[default.extend-words]
+# Product / domain words that are not typos.
+pando = "pando"
+
+[files]
+extend-exclude = ["docs/.pmngr/", "vendor/", "target/", "*.svg"]

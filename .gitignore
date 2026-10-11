@@ -1,1 +1,4 @@
 .pando*
+target/
+vendor/needle/
+*.onnx
