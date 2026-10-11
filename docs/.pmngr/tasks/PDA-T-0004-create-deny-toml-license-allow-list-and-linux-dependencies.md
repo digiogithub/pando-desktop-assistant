@@ -2,7 +2,7 @@
 id: PDA-T-0004
 type: task
 title: Create deny.toml license allow-list and Linux dependencies script
-status: in_progress
+status: done
 parent: PDA-US-0001
 milestone: PDA-M-0001
 assignees: [claude-sonnet]
@@ -10,8 +10,9 @@ author: mcp
 labels: [infra]
 estimate: 1
 created: 2026-10-11T21:47:40Z
-updated: 2026-10-11T22:17:53Z
+updated: 2026-10-11T22:18:27Z
 started: 2026-10-11T22:17:53Z
+closed: 2026-10-11T22:18:27Z
 ---
 
 ## Description
