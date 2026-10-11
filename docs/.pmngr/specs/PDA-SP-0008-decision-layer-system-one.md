@@ -6,22 +6,101 @@ status: backlog
 author: mcp
 labels: [decide]
 created: 2026-10-11T21:41:32Z
-updated: 2026-10-11T22:04:13Z
+updated: 2026-10-11T23:01:56Z
 requirements:
   R1:
     status: backlog
+    trace:
+      code:
+        - crates/decide/src/cascade.rs#Cascade
+        - crates/decide/src/cascade.rs#run
+        - crates/decide/src/questions.rs#intent_question
+        - crates/decide/src/questions.rs#agent_question
+        - crates/decide/src/questions.rs#action_question
+        - crates/decide/src/questions.rs#engine_question
+        - crates/decide/src/state.rs#build_state
+        - crates/decide/src/protocol.rs#Request
+      tests:
+        - crates/decide/src/cascade.rs#tests::control_scenario_cancel_migracion_auth
+        - crates/decide/src/cascade.rs#tests::spawn_asks_engine_and_project
+        - crates/decide/src/cascade.rs#tests::every_request_respects_context_and_body_budget
+        - crates/decide/src/protocol.rs#tests::encodes_ordered_criteria_and_null_descriptions
+        - crates/decide/src/state.rs#tests::always_valid_json_within_budget
+        - crates/decide/tests/live_intent.rs#intent_accuracy_above_90_percent
   R2:
     status: backlog
+    trace:
+      code:
+        - crates/decide/src/policy.rs#policy
+        - crates/decide/src/policy.rs#Thresholds
+      tests:
+        - crates/decide/src/policy.rs#tests::spec_table
+        - crates/decide/src/policy.rs#tests::ambiguous_cancel_confirms
+        - crates/decide/src/policy.rs#tests::flagged_approvals_are_explicit_only
+        - crates/decide/src/policy.rs#tests::never_executes_below_threshold
+        - crates/decide/src/policy.rs#tests::destructive_needs_literal_id
+        - crates/decide/src/policy.rs#tests::flagged_approval_never_executes
+        - crates/decide/src/policy.rs#tests::monotonic_in_confidence
   R3:
     status: backlog
+    trace:
+      code:
+        - crates/decide/src/command.rs#to_command
+        - crates/decide/src/command.rs#CommandExecutor
+        - crates/decide/src/command.rs#dispatch
+      tests:
+        - crates/decide/src/command.rs#tests::maps_every_action
+        - crates/decide/src/command.rs#tests::pause_resume_unavailable_until_g4
+        - crates/decide/src/command.rs#tests::dispatch_runs_or_refuses_fast
   R4:
     status: backlog
+    trace:
+      code:
+        - crates/decide/src/transport.rs#DecisionTransport
+        - crates/decide/src/transport.rs#SystemOneClient
+        - crates/decide/src/error.rs#DecisionError
+        - crates/decide/src/policy.rs#Outcome::unavailable
+      tests:
+        - crates/decide/src/transport.rs#tests::typed_errors
+        - crates/decide/src/transport.rs#tests::happy_path_sends_model_keep_alive_and_timeout
+        - crates/decide/src/cascade.rs#tests::failures_are_reported_with_partial_exchanges
+        - crates/decide/src/policy.rs#tests::unavailable_is_conversation
   R5:
     status: backlog
+    trace:
+      code:
+        - crates/decide/src/log.rs#DecisionLog
+        - crates/decide/src/log.rs#DecisionRecord
+        - crates/decide/src/eval.rs#replay
+        - crates/decide/src/eval.rs#compare_logs
+        - crates/decide/src/bin/decide-eval/main.rs
+      tests:
+        - crates/decide/src/log.rs#tests::appends_and_rotates
+        - crates/decide/src/log.rs#tests::record_round_trips_and_holds_no_secrets
+        - crates/decide/src/eval.rs#tests::replay_report_is_reproducible
+        - crates/decide/src/eval.rs#tests::offline_comparison_pairs_by_transcript
+        - crates/decide/tests/live_intent.rs#log_and_replay_round_trip
   R6:
     status: backlog
+    trace:
+      code:
+        - crates/decide/src/project.rs#prefilter
+        - crates/decide/src/project.rs#Scorer
+        - crates/decide/src/project.rs#select_project
+        - crates/decide/src/questions.rs#project_question
+      tests:
+        - crates/decide/src/project.rs#tests::correct_project_in_top_12_at_least_98_percent
+        - crates/decide/src/project.rs#tests::select_project_for_the_pill
+        - crates/decide/src/cascade.rs#tests::long_lists_keep_the_mentioned_candidates
   R7:
     status: backlog
+    trace:
+      code:
+        - crates/decide/src/questions.rs#dictation_trigger
+        - crates/decide/src/policy.rs#Outcome::Dictate
+      tests:
+        - crates/decide/src/questions.rs#tests::dictation_triggers
+        - crates/decide/src/cascade.rs#tests::dictation_lead_in_needs_no_call
 ---
 
 ## Purpose
