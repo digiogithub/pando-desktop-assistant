@@ -2,14 +2,17 @@
 id: PDA-T-0044
 type: task
 title: Integrate pando-rs core (client, config, error, SseParser)
-status: backlog
+status: done
 parent: PDA-US-0012
 milestone: PDA-M-0003
+assignees: [claude-sonnet]
 author: mcp
 labels: [pando-client]
 estimate: 2
 created: 2026-10-11T21:50:04Z
-updated: 2026-10-11T22:02:51Z
+updated: 2026-10-11T22:23:21Z
+started: 2026-10-11T22:23:12Z
+closed: 2026-10-11T22:23:21Z
 ---
 
 ## Description

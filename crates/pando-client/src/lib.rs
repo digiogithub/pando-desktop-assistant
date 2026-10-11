@@ -1,14 +1,18 @@
 //! Pando HTTP + SSE API client.
+//!
+//! - [`config`]: [`PandoConfig`] (base URL, credentials, timeouts, local CA) and redacted secrets.
+//! - [`error`]: the shared [`Error`] type.
+//! - [`client`]: [`PandoClient`], the authenticated transport, and [`SseStream`].
+//! - [`sse`]: the incremental [`SseParser`].
+//!
+//! The core is derived from Bitácora's `pando-rs` (MIT).
 
-/// Crate name, used by the skeleton smoke test.
-pub const CRATE_NAME: &str = "pando-client";
+pub mod client;
+pub mod config;
+pub mod error;
+pub mod sse;
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn crate_name_is_set() {
-        assert_eq!(CRATE_NAME, "pando-client");
-    }
-}
+pub use client::{PandoClient, ServerInfo, SseStream};
+pub use config::{BasicAuth, PandoConfig, Token};
+pub use error::{Error, Result};
+pub use sse::{SseEvent, SseParser};
