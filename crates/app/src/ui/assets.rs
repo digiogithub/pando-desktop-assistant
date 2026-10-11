@@ -62,10 +62,28 @@ const BRAND: &[(&str, &[u8])] = &[
     ),
 ];
 
-/// The bytes of an embedded brand SVG.
+/// The bytes of an embedded brand SVG, exactly as shipped in `design-system/brand/`.
 #[must_use]
 pub fn brand_svg(path: &str) -> Option<&'static [u8]> {
     BRAND.iter().find(|(p, _)| *p == path).map(|(_, b)| *b)
+}
+
+/// Intrinsic width given to the wordmarks. Their `viewBox` is 4132 units wide and GPUI rasterizes
+/// an `img()` SVG at twice its intrinsic size (8264 px, past the 8192 px texture cap), so the
+/// shipped files get a modest `width`/`height` at load time.
+const WORDMARK_WIDTH: f32 = 413.2;
+
+/// The bytes served for `path`: wordmarks carry an explicit intrinsic size, the rest is verbatim.
+fn served(path: &str, bytes: &'static [u8]) -> Cow<'static, [u8]> {
+    const OPEN: &[u8] = b"<svg ";
+    let wordmark = path == WORDMARK_ON_DARK || path == WORDMARK_ON_LIGHT;
+    if !wordmark || !bytes.starts_with(OPEN) {
+        return Cow::Borrowed(bytes);
+    }
+    let height = WORDMARK_WIDTH * 1080.0 / 4132.0;
+    let mut out = format!("<svg width=\"{WORDMARK_WIDTH}\" height=\"{height:.1}\" ").into_bytes();
+    out.extend_from_slice(&bytes[OPEN.len()..]);
+    Cow::Owned(out)
 }
 
 /// Brand SVGs first, then the kit's default icons.
@@ -75,7 +93,7 @@ pub struct AppAssets;
 impl AssetSource for AppAssets {
     fn load(&self, path: &str) -> anyhow::Result<Option<Cow<'static, [u8]>>> {
         if let Some(bytes) = brand_svg(path) {
-            return Ok(Some(Cow::Borrowed(bytes)));
+            return Ok(Some(served(path, bytes)));
         }
         Assets.load(path)
     }
@@ -121,6 +139,23 @@ mod tests {
             String::from_utf8_lossy(brand_svg(WORDMARK_ON_DARK).expect("wordmark")).into_owned();
         // Marfil text and Álamo accents: tinting it with one colour would lose one of them.
         assert!(svg.contains("#F4F1E8") && svg.contains("#E9B949"));
+    }
+
+    #[test]
+    fn wordmarks_are_served_with_a_small_intrinsic_size() {
+        let bytes = AppAssets
+            .load(WORDMARK_ON_DARK)
+            .expect("load")
+            .expect("embedded");
+        let text = String::from_utf8_lossy(&bytes);
+        assert!(
+            text.starts_with("<svg width=\"413.2\" height=\"108.0\" "),
+            "{}",
+            &text[..80]
+        );
+        // Icons are served verbatim.
+        let icon = AppAssets.load(APP_ICON).expect("load").expect("embedded");
+        assert_eq!(&*icon, brand_svg(APP_ICON).expect("icon"));
     }
 
     #[test]

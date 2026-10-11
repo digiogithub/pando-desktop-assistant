@@ -1,14 +1,7 @@
-//! Entry point of `pando-assistant` (skeleton).
+//! Entry point of `pando-assistant`.
 
-fn main() {
-    // gpui-kit is linked but not used yet; the UI lands in later tasks.
-    println!("pando-assistant {}", env!("CARGO_PKG_VERSION"));
-}
+use clap::Parser as _;
 
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn version_is_set() {
-        assert!(!env!("CARGO_PKG_VERSION").is_empty());
-    }
+fn main() -> anyhow::Result<()> {
+    app::app::run(&app::cli::Args::parse())
 }

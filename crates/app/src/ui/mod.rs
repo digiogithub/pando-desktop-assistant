@@ -25,6 +25,7 @@ pub use gpui_kit::{
 };
 pub use gpui_kit::{rgb, rgba};
 
+pub mod kit_theme;
 pub mod theme;
 
 /// The kit's "cancel" action (Escape in menus and command palettes).

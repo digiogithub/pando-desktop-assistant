@@ -1,0 +1,15 @@
+app:
+  name: Pando Assistant
+window:
+  title: Pando Assistant
+titlebar:
+  project_none: Sin proyecto
+  project_label: Proyecto activo
+  status_pando: Pando
+  status_voice: Voz
+  minimize: Minimizar
+  maximize: Maximizar
+  restore: Restaurar
+  close: Cerrar
+main:
+  placeholder: El organismo despierta pronto.
