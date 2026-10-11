@@ -3,6 +3,7 @@
 //! - [`conclusion`]: parsers for `<pando:conclusion>` and `[delegated-result]`.
 //! - [`config`]: [`PandoConfig`] (base URL, credentials, timeouts, local CA) and redacted secrets.
 //! - [`error`]: the shared [`Error`] type.
+//! - [`api`]: orchestrator, instances, projects, models, commands.
 //! - [`auth`]: local CA, secret store (OS keychain) and Basic-auth prompt hooks.
 //! - [`chat`]: sessions, history and the chat SSE protocol.
 //! - [`client`]: [`PandoClient`], the authenticated transport, and [`SseStream`].
@@ -12,6 +13,7 @@
 //!
 //! The core is derived from Bitácora's `pando-rs` (MIT).
 
+pub mod api;
 pub mod auth;
 pub mod chat;
 pub mod client;
