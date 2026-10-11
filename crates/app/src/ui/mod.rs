@@ -306,30 +306,16 @@ pub fn key_binding(
     )?)
 }
 
-/// Raw asset access for icons that need to be adjusted before they are painted.
-pub mod assets {
-    use gpui_kit::assets::AllAssets;
-    use gpui_kit::gpui::AssetSource as _;
-
-    /// The bytes of an embedded icon (`icons/<lucide-name>.svg`, the full Lucide catalog).
-    #[must_use]
-    pub fn icon_svg(path: &str) -> Option<Vec<u8>> {
-        AllAssets
-            .load(path)
-            .ok()
-            .flatten()
-            .map(std::borrow::Cow::into_owned)
-    }
-}
+pub mod assets;
 
 /// Builds an icon element from a Lucide icon name.
 pub fn icon(name: IconName) -> Icon {
     Icon::new(name)
 }
 
-/// Starts the platform application with the default GPUI Kit assets (icons).
+/// Starts the platform application with the app assets (brand SVGs) over the GPUI Kit icons.
 pub fn application() -> Application {
-    gpui_kit::application().with_assets(gpui_kit::assets::Assets)
+    gpui_kit::application().with_assets(assets::AppAssets)
 }
 
 /// Initializes GPUI Kit (themes, component keymaps, global state).

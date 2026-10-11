@@ -6,3 +6,15 @@ src/tokio_bridge.rs, src/events.rs, src/ui/mod.rs
   Zed repository (Apache-2.0); no source code was copied from it.
 
 GPUI and GPUI Kit are licensed under the Apache License 2.0.
+
+Embedded fonts (src/fonts.rs, assets/fonts/), all SIL Open Font License 1.1
+  Space Grotesk: Copyright 2020 The Space Grotesk Project Authors
+    (https://github.com/floriankarsten/space-grotesk).
+  JetBrains Mono: Copyright 2020 The JetBrains Mono Project Authors
+    (https://github.com/JetBrains/JetBrainsMono).
+  Zen Kaku Gothic New: Copyright 2022 The Zen Kaku Gothic Project Authors
+    (https://github.com/googlefonts/zen-kakugothic).
+  The licence texts are in assets/fonts/OFL-*.txt and must be shipped with the installable
+  bundles (resources `licenses/`). The fonts are embedded unmodified.
+
+Brand SVGs (src/ui/assets.rs): design-system/brand/, Pando brand v1, embedded unmodified.
