@@ -113,6 +113,11 @@ impl<T: DecisionTransport> SystemOneClient<T> {
         Self { transport, options }
     }
 
+    /// The transport.
+    pub fn transport(&self) -> &T {
+        &self.transport
+    }
+
     /// The options.
     pub fn options(&self) -> &ClientOptions {
         &self.options

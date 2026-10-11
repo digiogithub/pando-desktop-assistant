@@ -1,0 +1,101 @@
+# label<TAB>transcript — labelled Spanish voice inputs for the intent question (PDA-T-0098).
+control	cancela migración auth
+control	cancela el agente de bitácora
+control	para el agente de los tests
+control	detén migración auth ahora mismo
+control	mata la tarea del parser
+control	¿cómo va bitácora?
+control	¿cómo va el agente de la migración?
+control	dime el estado de pando ui
+control	estado de todos los agentes
+control	¿qué tal va el refactor?
+control	aprueba
+control	sí, apruébalo
+control	aprueba el permiso de migración auth
+control	adelante, permítelo
+control	deniega el permiso
+control	no lo permitas
+control	deniega lo que pide bitácora
+control	reintenta la tarea de los tests
+control	relanza el agente que falló
+control	vuelve a lanzar la migración
+control	abre migración auth
+control	enséñame el agente de bitácora
+control	muéstrame la celda del parser
+control	lanza un agente en bitácora
+control	crea un agente nuevo para pando
+control	arranca un claude code en el proyecto pando
+control	lanza un agente que arregle el build
+control	pausa el agente de los tests
+control	pausa migración auth
+control	reanuda la migración
+control	continúa con el agente pausado
+control	cancela todos los agentes
+control	para todo
+control	¿cómo van los agentes?
+control	abre el agente que está esperando
+control	aprueba la pregunta pendiente
+control	cancela pando ui
+control	estado de migración auth
+control	lanza un agente cli en bitácora
+control	reintenta bitácora ui
+control	cambia de proyecto a bitácora
+control	cambia a pando
+control	cancela la última tarea
+control	deniega la petición de borrar archivos
+control	enséñame qué está haciendo el agente de documentación
+conversation	explícame el error del build
+conversation	resume los cambios de hoy
+conversation	¿qué hace la función parse config?
+conversation	¿por qué falla el test de integración?
+conversation	busca en la documentación cómo configurar el tls
+conversation	hazme un resumen del proyecto bitácora
+conversation	¿qué diferencia hay entre tokio y async std?
+conversation	escribe un plan para migrar la autenticación
+conversation	revisa el último commit y dime si hay errores
+conversation	¿cuántos agentes he lanzado esta semana?
+conversation	investiga por qué el binario pesa tanto
+conversation	propón nombres para el nuevo módulo
+conversation	¿qué opinas de usar sqlite aquí?
+conversation	analiza el rendimiento del renderizado
+conversation	cuéntame qué hay pendiente en el backlog
+conversation	¿tengo reuniones hoy?
+conversation	ayúdame a entender este stack trace
+conversation	genera documentación para el crate decide
+conversation	compara las dos ramas y dime qué cambia
+conversation	¿cuál es la mejor forma de hacer esto en rust?
+conversation	hola pando, ¿qué tal?
+conversation	gracias, buen trabajo
+conversation	¿qué hora es?
+conversation	redacta un correo para el equipo sobre la release
+conversation	piensa una estrategia de pruebas para el organismo
+conversation	¿dónde se define el token de pando?
+conversation	explícame cómo funciona el wake word
+conversation	haz una lista de riesgos del proyecto
+conversation	traduce este mensaje al inglés
+conversation	¿qué modelo de decisión estamos usando?
+conversation	lee el informe de la migración y resúmelo
+conversation	¿hay algún agente que haya fallado hoy y por qué?
+conversation	sugiere mejoras para la interfaz
+conversation	refactoriza el módulo de logs para que sea más simple
+conversation	quiero entender la arquitectura del cliente http
+dictation	dicta: añade un test para el parser
+dictation	escribe: revisa los imports del módulo de voz
+dictation	dicta arregla el warning de clippy en main
+dictation	apunta: el timeout debe ser de cuatrocientos milisegundos
+dictation	escribe en el prompt: usa thiserror para los errores
+dictation	dicta: no toques el crate app
+dictation	escribe esto: comprueba que los tests pasan antes de hacer commit
+dictation	dicta el siguiente texto: actualiza el changelog
+dictation	pon en el cuadro de texto: añade logs de depuración
+dictation	dicta: renombra la función build state
+dictation	escribe: el usuario quiere modo oscuro por defecto
+dictation	dicta: documenta el protocolo de system one
+dictation	escribe en el agente: termina la migración antes de las seis
+dictation	toma nota: hay que revisar las licencias
+dictation	dicta: elimina el código muerto del módulo de audio
+dictation	escribe: sube la cobertura de tests al ochenta por ciento
+dictation	dicta: cambia el color del organismo a verde
+dictation	escribe sin enviar: prepara la release candidata
+dictation	dicta: añade un ejemplo en el readme
+dictation	escribe: valida la entrada antes de llamar a la api

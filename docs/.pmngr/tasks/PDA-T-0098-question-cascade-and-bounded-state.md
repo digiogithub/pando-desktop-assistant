@@ -2,14 +2,16 @@
 id: PDA-T-0098
 type: task
 title: Question cascade and bounded state
-status: backlog
+status: in_progress
 parent: PDA-US-0028
 milestone: PDA-M-0006
+assignees: [claude-opus]
 author: mcp
 labels: [decide]
 estimate: 5
 created: 2026-10-11T21:52:55Z
-updated: 2026-10-11T22:03:24Z
+updated: 2026-10-11T22:42:36Z
+started: 2026-10-11T22:42:36Z
 ---
 
 ## Description

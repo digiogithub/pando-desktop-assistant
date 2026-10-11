@@ -7,10 +7,19 @@
 //! - [`protocol`]: `/v1/systemone` wire types, validation and answer checks.
 //! - [`transport`]: the transport trait and [`transport::SystemOneClient`].
 //! - [`error`]: typed, fail-open errors.
+//! - [`questions`]: the typed questions and answer enums.
+//! - [`state`]: the bounded `state` string.
+//! - [`text`]: Spanish-aware normalization.
+//! - [`cascade`]: intent → agent/action → engine/project, asking only what is needed.
 
+pub mod cascade;
 pub mod error;
 pub mod protocol;
+pub mod questions;
+pub mod state;
+pub mod text;
 pub mod transport;
 
+pub use cascade::{Decision, run as run_cascade};
 pub use error::DecisionError;
 pub use transport::{ClientOptions, DecisionTransport, SystemOneClient};
