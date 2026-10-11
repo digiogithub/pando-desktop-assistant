@@ -2,7 +2,7 @@
 id: PDA-T-0170
 type: task
 title: G17 · Bugs found in WebUI and Wails desktop
-status: backlog
+status: cancelled
 priority: medium
 parent: PDA-US-0049
 milestone: PDA-M-0003
@@ -10,7 +10,8 @@ author: mcp
 labels: [upstream-pando, bug]
 estimate: 2
 created: 2026-10-11T21:57:00Z
-updated: 2026-10-11T22:03:25Z
+updated: 2026-10-11T22:21:30Z
+closed: 2026-10-11T22:21:30Z
 ---
 
 ## Description

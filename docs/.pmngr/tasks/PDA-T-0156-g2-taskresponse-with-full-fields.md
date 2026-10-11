@@ -2,15 +2,17 @@
 id: PDA-T-0156
 type: task
 title: G2 · TaskResponse with full fields
-status: backlog
+status: in_progress
 priority: high
 parent: PDA-US-0046
 milestone: PDA-M-0003
+assignees: [claude-sonnet]
 author: mcp
 labels: [upstream-pando]
 estimate: 3
 created: 2026-10-11T21:56:59Z
-updated: 2026-10-11T22:03:16Z
+updated: 2026-10-11T22:21:58Z
+started: 2026-10-11T22:21:58Z
 ---
 
 ## Description

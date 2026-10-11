@@ -2,7 +2,7 @@
 id: PDA-T-0157
 type: task
 title: G3 · Structured conclusion in events and in the task
-status: backlog
+status: cancelled
 priority: high
 parent: PDA-US-0046
 milestone: PDA-M-0003
@@ -10,7 +10,8 @@ author: mcp
 labels: [upstream-pando]
 estimate: 3
 created: 2026-10-11T21:56:59Z
-updated: 2026-10-11T22:03:16Z
+updated: 2026-10-11T22:21:30Z
+closed: 2026-10-11T22:21:30Z
 ---
 
 ## Description
