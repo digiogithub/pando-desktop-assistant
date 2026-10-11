@@ -510,7 +510,7 @@ impl Painter<'_> {
             Status::Paused => Some("II"),
             _ => None,
         };
-        if let Some(glyph) = badge {
+        if let Some(glyph) = badge.filter(|_| a.id.as_str() != crate::FOLD_ID) {
             let (bx, by) = (
                 c.spring.x + cr * ex.badge_offset,
                 c.spring.y - cr * ex.badge_offset,

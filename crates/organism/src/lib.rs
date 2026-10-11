@@ -5,20 +5,29 @@ pub mod dash;
 pub mod draw;
 pub mod envelope;
 pub mod layout;
+mod lifecycle;
 pub mod noise;
 pub mod params;
 pub mod rng;
 pub mod shape;
 pub mod sim;
 pub mod spring;
+pub mod state;
 pub mod tokens;
 pub mod types;
 
 pub use draw::{DrawList, Prim};
 pub use layout::Scene;
+pub use lifecycle::FOLD_ID;
 pub use params::{Extras, Params, W_REF};
 pub use sim::{Config, Organism};
+pub use state::BodyMachine;
 pub use types::{BodyState, CellId, CellInput, Engine, Inputs, Status};
+
+/// Stable 32-bit seed derived from a cell id.
+pub(crate) fn hash_seed(id: &str) -> u32 {
+    (rng::hash_unit(id) * 4_294_967_296.0) as u32
+}
 
 /// Crate name, used by the skeleton smoke test.
 pub const CRATE_NAME: &str = "organism";

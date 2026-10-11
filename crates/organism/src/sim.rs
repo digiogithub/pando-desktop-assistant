@@ -5,13 +5,20 @@
 //! golden tests); without it the lifecycle improvements of the design decisions apply.
 
 use std::f64::consts::TAU;
+use std::sync::Arc;
 
 use crate::body::BodyCache;
 use crate::envelope::Amplitude;
 use crate::params::{Extras, Params, W_REF};
-use crate::rng::{Mulberry32, hash_unit};
+use crate::rng::Mulberry32;
 use crate::spring::CellSpring;
+use crate::state::BodyMachine;
 use crate::types::{BodyState, CellId, CellInput, Inputs, Status};
+
+/// Reduced-motion approach rate of cell positions (1/s): monotone, no overshoot.
+const REDUCED_SPRING_RATE: f64 = 6.0;
+/// Seconds a revived cell takes to fade back in.
+const REVIVE_SECONDS: f64 = 0.25;
 
 /// Largest `dt` the simulation accepts (the reference clamps the frame time to 50 ms).
 pub const MAX_DT: f64 = 0.05;
@@ -61,6 +68,23 @@ pub struct CellSim {
     pub flow: Vec<f64>,
     /// Angle of the ring slot the cell is pulled to.
     pub ang: f64,
+    /// Ring slot index (stable for the life of the cell outside parity mode).
+    pub slot: usize,
+    /// Creation order, used to compact the ring deterministically.
+    pub seq: u64,
+    pub life: Life,
+    /// Presence in `0..=1`: 1 alive, fading to 0 while dying (`cellDeath`), back up on revival.
+    pub fade: f64,
+}
+
+/// Whether a cell is still wanted by the app.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Life {
+    Alive,
+    /// The app dropped the cell at `since`; it fades and retracts, then is removed.
+    Dying {
+        since: f64,
+    },
 }
 
 impl CellSim {
@@ -89,6 +113,20 @@ pub struct Organism {
     pub(crate) reduced_motion: bool,
     pub(crate) pointer: Option<[f64; 2]>,
     pub(crate) body: BodyCache,
+    pub(crate) machine: BodyMachine,
+    pub(crate) ring: RingState,
+}
+
+/// Ring bookkeeping for stable slots, compaction and the `+N` fold.
+#[derive(Clone, Debug, Default)]
+pub(crate) struct RingState {
+    pub seq: u64,
+    pub slots: usize,
+    pub last_change: f64,
+    pub last_wave: f64,
+    pub scratch: Vec<CellInput>,
+    pub folded: Vec<CellId>,
+    pub fold_label: Option<(usize, Arc<str>)>,
 }
 
 impl Organism {
@@ -134,6 +172,11 @@ impl Organism {
             reduced_motion: false,
             pointer: None,
             body: BodyCache::default(),
+            machine: BodyMachine::default(),
+            ring: RingState {
+                last_wave: -10.0,
+                ..RingState::default()
+            },
         }
     }
 
@@ -208,29 +251,45 @@ impl Organism {
         W_REF * self.params.ring_radius
     }
 
-    /// State that drives the body radius, organelle speed and thinking visuals.
+    /// State that drives the body radius, organelle speed and thinking visuals. The
+    /// Delegating overlay never changes it (design decision 13).
     pub(crate) fn visual_state(&self) -> BodyState {
         self.state
     }
 
     /// Fade of a cell's bulge (dying cells).
-    pub(crate) fn bulge_fade(&self, _c: &CellSim) -> f64 {
-        1.0
+    pub(crate) fn bulge_fade(&self, c: &CellSim) -> f64 {
+        c.fade
     }
 
-    /// Alpha multiplier of everything drawn for a cell (dying fade, pending dim).
-    pub(crate) fn cell_fade(&self, _c: &CellSim) -> f64 {
-        1.0
+    /// Alpha multiplier of everything drawn for a cell (dying fade, pending dim, `dim`).
+    pub(crate) fn cell_fade(&self, c: &CellSim) -> f64 {
+        if self.cfg.parity {
+            return 1.0;
+        }
+        let pending = if c.input.status == Status::Pending {
+            self.params.cell.pending_alpha
+        } else {
+            1.0
+        };
+        c.fade * pending * f64::from(c.input.dim.clamp(0.0, 1.0))
     }
 
     /// Pseudopod length factor (`1` normally, `0` when a dying cell has retracted it).
-    pub(crate) fn cell_retract(&self, _c: &CellSim) -> f64 {
-        1.0
+    pub(crate) fn cell_retract(&self, c: &CellSim) -> f64 {
+        c.fade
     }
 
-    /// Uniform radius pulse added by the Delegating overlay.
-    pub(crate) fn overlay_extra(&self, _base: f64) -> f64 {
-        0.0
+    /// Uniform radius pulse added by the Delegating overlay (zero in reduced motion).
+    pub(crate) fn overlay_extra(&self, base: f64) -> f64 {
+        if self.reduced_motion {
+            return 0.0;
+        }
+        self.machine
+            .overlay_progress(self.t, self.params.durations.delegating_overlay)
+            .map_or(0.0, |p| {
+                base * self.extras.overlay_pulse * (p * std::f64::consts::PI).sin()
+            })
     }
 
     // --- step --------------------------------------------------------------------------
@@ -255,6 +314,9 @@ impl Organism {
         self.selected.clone_from(&inputs.selected);
         let state = inputs.state;
         self.state = state;
+        self.machine.set_base(state);
+        self.machine
+            .update(self.t, self.params.durations.delegating_overlay);
 
         self.step_amplitude(dt, inputs);
         self.step_waves(dt, state);
@@ -274,8 +336,9 @@ impl Organism {
             .update(&self.params, inputs.state, rms.map(f64::from), dt);
     }
 
-    fn emit_wave(&mut self) {
+    pub(crate) fn emit_wave(&mut self) {
         self.waves.push(Wave { r: 0.0, life: 1.0 });
+        self.ring.last_wave = self.t;
     }
 
     fn step_waves(&mut self, dt: f64, state: BodyState) {
@@ -304,48 +367,30 @@ impl Organism {
     }
 
     fn step_cells(&mut self, dt: f64, inputs: &Inputs<'_>) {
+        if self.cfg.parity {
+            self.reconcile_parity(inputs);
+        } else {
+            self.reconcile(inputs);
+        }
         let c0 = W_REF / 2.0;
         let rc = self.ring_radius();
-        let tau = self.tau();
-        let n = inputs.cells.len();
         let birth_seconds = self.params.bulge.birth_seconds;
         let ph = self.params.physics;
         let ps = self.params.pseudopod;
-        let ex = self.extras.clone();
-        let hover_r = hover_radius(&ex, &self.params, inputs.canvas_px);
+        let ex = &self.extras;
+        let hover_r = hover_radius(ex, &self.params, inputs.canvas_px);
+        let t = self.t;
+        let thinking = self.state == BodyState::Thinking;
+        let rm = self.reduced_motion;
+        let pointer = self.pointer;
+        let death = self.params.durations.cell_death;
 
-        for (i, input) in inputs.cells.iter().enumerate() {
-            let ang = -std::f64::consts::FRAC_PI_2 + (tau / n as f64) * i as f64 + 0.15;
-            let idx = match self.cells.iter().position(|c| c.input.id == input.id) {
-                Some(idx) => idx,
-                None => {
-                    let born = input.is_new;
-                    let (x, y) = if born {
-                        (c0, c0)
-                    } else {
-                        (c0 + ang.cos() * rc, c0 + ang.sin() * rc)
-                    };
-                    let phase = self.rng.next_f64() * ex.phase_span;
-                    let flow = (0..ps.vesicles).map(|_| self.rng.next_f64()).collect();
-                    self.cells.push(CellSim {
-                        input: input.clone(),
-                        spring: CellSpring::at(x, y),
-                        born: if born { self.t } else { ex.born_old },
-                        phase,
-                        hover: 0.0,
-                        flow,
-                        ang,
-                    });
-                    self.cells.len() - 1
-                }
-            };
-            let t = self.t;
-            let thinking = self.state == BodyState::Thinking;
-            let rm = self.reduced_motion;
-            let pointer = self.pointer;
-            let c = &mut self.cells[idx];
-            c.ang = ang;
-            c.input.clone_from(input);
+        for c in &mut self.cells {
+            let ang = c.ang;
+            match c.life {
+                Life::Alive => c.fade = (c.fade + dt / REVIVE_SECONDS).min(1.0),
+                Life::Dying { .. } => c.fade = (c.fade - dt / death).max(0.0),
+            }
             let age = t - c.born;
             let drift = if rm {
                 0.0
@@ -355,7 +400,7 @@ impl Organism {
             let tx = c0 + ang.cos() * (rc + drift);
             let ty = c0 + ang.sin() * (rc + drift * ex.drift_y_ratio);
             if rm {
-                c.spring.step_critical(tx, ty, 6.0, dt);
+                c.spring.step_critical(tx, ty, REDUCED_SPRING_RATE, dt);
             } else {
                 let k = if age < birth_seconds {
                     ph.cell_spring_k_newborn
@@ -371,7 +416,7 @@ impl Organism {
                     dt,
                 );
             }
-            let base = match input.status {
+            let base = match c.input.status {
                 Status::Working | Status::Pending => ps.flow_working,
                 Status::Waiting => ps.flow_waiting,
                 _ => 0.0,
@@ -388,16 +433,60 @@ impl Organism {
             for f in &mut c.flow {
                 *f = ((*f + spd * dt) % 1.0 + 1.0) % 1.0;
             }
-            let hov =
-                pointer.is_some_and(|m| (m[0] - c.spring.x).hypot(m[1] - c.spring.y) < hover_r);
+            let hov = matches!(c.life, Life::Alive)
+                && pointer.is_some_and(|m| (m[0] - c.spring.x).hypot(m[1] - c.spring.y) < hover_r);
             c.hover +=
                 (f64::from(u8::from(hov)) - c.hover) * (dt * ph.hover_lerp_per_second).min(1.0);
         }
+    }
 
-        // Cells whose agent disappeared are removed instantly (reference behaviour).
-        let inputs_cells = inputs.cells;
+    /// Reference reconciliation: slots reflow with the list, phases come from the RNG and
+    /// cells that disappear are deleted instantly.
+    fn reconcile_parity(&mut self, inputs: &Inputs<'_>) {
+        let c0 = W_REF / 2.0;
+        let rc = self.ring_radius();
+        let tau = self.tau();
+        let n = inputs.cells.len();
+        let ps = self.params.pseudopod;
+        let ex = self.extras.clone();
+        for (i, input) in inputs.cells.iter().enumerate() {
+            let ang = -std::f64::consts::FRAC_PI_2 + (tau / n as f64) * i as f64 + 0.15;
+            let idx = if let Some(idx) = self.cells.iter().position(|c| c.input.id == input.id) {
+                idx
+            } else {
+                let born = input.is_new;
+                let (x, y) = if born {
+                    (c0, c0)
+                } else {
+                    (c0 + ang.cos() * rc, c0 + ang.sin() * rc)
+                };
+                let phase = self.rng.next_f64() * ex.phase_span;
+                let flow = (0..ps.vesicles).map(|_| self.rng.next_f64()).collect();
+                let seq = self.ring.seq;
+                self.ring.seq += 1;
+                self.cells.push(CellSim {
+                    input: input.clone(),
+                    spring: CellSpring::at(x, y),
+                    born: if born { self.t } else { ex.born_old },
+                    phase,
+                    hover: 0.0,
+                    flow,
+                    ang,
+                    slot: i,
+                    seq,
+                    life: Life::Alive,
+                    fade: 1.0,
+                });
+                self.cells.len() - 1
+            };
+            let c = &mut self.cells[idx];
+            c.ang = ang;
+            c.slot = i;
+            c.input.clone_from(input);
+        }
+        let list = inputs.cells;
         self.cells
-            .retain(|c| inputs_cells.iter().any(|a| a.id == c.input.id));
+            .retain(|c| list.iter().any(|a| a.id == c.input.id));
     }
 
     fn step_organelles(&mut self, dt: f64, state: BodyState) {
@@ -449,10 +538,4 @@ impl Organism {
 pub(crate) fn hover_radius(ex: &Extras, p: &Params, canvas_px: f32) -> f64 {
     let scale = (f64::from(canvas_px) / W_REF).max(1e-3);
     ex.hover_radius.max(p.scaling.min_hit_radius_px / scale)
-}
-
-/// Stable seed for per-cell randomness outside parity mode.
-#[allow(dead_code)]
-pub(crate) fn id_seed(id: &str) -> u32 {
-    (hash_unit(id) * 4_294_967_296.0) as u32
 }
