@@ -2,14 +2,16 @@
 id: PDA-T-0036
 type: task
 title: Reduced motion and Scene::layout with LOD
-status: backlog
+status: in_progress
 parent: PDA-US-0010
 milestone: PDA-M-0002
+assignees: [claude-sonnet]
 author: mcp
 labels: [organism, a11y]
 estimate: 3
 created: 2026-10-11T21:48:44Z
-updated: 2026-10-11T22:02:51Z
+updated: 2026-10-11T22:41:26Z
+started: 2026-10-11T22:41:26Z
 ---
 
 ## Description
