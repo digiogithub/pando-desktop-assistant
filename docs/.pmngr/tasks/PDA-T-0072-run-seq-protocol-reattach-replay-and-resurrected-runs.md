@@ -2,14 +2,16 @@
 id: PDA-T-0072
 type: task
 title: "run_seq protocol: reattach, replay and resurrected runs"
-status: backlog
+status: in_review
 parent: PDA-US-0020
 milestone: PDA-M-0004
+assignees: [claude-sonnet]
 author: mcp
 labels: [chat, pando-client]
 estimate: 5
 created: 2026-10-11T21:51:27Z
-updated: 2026-10-11T22:02:19Z
+updated: 2026-10-11T22:39:59Z
+started: 2026-10-11T22:39:05Z
 ---
 
 ## Description
