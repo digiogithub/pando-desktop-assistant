@@ -13,3 +13,26 @@ titlebar:
   close: Cerrar
 main:
   placeholder: El organismo despierta pronto.
+pando:
+  chip:
+    connecting: Conectando…
+    connected: "Pando %{version}"
+    unavailable: Sin Pando
+    unauthorized: No autorizado
+    too_old: Pando antiguo
+  reason:
+    connecting: Buscando Pando en este equipo.
+    unavailable: No encuentro ningún Pando en marcha.
+    unauthorized: Pando rechazó las credenciales.
+    too_old: "Pando %{found} es anterior al mínimo %{min}. Actualiza Pando."
+  empty:
+    title: Sin Pando
+    instructions: "Arranca Pando en una terminal con:"
+    command: pando serve
+    retry: Reintentar
+    url_label: O indica la dirección a mano
+    url_placeholder: "https://localhost:8080"
+    url_apply: Usar esta dirección
+    url_invalid: "Dirección no válida: %{error}"
+    settings: Abrir ajustes
+    settings_soon: Los ajustes llegarán pronto.

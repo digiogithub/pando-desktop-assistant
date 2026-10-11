@@ -82,6 +82,8 @@ fn start(
     fonts::register(cx);
     tokio_bridge::init(cx).context("starting the tokio runtime")?;
 
+    let tokio_handle = tokio_bridge::handle(cx);
+    let pando_url = settings.pando_url.clone();
     let bounds = ui::Bounds::centered(
         None,
         ui::size(
@@ -95,8 +97,10 @@ fn start(
         bounds,
         ui::size(ui::px(title_bar::MIN_SIZE.0), ui::px(title_bar::MIN_SIZE.1)),
     );
-    let (handle, _view) = ui::open_main_window(options, cx, |_, cx| cx.new(|_| MainView))
-        .context("opening the main window")?;
+    let (handle, _view) = ui::open_main_window(options, cx, |window, cx| {
+        cx.new(|cx| MainView::new(window, cx, tokio_handle, pando_url))
+    })
+    .context("opening the main window")?;
     tracing::info!("window opened");
 
     handle.update(cx, |_, window, cx| {

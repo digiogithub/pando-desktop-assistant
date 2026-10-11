@@ -20,6 +20,8 @@ pub struct AppSettings {
     pub settings_version: u32,
     /// Explicit UI language tag (`es`, `en`); `None` follows the operating system.
     pub language: Option<String>,
+    /// Manual Pando URL (skips discovery); `None` discovers the local instance.
+    pub pando_url: Option<String>,
     /// Disable decorative animation (organism idle motion, transitions).
     pub reduce_motion: bool,
 }
@@ -29,6 +31,7 @@ impl Default for AppSettings {
         Self {
             settings_version: SETTINGS_VERSION,
             language: None,
+            pando_url: None,
             reduce_motion: false,
         }
     }

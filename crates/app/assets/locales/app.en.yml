@@ -13,3 +13,26 @@ titlebar:
   close: Close
 main:
   placeholder: The organism wakes up soon.
+pando:
+  chip:
+    connecting: Connecting…
+    connected: "Pando %{version}"
+    unavailable: No Pando
+    unauthorized: Unauthorized
+    too_old: Pando too old
+  reason:
+    connecting: Looking for Pando on this machine.
+    unavailable: I cannot find a running Pando.
+    unauthorized: Pando rejected the credentials.
+    too_old: "Pando %{found} is older than the minimum %{min}. Update Pando."
+  empty:
+    title: No Pando
+    instructions: "Start Pando in a terminal with:"
+    command: pando serve
+    retry: Retry
+    url_label: Or enter the address by hand
+    url_placeholder: "https://localhost:8080"
+    url_apply: Use this address
+    url_invalid: "Invalid address: %{error}"
+    settings: Open settings
+    settings_soon: Settings are coming soon.

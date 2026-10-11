@@ -6,6 +6,7 @@ rust_i18n::i18n!("assets/locales", fallback = "es");
 
 pub mod app;
 pub mod cli;
+pub mod connection;
 pub mod events;
 pub mod fonts;
 pub mod i18n;

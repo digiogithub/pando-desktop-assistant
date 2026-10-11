@@ -362,6 +362,11 @@ pub mod a11y {
     pub use gpui_kit::gpui::{Orientation, Role, Toggled};
 }
 
+/// GPUI Kit text inputs.
+pub mod input {
+    pub use gpui_kit::component::input::{Input, InputEvent, InputState};
+}
+
 /// Test helpers (headless windows, simulated input).
 #[cfg(test)]
 pub mod testing {
