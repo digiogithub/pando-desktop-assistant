@@ -44,3 +44,11 @@ voice:
     available: "decisión · %{model}"
     unavailable: "decisión: no disponible"
     unknown: "decisión…"
+  speak:
+    rest_on_screen: "Tienes el resto en pantalla."
+    conclusion_done: "%{agent} ha terminado."
+    conclusion_failed: "%{agent} ha fallado."
+    conclusion_blocked: "%{agent} se ha bloqueado."
+    conclusion_partial: "%{agent} ha terminado a medias."
+    follow_up: "Siguiente paso sugerido: %{text}."
+    claude_done: "Claude en %{session} ha terminado."

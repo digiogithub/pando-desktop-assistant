@@ -11,7 +11,9 @@ pub mod levels;
 pub mod ptt;
 pub mod resolve;
 pub mod service;
+pub mod session;
 mod settings_panel;
+pub mod speak;
 pub mod supervisor;
 pub mod wer;
 

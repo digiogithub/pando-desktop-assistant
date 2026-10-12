@@ -977,6 +977,90 @@ impl Render for OrganismPane {
     }
 }
 
+/// A pending approval as the voice layer sees it (PDA-T-0103).
+#[derive(Clone, Debug, PartialEq)]
+pub struct VoicePending {
+    /// Session owning the request.
+    pub session: String,
+    /// Request id.
+    pub id: String,
+    /// Cell the session belongs to, when known.
+    pub cell_id: Option<String>,
+}
+
+/// Voice port: read-only views and voice-origin decisions (PDA-T-0101/0103).
+impl OrganismPane {
+    /// `(cell id, label, status word, session)` of every cell, for the decision state.
+    #[must_use]
+    pub fn voice_rows(&self) -> Vec<(String, String, String, Option<String>)> {
+        self.source
+            .cells()
+            .iter()
+            .map(|c| {
+                let status = self
+                    .source
+                    .task(c.id.as_str())
+                    .map(|t| t.status.clone())
+                    .unwrap_or_default();
+                (
+                    c.id.as_str().to_owned(),
+                    c.label.to_string(),
+                    status,
+                    self.session_of(&c.id),
+                )
+            })
+            .collect()
+    }
+
+    /// Every unresolved request in every session ledger.
+    #[must_use]
+    pub fn voice_pending(&self) -> Vec<VoicePending> {
+        let mut out = Vec::new();
+        for (session, ledger) in &self.approvals {
+            let cell_id = self
+                .source
+                .cells()
+                .iter()
+                .find(|c| self.session_of(&c.id).as_deref() == Some(session.as_str()))
+                .map(|c| c.id.as_str().to_owned());
+            for id in ledger.pending_ids() {
+                out.push(VoicePending {
+                    session: session.clone(),
+                    id,
+                    cell_id: cell_id.clone(),
+                });
+            }
+        }
+        out
+    }
+
+    /// The ledger of a session (decisions made through it must use `Origin::Voice`).
+    pub fn voice_ledger(&mut self, session: &str) -> Option<&mut Approvals> {
+        self.approvals.get_mut(session)
+    }
+
+    /// Delivers whatever the ledgers resolved (call after a voice decision).
+    pub fn voice_deliver(&mut self, cx: &mut Context<Self>) {
+        self.deliver(cx);
+        cx.notify();
+    }
+
+    /// The Pando client while connected.
+    #[must_use]
+    pub fn voice_client(&self) -> Option<PandoClient> {
+        self.client()
+    }
+
+    /// The session the next voice prompt goes to: the targeted cell's, else the primary one.
+    #[must_use]
+    pub fn voice_chat_session(&self) -> Option<String> {
+        self.target
+            .session()
+            .map(str::to_owned)
+            .or_else(|| self.primary_session.clone())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
