@@ -1,0 +1,75 @@
+# Model manifest (PDA-T-0148). URLs are pinned to a commit / immutable release asset; every file is
+# verified against its SHA-256 before it is installed. `bundled = true` models ship with the
+# installer (the downloader only repairs them). Sizes are exact bytes of the downloaded file.
+
+[[model]]
+id = "whistle"
+kind = "stt"
+title = "Whistle speech model (Cactus Compute)"
+url = "https://huggingface.co/Cactus-Compute/whistle/resolve/ca5287601bef25af26dcf2e1b2bdc0843a7c19e5/whistle.cact"
+file = "whistle.cact"
+sha256 = "b6e02f048568ac5d01a2042556c658061e699acbc0aa2a1439f52f3d461dffeb"
+size = 16919407
+license = "Apache-2.0"
+attribution = "Whistle by Cactus Compute"
+bundled = true
+
+[[model]]
+id = "silero-vad-v5"
+kind = "vad"
+title = "Silero VAD v5"
+url = "https://github.com/snakers4/silero-vad/raw/v5.1.2/src/silero_vad/data/silero_vad.onnx"
+file = "silero_vad.onnx"
+sha256 = "2623a2953f6ff3d2c1e61740c6cdb7168133479b267dfef114a4a3cc5bdd788f"
+size = 2327524
+license = "MIT"
+attribution = "Silero VAD by Silero Team"
+bundled = true
+
+[[model]]
+id = "piper-es_ES-davefx-medium"
+kind = "tts"
+title = "Piper voice es_ES davefx (medium)"
+url = "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/vits-piper-es_ES-davefx-medium.tar.bz2"
+archive = "tar.bz2"
+sha256 = "a3f6beb54a9cb893279f72978a22f807a4d9fc9c7848157b524d5cc7b7f58b22"
+size = 67184952
+license = "CC0-1.0"
+attribution = ""
+required_files = ["es_ES-davefx-medium.onnx", "tokens.txt", "espeak-ng-data/phondata"]
+
+[[model]]
+id = "piper-es_MX-ald-medium"
+kind = "tts"
+title = "Piper voice es_MX ald (medium)"
+url = "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/vits-piper-es_MX-ald-medium.tar.bz2"
+archive = "tar.bz2"
+sha256 = "c60cf7bc853eb01a875fba0756523fecf9d9f46c763b19785d223fc981fb4fb6"
+size = 67196497
+license = "Unlicense"
+attribution = ""
+required_files = ["es_MX-ald-medium.onnx", "tokens.txt", "espeak-ng-data/phondata"]
+
+[[model]]
+id = "kokoro-multi-lang-v1_0"
+kind = "tts"
+title = "Kokoro multi-lang v1.0 (54 voices)"
+url = "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/kokoro-multi-lang-v1_0.tar.bz2"
+archive = "tar.bz2"
+sha256 = "c5f7e2d2caf082bc1d20fb70334a61d99d20b484500aad32e7cf84c128ea3298"
+size = 349906910
+license = "Apache-2.0"
+attribution = "Kokoro-82M by hexgrad"
+required_files = ["model.onnx", "voices.bin", "tokens.txt"]
+
+[[model]]
+id = "parakeet-tdt-0.6b-v3-int8"
+kind = "stt"
+title = "Parakeet-TDT 0.6B v3 (int8, high accuracy)"
+url = "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8.tar.bz2"
+archive = "tar.bz2"
+sha256 = "5793d0fd397c5778d2cf2126994d58e9d56b1be7c04d13c7a15bb1b4eafb16bf"
+size = 487170055
+license = "CC-BY-4.0"
+attribution = "NVIDIA Parakeet-TDT-0.6B-v3 (CC-BY-4.0), ONNX export by k2-fsa/sherpa-onnx"
+required_files = ["encoder.int8.onnx", "decoder.int8.onnx", "joiner.int8.onnx", "tokens.txt"]

@@ -1,0 +1,36 @@
+[package]
+name = "models"
+description = "Model manifest and verified downloader: pinned URLs, SHA-256, resumable .part downloads, atomic install."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[features]
+default = ["http"]
+# reqwest-based transport; disable for a pure crate (tests use a fake transport).
+http = ["dep:reqwest"]
+
+[[bin]]
+name = "pando-models"
+path = "src/bin/pando-models.rs"
+required-features = ["http"]
+
+[dependencies]
+serde.workspace = true
+thiserror.workspace = true
+directories.workspace = true
+reqwest = { workspace = true, features = ["blocking"], optional = true }
+sha2 = "0.11.0"
+toml = "1.1.8"
+tar = "0.4.46"
+bzip2 = "0.6.1"
+
+[dev-dependencies]
+tempfile.workspace = true
