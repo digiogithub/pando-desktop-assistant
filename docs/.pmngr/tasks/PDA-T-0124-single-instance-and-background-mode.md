@@ -2,14 +2,16 @@
 id: PDA-T-0124
 type: task
 title: Single instance and background mode
-status: backlog
+status: in_progress
 parent: PDA-US-0037
 milestone: PDA-M-0008
+assignees: [claude-sonnet]
 author: mcp
 labels: [shell]
 estimate: 2
 created: 2026-10-11T21:54:29Z
-updated: 2026-10-11T22:02:08Z
+updated: 2026-10-12T07:55:07Z
+started: 2026-10-12T07:55:07Z
 ---
 
 ## Description

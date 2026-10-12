@@ -2,14 +2,16 @@
 id: PDA-T-0128
 type: task
 title: Toasts and system notifications
-status: backlog
+status: in_progress
 parent: PDA-US-0038
 milestone: PDA-M-0008
+assignees: [claude-sonnet]
 author: mcp
 labels: [shell]
 estimate: 2
 created: 2026-10-11T21:54:29Z
-updated: 2026-10-11T22:02:28Z
+updated: 2026-10-12T07:55:07Z
+started: 2026-10-12T07:55:07Z
 ---
 
 ## Description

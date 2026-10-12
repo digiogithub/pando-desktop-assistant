@@ -2,14 +2,14 @@
 id: PDA-T-0132
 type: task
 title: ClaudeExternal cells, project by cwd and "avísame"
-status: backlog
+status: todo
 parent: PDA-US-0039
 milestone: PDA-M-0009
 author: mcp
 labels: [claude-bridge, organism]
 estimate: 3
 created: 2026-10-11T21:56:03Z
-updated: 2026-10-11T22:02:28Z
+updated: 2026-10-12T07:54:49Z
 ---
 
 ## Description
