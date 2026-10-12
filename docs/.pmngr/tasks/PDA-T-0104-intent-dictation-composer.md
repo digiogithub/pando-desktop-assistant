@@ -2,14 +2,16 @@
 id: PDA-T-0104
 type: task
 title: Intent dictation → composer
-status: backlog
+status: in_review
 parent: PDA-US-0029
 milestone: PDA-M-0006
+assignees: [claude-sonnet]
 author: mcp
 labels: [decide, chat]
 estimate: 1
 created: 2026-10-11T21:52:55Z
-updated: 2026-10-11T22:03:24Z
+updated: 2026-10-12T08:47:05Z
+started: 2026-10-12T08:47:05Z
 ---
 
 ## Description

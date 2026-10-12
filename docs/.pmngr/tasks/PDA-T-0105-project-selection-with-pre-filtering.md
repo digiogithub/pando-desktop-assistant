@@ -2,15 +2,15 @@
 id: PDA-T-0105
 type: task
 title: Project selection with pre-filtering
-status: in_progress
+status: in_review
 parent: PDA-US-0030
 milestone: PDA-M-0006
-assignees: [claude-opus]
+assignees: [claude-sonnet]
 author: mcp
 labels: [decide]
 estimate: 3
 created: 2026-10-11T21:52:55Z
-updated: 2026-10-11T22:42:36Z
+updated: 2026-10-12T08:47:05Z
 started: 2026-10-11T22:42:36Z
 ---
 

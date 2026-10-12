@@ -2,14 +2,16 @@
 id: PDA-T-0140
 type: task
 title: "Hands-free barge-in: duck and stop"
-status: backlog
+status: in_review
 parent: PDA-US-0042
 milestone: PDA-M-0010
+assignees: [claude-sonnet]
 author: mcp
 labels: [wake-word, voice-out]
 estimate: 2
 created: 2026-10-11T21:56:03Z
-updated: 2026-10-11T22:02:45Z
+updated: 2026-10-12T08:47:06Z
+started: 2026-10-12T08:47:06Z
 ---
 
 ## Description

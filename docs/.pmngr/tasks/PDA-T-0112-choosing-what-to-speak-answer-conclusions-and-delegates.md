@@ -2,14 +2,16 @@
 id: PDA-T-0112
 type: task
 title: "Choosing what to speak: answer, conclusions and delegates"
-status: backlog
+status: in_review
 parent: PDA-US-0032
 milestone: PDA-M-0007
+assignees: [claude-sonnet]
 author: mcp
 labels: [voice-out, pando-client]
 estimate: 3
 created: 2026-10-11T21:54:29Z
-updated: 2026-10-11T22:03:24Z
+updated: 2026-10-12T08:47:05Z
+started: 2026-10-12T08:47:05Z
 ---
 
 ## Description

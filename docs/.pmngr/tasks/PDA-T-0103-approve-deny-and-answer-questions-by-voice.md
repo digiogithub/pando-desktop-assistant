@@ -2,14 +2,16 @@
 id: PDA-T-0103
 type: task
 title: Approve, deny and answer questions by voice
-status: backlog
+status: in_review
 parent: PDA-US-0029
 milestone: PDA-M-0006
+assignees: [claude-sonnet]
 author: mcp
 labels: [decide, safety]
 estimate: 2
 created: 2026-10-11T21:52:55Z
-updated: 2026-10-11T22:03:24Z
+updated: 2026-10-12T08:47:05Z
+started: 2026-10-12T08:47:05Z
 ---
 
 ## Description

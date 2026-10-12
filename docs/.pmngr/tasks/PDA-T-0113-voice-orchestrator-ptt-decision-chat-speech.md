@@ -2,14 +2,16 @@
 id: PDA-T-0113
 type: task
 title: "Voice orchestrator: PTT → decision → chat → speech"
-status: backlog
+status: in_review
 parent: PDA-US-0033
 milestone: PDA-M-0007
+assignees: [claude-sonnet]
 author: mcp
 labels: [voice-out, voice-in]
 estimate: 5
 created: 2026-10-11T21:54:29Z
-updated: 2026-10-11T22:03:24Z
+updated: 2026-10-12T08:47:05Z
+started: 2026-10-12T08:47:05Z
 ---
 
 ## Description

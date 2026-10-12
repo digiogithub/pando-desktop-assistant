@@ -2,14 +2,16 @@
 id: PDA-T-0134
 type: task
 title: "\"Send message\" action on card and by voice"
-status: backlog
+status: in_review
 parent: PDA-US-0040
 milestone: PDA-M-0009
+assignees: [claude-sonnet]
 author: mcp
 labels: [claude-bridge, decide]
 estimate: 2
 created: 2026-10-11T21:56:03Z
-updated: 2026-10-11T22:02:28Z
+updated: 2026-10-12T08:47:06Z
+started: 2026-10-12T08:47:06Z
 ---
 
 ## Description

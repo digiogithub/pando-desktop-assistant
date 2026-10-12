@@ -2,15 +2,15 @@
 id: PDA-T-0097
 type: task
 title: /v1/systemone client and transport trait
-status: in_progress
+status: in_review
 parent: PDA-US-0028
 milestone: PDA-M-0006
-assignees: [claude-opus]
+assignees: [claude-sonnet]
 author: mcp
 labels: [decide]
 estimate: 3
 created: 2026-10-11T21:52:55Z
-updated: 2026-10-11T22:42:36Z
+updated: 2026-10-12T08:47:05Z
 started: 2026-10-11T22:42:36Z
 ---
 
