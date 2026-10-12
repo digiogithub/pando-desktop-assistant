@@ -12,6 +12,17 @@ publish = false
 [lints]
 workspace = true
 
+[lib]
+name = "pando_tts"
+path = "src/lib.rs"
+
 [[bin]]
 name = "pando-tts"
 path = "src/main.rs"
+
+[dependencies]
+voice-proto = { path = "../voice-proto" }
+speech = { path = "../speech" }
+# Prebuilt libraries are fine here: this process is the GPL-3 one (espeak-ng is linked on purpose).
+sherpa-onnx = "=1.13.8"
+thiserror.workspace = true
