@@ -7,6 +7,7 @@ pub mod chunking;
 pub mod engine;
 pub mod handsfree;
 pub mod keywords;
+pub mod live;
 #[cfg(feature = "parakeet")]
 pub mod parakeet;
 pub mod server;
