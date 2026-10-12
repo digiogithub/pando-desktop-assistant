@@ -2,7 +2,7 @@
 id: PDA-T-0172
 type: task
 title: "Voice target switch: \"háblale a <agente>\" / \"vuelve\""
-status: in_progress
+status: done
 priority: medium
 parent: PDA-US-0029
 milestone: PDA-M-0006
@@ -11,8 +11,9 @@ author: mcp
 labels: [decide, shell]
 estimate: 3
 created: 2026-10-12T14:06:10Z
-updated: 2026-10-12T14:06:14Z
+updated: 2026-10-12T14:13:27Z
 started: 2026-10-12T14:06:14Z
+closed: 2026-10-12T14:13:27Z
 ---
 
 ## Description

@@ -6,7 +6,7 @@ status: backlog
 author: mcp
 labels: [decide]
 created: 2026-10-11T21:41:32Z
-updated: 2026-10-12T14:06:03Z
+updated: 2026-10-12T14:13:13Z
 requirements:
   R1:
     status: backlog
@@ -41,6 +41,7 @@ requirements:
         - crates/decide/src/policy.rs#tests::destructive_needs_literal_id
         - crates/decide/src/policy.rs#tests::flagged_approval_never_executes
         - crates/decide/src/policy.rs#tests::monotonic_in_confidence
+        - crates/app/src/voice/e2e.rs#a_flagged_approval_is_never_approved_by_a_spoken_yes
   R3:
     status: backlog
     trace:
@@ -103,6 +104,26 @@ requirements:
         - crates/decide/src/cascade.rs#tests::dictation_lead_in_needs_no_call
   R8:
     status: backlog
+    trace:
+      code:
+        - crates/decide/src/questions.rs#target_trigger
+        - crates/decide/src/cascade.rs#Cascade
+        - crates/decide/src/policy.rs#talk_to
+        - crates/decide/src/policy.rs#Outcome::SwitchTarget
+        - crates/decide/src/policy.rs#VoiceTarget
+        - crates/app/src/cells/pane.rs#OrganismPane::voice_switch_target
+        - crates/app/src/voice/assistant.rs#Assistant::on_resolved
+      tests:
+        - crates/decide/src/questions.rs#tests::target_triggers
+        - crates/decide/src/cascade.rs#tests::talk_to_agent_asks_only_the_agent
+        - crates/decide/src/cascade.rs#tests::back_to_pando_needs_no_call
+        - crates/decide/src/policy.rs#tests::switch_target_table
+        - crates/decide/src/policy.rs#tests::switch_target_is_safe
+        - crates/decide/src/policy.rs#tests::monotonic_in_confidence
+        - crates/decide/tests/live_intent.rs#target_phrases_by_rule
+        - crates/decide/tests/live_intent.rs#target_near_misses_keep_their_class
+        - crates/app/src/cells/pane.rs#tests::voice_switches_the_target_like_hablarle_and_esc
+        - crates/app/src/voice/e2e.rs#hablale_and_vuelve_switch_the_target_without_confirmation
 ---
 
 ## Purpose
@@ -173,10 +194,10 @@ Intent `dictation` SHALL insert the transcript into the composer of the current 
 
 ### PDA-SP-0008.R8 — Voice target switch ("háblale a" / "vuelve")
 
-The decision layer SHALL recognise "háblale a <agente/célula>" (variants: "habla con el de docs", "háblale a auth") as a non-destructive SwitchTarget command that makes the named agent the voice/composer target, and "vuelve" (variants: "vuelve a Pando", "volver") as a SwitchTarget back to the primary session. Its confidence is the minimum over the questions it depends on (intent, and agent for "háblale a"). At p ≥ the reversible threshold (0.6) it SHALL execute directly without confirmation; below it the transcript goes to the conversation with the top-2 options of the weakest question as a clarification, like other commands. An unknown, `all` or missing agent SHALL never switch the target (missing-target clarification). A cell that cannot talk (CLI) or is finished SHALL refuse with a spoken reason and keep the current target.
+The decision layer SHALL recognise "háblale a <agente/célula>" (variants: "habla con el de docs", "háblale a auth", "quiero hablar con", "pásame con", "ponme con") as a non-destructive SwitchTarget command that makes the named agent the voice/composer target, and "vuelve" (variants: "vuelve a Pando", "volver", with fillers such as "ya está") as a SwitchTarget back to the primary session. Both are recognised by rule before the intent call (intent p = 1.0), because as model intent classes they lowered live intent accuracy (96 → 88/100 with tev1:0.8b); "háblale a" then asks only the agent question, "vuelve" asks nothing. Its confidence is the minimum over the questions it depends on (intent, and agent for "háblale a"). At p ≥ the reversible threshold (0.6) it SHALL execute directly without confirmation; below it the transcript goes to the conversation with the top-2 options of the weakest question as a clarification, like other commands. An unknown, `all` or missing agent SHALL never switch the target (missing-target clarification). A cell that cannot talk (CLI) or is finished SHALL refuse with a spoken reason and keep the current target.
 
 #### Scenario: talk to an agent
-- WHEN the user says "háblale a auth" with agent `migracion-auth` live and p(intent), p(agent) ≥ 0.6
+- WHEN the user says "háblale a auth" with agent `migracion-auth` live and p(agent) ≥ 0.6
 - THEN the target becomes `migracion-auth` without a confirmation and the assistant says so
 
 #### Scenario: back to the primary session
@@ -190,3 +211,7 @@ The decision layer SHALL recognise "háblale a <agente/célula>" (variants: "hab
 #### Scenario: unknown agent
 - WHEN the model names an agent that is not live, or `all`
 - THEN nothing switches and the assistant asks which agent
+
+#### Scenario: near miss
+- WHEN the user says "vuelve a lanzar migración auth"
+- THEN it is not a target switch and goes through the normal command cascade (retry)
