@@ -2,14 +2,17 @@
 id: PDA-T-0028
 type: task
 title: Document delegation → conclusion → resurrection flow
-status: backlog
+status: done
 parent: PDA-US-0008
 milestone: PDA-M-0001
+assignees: [claude-opus]
 author: mcp
 labels: [spike, docs]
 estimate: 1
 created: 2026-10-11T21:47:41Z
-updated: 2026-10-11T22:02:37Z
+updated: 2026-10-12T08:28:08Z
+started: 2026-10-12T08:27:58Z
+closed: 2026-10-12T08:28:08Z
 ---
 
 ## Description

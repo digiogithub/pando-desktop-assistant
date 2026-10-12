@@ -131,7 +131,94 @@ model reacts in the same stream; if it is idle, Pando starts a **new background 
 no client attached (first replayed event `resurrected`), discovered via `run_seq`.
 The assistant speaks the parent's reply, or the `summary` (+ `follow_up`) parsed from the
 `[delegated-result …]` block (parser task PDA-T-0053). The structured conclusion is not
-reachable over HTTP (gap G3, PDA-T-0157). Flow details: PDA-T-0028.
+reachable over HTTP until G2 lands (gap G3, PDA-T-0157, folded into G2). Flow details below.
+
+### Delegation → conclusion → resurrection flow (PDA-T-0028)
+
+Ground truth: Pando `docs/delegation.md`, `internal/llm/agent/agent.go` (event types and the
+human notes at `:708`/`:757`), `internal/api/handlers_chat.go` (`conclusion_*`/`resurrected`
+SSE writers, payload `{session_id, message}` only), `internal/app/delegation_supervisor.go`
+(`enqueueResurrection`), `internal/api/resume_run.go` (server-owned background run) and
+`internal/mesnada/conclusion/{parse,format}.go`. Delegation is **default-off** in Pando
+(`Mesnada → Delegation`).
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant A as Assistant (pando-client)
+    participant P as Pando API (parent session)
+    participant L as Parent agent loop
+    participant O as Mesnada orchestrator
+    participant S as Subagent task
+
+    A->>P: POST /chat/stream {sessionId, prompt}
+    P-->>A: SSE session, run{runSeq:n}, content_delta …
+    L->>O: tool_call mesnada_spawn_agent / spawn_agent
+    P-->>A: SSE tool_call, tool_result (task id inside content)
+    O->>S: start task (cold CLI, warm ACP or hot peer)
+    loop every 1–2 s
+        A->>P: GET /orchestrator/tasks
+        P-->>A: TaskResponse list (status, progress; G2 adds parent_session_id, conclusion)
+    end
+    S-->>O: output ends with <pando:conclusion> YAML (last block wins)
+    O->>O: parse + enrich (task id, engine, project, parent), durable events.jsonl
+    alt Case A: parent run still active
+        O->>L: queue conclusion
+        P-->>A: SSE conclusion_queued {session_id, message}
+        L->>L: inject [delegated-result …] at next step
+        P-->>A: SSE conclusion_injected, then the model's reaction (content_delta …, done)
+    else Case B: parent idle (resurrection)
+        O->>P: delegation supervisor starts a new background run (no client attached)
+        Note over P: run_seq = n+1, is_running = true
+        loop every ~4 s
+            A->>P: GET /sessions/{id}/pending
+            P-->>A: {running, run_seq: n+1}
+        end
+        A->>A: run_seq > seen and no stream open → claim, reset live bubble
+        A->>P: GET /sessions/{id}/stream (replay ≤500 events / 10 min + live)
+        P-->>A: SSE session, run{runSeq:n+1}, resurrected, content_delta …, done
+    end
+    A->>P: GET /sessions/{id} (history)
+    P-->>A: messages incl. the injected [delegated-result task=… status=… confidence=…] text
+```
+
+| Step | What the wire shows | Client code that handles it |
+|---|---|---|
+| Spawn (1–4) | `tool_call`/`tool_result` for the mesnada spawn tool; task id only inside `tool_result.content` | `ChatEvent::{ToolCall,ToolResult}` in `crates/pando-client/src/chat.rs`, folded by `ChatModel` in `model.rs` |
+| Task lifecycle (5–7) | No push stream (G1): poll `GET /orchestrator/tasks` | `PandoClient::list_tasks` + `TaskTracker::update` → `TaskChange::{Appeared,Updated,Finished,Removed}` in `crates/pando-client/src/api.rs` |
+| Conclusion block (8–9) | `<pando:conclusion>` in the subagent output; structured `conclusion` on the task only with G2 | `parse_conclusion` / `Conclusion` in `crates/pando-client/src/conclusion.rs`; `TaskResponse.conclusion` (`Option`, additive) in `api.rs` |
+| Case A (10–13) | `conclusion_queued` → `conclusion_injected`; human note only, no task id | `ChatEvent::{ConclusionQueued,ConclusionInjected}(Note)` → `NoticeKind::{ConclusionQueued,ConclusionInjected}` rows in `ChatModel::apply` (`model.rs`) |
+| Case B (14–20) | nothing on any open stream; only `run_seq` grows | `follow_session` / `seen_for` / `should_attach` in `crates/pando-client/src/follow.rs`: poll `/pending`, `FollowEvent::ResetBubble`, attach `/stream`, `FollowEvent::HistoryReload` if the replay was empty, reattach if the body closes without `done` |
+| `resurrected` (20) | first event after `run` in the replay | `ChatEvent::Resurrected` → `run_active = true` + `NoticeKind::Resurrected` notice (`model.rs`) |
+| History (21–22) | `[delegated-result …]` + `summary:`/`follow_up:`/`artifacts:` as message text, never in SSE | `parse_delegated_results` / `DelegatedResult` (`conclusion.rs`), turned into `ItemKind::Conclusion` rows by `ChatModel::load_history` (`model.rs`) |
+
+Notes:
+
+- **Who owns a resurrected run.** Pando streams it to whichever surface has the session open;
+  with nothing attached it still runs and is persisted. The assistant therefore must keep a
+  `SessionFollow` alive for every session it shows (and call `begin_local_run`/`observe`
+  around its own runs so the poller does not double-attach). A prompt sent while a resurrected
+  run is active becomes steering for it; cancelling the session stops it.
+- **Stale conclusions.** A conclusion replayed from the durable log after more than an hour is
+  acknowledged without resurrecting the parent, so a restart does not wake old sessions.
+- **What gets spoken.** Prefer the parent's reply (`content_delta` accumulated to `done` of the
+  resurrected run). Fall back to `summary` (+ `follow_up`) from the parsed `[delegated-result]`
+  block. Once G2 is deployed, `TaskResponse.conclusion` of a `Finished` task gives the same
+  data without a history reload and `parent_session_id` maps the cell to its parent session.
+- **Upstream G2** (`PDA-T-0156`): implemented in Pando on branch
+  `task/PDA-T-0156-task-response-fields` (commit `0f00fd924`, additive `omitempty` fields incl.
+  `parent_session_id`, `project_*`, `acp_*`, `conclusion`), **pending owner review**, not on
+  Pando `main`. The client already parses those fields as optional, so older servers keep
+  working. G3's event half (task id/summary in `conclusion_*`/`resurrected`) is not planned;
+  polling sees the terminal status (`docs/research/upstream-gap-review.md`). G5 (a global
+  session-activity stream) would replace the `/pending` polling for Case B.
+- **Fixture review.** `session_reattach.sse` (real, Pando v1.3.0) confirms the replay shape
+  `session` → `goal_status` → `run{runSeq}` → events → `done` that the follower relies on.
+  `conclusion_queued`, `conclusion_injected` and `resurrected` are only covered by the
+  synthetic fixture `synthetic_events.sse` and by `tests/follow.rs`
+  (`resurrected_run_is_attached_after_run_seq_grows`); their payload shape
+  `{session_id, message}` matches `handlers_chat.go`. A live delegation capture is still
+  pending (PDA-T-0027).
 
 ## Events
 
