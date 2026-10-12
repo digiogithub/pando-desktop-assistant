@@ -540,6 +540,36 @@ impl OrganismPane {
         cx.notify();
     }
 
+    /// Voice "háblale a <agente>" / "vuelve" (PDA-SP-0008.R8): the same moves as the
+    /// "Hablarle" button and Esc. `None` or the primary cell returns to the primary session
+    /// (`Ok(None)`); a cell becomes the target (`Ok(Some(label))`) unless it is unknown, cannot
+    /// talk (CLI) or is finished (`Err(notice)`, target unchanged).
+    pub fn voice_switch_target(
+        &mut self,
+        cell_id: Option<&str>,
+        cx: &mut Context<Self>,
+    ) -> Result<Option<String>, String> {
+        let Some(id) = cell_id.filter(|id| *id != super::source::PRIMARY_CELL_ID) else {
+            self.back_to_primary(cx);
+            return Ok(None);
+        };
+        let id = CellId::new(id);
+        let Some(label) = self
+            .source
+            .cells()
+            .iter()
+            .find(|c| c.id == id)
+            .map(|c| c.label.to_string())
+        else {
+            return Err(t!("voice.cmd.missing_target").to_string());
+        };
+        self.talk(&id, cx);
+        match self.notice.clone() {
+            Some(notice) => Err(notice),
+            None => Ok(Some(label)),
+        }
+    }
+
     /// Esc: the next message goes to the primary session again.
     pub fn back_to_primary(&mut self, cx: &mut Context<Self>) {
         if self.target.back() {
@@ -1276,6 +1306,51 @@ mod tests {
             assert!(p.has_pending());
             p.apply_poll(&poll(vec![], vec![]), cx);
             assert!(!p.has_pending());
+        });
+        runtime.shutdown_timeout(std::time::Duration::from_secs(5));
+    }
+
+    /// PDA-SP-0008.R8: "háblale a <agente>" / "vuelve" move the same target as the
+    /// "Hablarle" button and Esc, and refusals keep the current target.
+    #[gpui_test]
+    fn voice_switches_the_target_like_hablarle_and_esc(cx: &mut TestAppContext) {
+        crate::i18n::apply(Some("es"));
+        let (pane, runtime, mut cx) = pane(cx);
+        pane.update(&mut cx, |p, cx| {
+            p.apply_poll(
+                &poll(
+                    vec![
+                        task("1", "acp-claude", "running"),
+                        task("2", "claude", "running"),
+                    ],
+                    vec![],
+                ),
+                cx,
+            );
+            assert_eq!(
+                p.voice_switch_target(Some("1"), cx),
+                Ok(Some("task 1".to_owned()))
+            );
+            assert_eq!(p.target().session(), Some("s-1"));
+            assert_eq!(p.voice_chat_session().as_deref(), Some("s-1"));
+            // A CLI cell refuses and the target stays on task 1.
+            assert!(p.voice_switch_target(Some("2"), cx).is_err());
+            assert_eq!(p.target().cell().map(CellId::as_str), Some("1"));
+            // An unknown cell is a missing target.
+            assert_eq!(
+                p.voice_switch_target(Some("ghost"), cx),
+                Err(t!("voice.cmd.missing_target").to_string())
+            );
+            assert_eq!(p.target().cell().map(CellId::as_str), Some("1"));
+            // "vuelve" (and the primary cell) go back to the primary session.
+            assert_eq!(p.voice_switch_target(None, cx), Ok(None));
+            assert!(p.target().cell().is_none());
+            p.voice_switch_target(Some("1"), cx).expect("talk");
+            assert_eq!(
+                p.voice_switch_target(Some(crate::cells::source::PRIMARY_CELL_ID), cx),
+                Ok(None)
+            );
+            assert!(p.target().cell().is_none());
         });
         runtime.shutdown_timeout(std::time::Duration::from_secs(5));
     }

@@ -6,7 +6,7 @@ status: backlog
 author: mcp
 labels: [decide]
 created: 2026-10-11T21:41:32Z
-updated: 2026-10-11T23:01:56Z
+updated: 2026-10-12T14:06:03Z
 requirements:
   R1:
     status: backlog
@@ -101,6 +101,8 @@ requirements:
       tests:
         - crates/decide/src/questions.rs#tests::dictation_triggers
         - crates/decide/src/cascade.rs#tests::dictation_lead_in_needs_no_call
+  R8:
+    status: backlog
 ---
 
 ## Purpose
@@ -168,3 +170,23 @@ Intent `dictation` SHALL insert the transcript into the composer of the current 
 #### Scenario: dictate
 - WHEN the user says "dicta: añade un test para el parser"
 - THEN the composer contains the text and nothing is sent
+
+### PDA-SP-0008.R8 — Voice target switch ("háblale a" / "vuelve")
+
+The decision layer SHALL recognise "háblale a <agente/célula>" (variants: "habla con el de docs", "háblale a auth") as a non-destructive SwitchTarget command that makes the named agent the voice/composer target, and "vuelve" (variants: "vuelve a Pando", "volver") as a SwitchTarget back to the primary session. Its confidence is the minimum over the questions it depends on (intent, and agent for "háblale a"). At p ≥ the reversible threshold (0.6) it SHALL execute directly without confirmation; below it the transcript goes to the conversation with the top-2 options of the weakest question as a clarification, like other commands. An unknown, `all` or missing agent SHALL never switch the target (missing-target clarification). A cell that cannot talk (CLI) or is finished SHALL refuse with a spoken reason and keep the current target.
+
+#### Scenario: talk to an agent
+- WHEN the user says "háblale a auth" with agent `migracion-auth` live and p(intent), p(agent) ≥ 0.6
+- THEN the target becomes `migracion-auth` without a confirmation and the assistant says so
+
+#### Scenario: back to the primary session
+- WHEN the user says "vuelve" while targeting a cell
+- THEN the target returns to the primary session (same as Esc)
+
+#### Scenario: low confidence
+- WHEN p(agent) < 0.6 for "habla con el de docs"
+- THEN nothing switches and the top-2 agents are offered as a clarification
+
+#### Scenario: unknown agent
+- WHEN the model names an agent that is not live, or `all`
+- THEN nothing switches and the assistant asks which agent

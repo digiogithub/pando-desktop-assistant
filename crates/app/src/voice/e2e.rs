@@ -232,6 +232,201 @@ fn a_spoken_cancel_asks_first_and_runs_only_after_a_yes() {
     );
 }
 
+/// The voice side of the UI: applies a spoken approve/deny to a real approvals ledger the way
+/// `Assistant::on_ui` does (`spoken_approvals::apply`, which decides with `Origin::Voice`).
+struct LedgerUi(Mutex<pando_client::approvals::Approvals>);
+
+impl UiPort for LedgerUi {
+    fn open(&self, _: Option<String>) {}
+    async fn decide(&self, _: ApprovalScope, approve: bool) -> VoiceDecisionReport {
+        use crate::decision::spoken_approvals::{Applied, Spoken, apply};
+        let mut ledger = self.0.lock().expect("lock");
+        let spoken = if approve {
+            Spoken::Approve
+        } else {
+            Spoken::Deny
+        };
+        let mut report = VoiceDecisionReport::default();
+        for id in ledger.pending_ids() {
+            match apply(&mut ledger, &id, &spoken) {
+                Applied::Resolved(_) => report.resolved += 1,
+                Applied::NeedsScreen => report.needs_explicit += 1,
+                Applied::Gone | Applied::Unclear => {}
+            }
+        }
+        report
+    }
+}
+
+/// ADR 0009 (decision of 2026-10-12, PDA-T-0103): an approval flagged
+/// `require_explicit_approval` / `never_auto_approve` is approved only by a click. A spoken
+/// "sí" never approves it — not through the policy, not through a voice confirmation, not by
+/// answering the read-aloud request.
+#[test]
+fn a_flagged_approval_is_never_approved_by_a_spoken_yes() {
+    use crate::decision::confirm::{Confirmation, Verdict, lexical_yes_no};
+    use crate::decision::spoken_approvals::{self, Applied, Spoken};
+    use decide::policy::PendingApproval;
+    use pando_client::chat::PermissionRequest;
+
+    crate::i18n::apply(Some("es"));
+    let flagged_perm = || PermissionRequest {
+        id: "p1".into(),
+        session_id: "s1".into(),
+        tool_name: "bash".into(),
+        description: "borrar la rama".into(),
+        action: "execute".into(),
+        require_explicit_approval: true,
+        ..PermissionRequest::default()
+    };
+    let approve_rounds = |p: f64| {
+        client(vec![
+            vec![("intent", "answer_permission", 0.99)],
+            vec![("agent", "migracion-auth", 0.99), ("action", "approve", p)],
+        ])
+    };
+
+    // 1. Policy: with the flag known, even p = 0.99 and the literal id give ExplicitOnly.
+    let mut snap = snapshot();
+    snap.pending = vec![PendingApproval {
+        agent_id: "migracion-auth".into(),
+        explicit_only: true,
+    }];
+    let resolved = block_on(decide_transcript(
+        &approve_rounds(0.99),
+        "sí, aprueba migracion-auth",
+        &snap,
+        Thresholds::default(),
+        1,
+    ));
+    assert!(
+        matches!(resolved.outcome, Outcome::ExplicitOnly { .. }),
+        "{:?}",
+        resolved.outcome
+    );
+
+    // 2. A stale snapshot without the flag asks for a confirmation; the spoken "sí" reaches
+    //    the ledger with Origin::Voice, which refuses the flagged item.
+    let resolved = block_on(decide_transcript(
+        &approve_rounds(0.7),
+        "aprueba lo de migración auth",
+        &snapshot(),
+        Thresholds::default(),
+        1,
+    ));
+    let Outcome::Confirm { request, reason } = resolved.outcome else {
+        panic!("{:?}", resolved.outcome)
+    };
+    let c = Confirmation::confirm("aprueba lo de migración auth", request, reason, 0);
+    let Verdict::Execute(req) = c.answer(lexical_yes_no("sí"), 1_000) else {
+        panic!("a yes in time runs the command")
+    };
+    let mut ledger = spoken_approvals::ledger();
+    ledger.register_permission(flagged_perm(), std::time::Duration::ZERO);
+    let ui = Arc::new(LedgerUi(Mutex::new(ledger)));
+    let executor = PandoExecutor::new(
+        Arc::new(World::default()),
+        ui.clone(),
+        AgentDirectory::from_rows([(
+            "t1".into(),
+            "Migración auth".into(),
+            "running".into(),
+            Some("s1".into()),
+        )]),
+    );
+    let Dispatched::Ran(result) = block_on(dispatch(&executor, &req, "", Capabilities::default()))
+    else {
+        panic!("refused before the ledger")
+    };
+    assert!(result.is_err(), "{result:?}");
+    assert!(
+        ui.0.lock().expect("lock").is_pending("p1"),
+        "the flagged request is still waiting for a click"
+    );
+
+    // 3. Read aloud and answered "sí": the ledger refuses it too.
+    let mut ledger = spoken_approvals::ledger();
+    ledger.register_permission(flagged_perm(), std::time::Duration::ZERO);
+    let spoken = spoken_approvals::interpret("sí", 0);
+    assert_eq!(spoken, Spoken::Approve);
+    assert_eq!(
+        spoken_approvals::apply(&mut ledger, "p1", &spoken),
+        Applied::NeedsScreen
+    );
+    assert!(ledger.is_pending("p1"));
+}
+
+/// PDA-SP-0008.R8: "háblale a auth" and "vuelve" switch the target with no confirmation and
+/// no command; an unknown agent never switches.
+#[test]
+fn hablale_and_vuelve_switch_the_target_without_confirmation() {
+    use decide::policy::VoiceTarget;
+    crate::i18n::apply(Some("es"));
+    let resolved = block_on(decide_transcript(
+        &client(vec![vec![("agent", "migracion-auth", 0.7)]]),
+        "háblale a auth",
+        &snapshot(),
+        Thresholds::default(),
+        1,
+    ));
+    let Outcome::SwitchTarget { target, p } = &resolved.outcome else {
+        panic!("{:?}", resolved.outcome)
+    };
+    assert_eq!(target, &VoiceTarget::Agent("migracion-auth".into()));
+    assert!((p - 0.7).abs() < 1e-9);
+    assert_eq!(
+        snapshot()
+            .agents
+            .resolve("migracion-auth")
+            .map(|e| e.cell_id.as_str()),
+        Some("t1")
+    );
+    let mut session = Session::new();
+    session.step(Input::PttPressed);
+    session.step(Input::PttReleased { submitted: true });
+    session.step(Input::Transcript("háblale a auth".into()));
+    let out = session.step(Input::Decided(Decided::SwitchTarget));
+    assert!(!out.iter().any(|o| matches!(o, Output::Chat { .. })));
+
+    for text in ["vuelve", "vuelve a Pando", "volver"] {
+        let resolved = block_on(decide_transcript(
+            &client(vec![]),
+            text,
+            &snapshot(),
+            Thresholds::default(),
+            1,
+        ));
+        assert_eq!(
+            resolved.outcome,
+            Outcome::SwitchTarget {
+                target: VoiceTarget::Primary,
+                p: 1.0
+            },
+            "{text}"
+        );
+    }
+
+    // Low agent confidence: clarify with the top-2, nothing switches.
+    let resolved = block_on(decide_transcript(
+        &client(vec![vec![("agent", "migracion-auth", 0.4)]]),
+        "habla con el de docs",
+        &snapshot(),
+        Thresholds::default(),
+        1,
+    ));
+    assert!(
+        matches!(
+            resolved.outcome,
+            Outcome::Conversation {
+                reason: decide::policy::ConversationReason::LowConfidence,
+                ..
+            }
+        ),
+        "{:?}",
+        resolved.outcome
+    );
+}
+
 #[test]
 fn a_conversation_speaks_only_the_final_answer_never_tool_output() {
     crate::i18n::apply(Some("es"));

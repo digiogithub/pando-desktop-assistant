@@ -12,10 +12,17 @@
 //! Fail-closed rules on top of the table:
 //! - `p` of a control decision is the **minimum** over every question it depends on
 //!   (intent, agent when the action needs one, action, engine/project for spawn); a
-//!   missing or invalid probability counts as 0.
+//!   missing or invalid probability counts as 0. Product decision of 2026-10-12, recorded
+//!   in ADR 0009: the minimum (not a product or a mean) keeps the policy monotonic and
+//!   lets the weakest question provide the clarification buttons.
 //! - `approve` never executes on confidence when a pending item of the target is flagged
 //!   `require_explicit_approval` / `never_auto_approve`: the outcome is
-//!   [`Outcome::ExplicitOnly`] and only an explicit UI decision may approve it.
+//!   [`Outcome::ExplicitOnly`] and only an explicit UI decision (a click) may approve it;
+//!   a spoken "sí" never does (ADR 0009). The app's approvals ledger enforces the same
+//!   rule a second time by refusing `Origin::Voice` on flagged items.
+//! - "háblale a <agente>" / "vuelve" ([`Outcome::SwitchTarget`], `PDA-SP-0008.R8`) only
+//!   change where the next prompt goes: reversible, so they execute from the reversible
+//!   threshold without a confirmation; an unknown, `all` or missing agent never switches.
 //! - Commands on `all` agents, approvals of an implied target and every other
 //!   irreversible action below the execute threshold confirm.
 //! - An unknown agent id or a missing target never executes.
@@ -23,7 +30,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::cascade::{Answered, Decision};
+use crate::cascade::{Answered, BACK_TO_PANDO_CLASS, Decision, TALK_TO_AGENT_CLASS};
 use crate::questions::{Action, AgentInfo, AgentTarget, Engine, Intent, ProjectChoice};
 use crate::text::contains_words;
 
@@ -119,6 +126,16 @@ pub struct ControlRequest {
     pub p: f64,
 }
 
+/// Where the next voice / composer prompt goes (`PDA-SP-0008.R8`).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum VoiceTarget {
+    /// One live agent, by id ("háblale a auth").
+    Agent(String),
+    /// The primary session ("vuelve", Esc).
+    Primary,
+}
+
 /// Why a command needs a confirmation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -176,6 +193,13 @@ pub enum Outcome {
         /// min(p(intent), p(project)).
         p: f64,
     },
+    /// Change the voice target (reversible; same as "Hablarle" / Esc).
+    SwitchTarget {
+        /// The new target.
+        target: VoiceTarget,
+        /// min(p(intent), p(agent)) — p(intent) alone for the primary.
+        p: f64,
+    },
     /// Insert the text into the composer of the voice target without sending.
     Dictate {
         /// Text to insert.
@@ -207,6 +231,7 @@ impl Outcome {
             Self::ExplicitOnly { .. } => "explicit_only",
             Self::Dictate { .. } => "dictate",
             Self::SwitchProject { .. } => "switch_project",
+            Self::SwitchTarget { .. } => "switch_target",
             Self::Conversation { .. } => "conversation",
         }
     }
@@ -258,8 +283,29 @@ pub fn policy(decision: &Decision, ctx: &PolicyContext<'_>) -> Outcome {
         Intent::Control => {}
     }
 
+    // "vuelve" / "háblale a <agente>": a target switch, reversible (PDA-SP-0008.R8).
+    if decision.action.is_none() {
+        match decision.intent_class.as_deref() {
+            Some(BACK_TO_PANDO_CLASS) => {
+                return if p_intent < t.reversible {
+                    low(top2(Some(&decision.intent)))
+                } else {
+                    Outcome::SwitchTarget {
+                        target: VoiceTarget::Primary,
+                        p: p_intent,
+                    }
+                };
+            }
+            Some(TALK_TO_AGENT_CLASS) => return talk_to(decision, ctx, p_intent, t),
+            _ => {}
+        }
+    }
+
     // Every question the command depends on, with its probability; the weakest one
-    // drives the outcome and provides the buttons.
+    // drives the outcome and provides the buttons. The command's confidence is the
+    // MINIMUM over those questions (product decision 2026-10-12, ADR 0009): one weak
+    // answer is enough to stop a command, and lowering any answer can never turn a
+    // confirmation into an execution.
     if decision.action.is_none()
         && decision.intent_class.as_deref() == Some(crate::cascade::SWITCH_PROJECT_CLASS)
         && let Some(project) = decision.project.as_ref()
@@ -405,6 +451,32 @@ pub fn policy(decision: &Decision, ctx: &PolicyContext<'_>) -> Outcome {
         Outcome::Execute { request }
     } else {
         confirm(ConfirmReason::NotReversible)
+    }
+}
+
+/// "háblale a <agente>": min(p(intent), p(agent)) against the reversible threshold, and
+/// only a live agent id may become the target.
+fn talk_to(decision: &Decision, ctx: &PolicyContext<'_>, p_intent: f64, t: Thresholds) -> Outcome {
+    let agent = decision.agent.as_ref();
+    let p_agent = p_of(agent);
+    if p_intent.min(p_agent) < t.reversible {
+        return low(if p_intent <= p_agent {
+            top2(Some(&decision.intent))
+        } else {
+            top2(agent)
+        });
+    }
+    match agent.map(|a| &a.value) {
+        Some(AgentTarget::Agent(id)) if ctx.agents.iter().any(|a| a.id == *id) => {
+            Outcome::SwitchTarget {
+                target: VoiceTarget::Agent(id.clone()),
+                p: p_intent.min(p_agent),
+            }
+        }
+        _ => Outcome::Conversation {
+            reason: ConversationReason::MissingTarget,
+            top2: top2(agent),
+        },
     }
 }
 
@@ -769,6 +841,88 @@ mod tests {
         assert_eq!(run(&d, "x", &[]).label(), "conversation");
     }
 
+    /// PDA-SP-0008.R8: target switches execute from the reversible threshold, never
+    /// confirm, and never land on an unknown / `all` / missing agent.
+    #[test]
+    fn switch_target_table() {
+        let talk = |target: AgentTarget, pi: f64, pa: f64| Decision {
+            intent: ans(Intent::Control, pi),
+            agent: Some(ans(target, pa)),
+            action: None,
+            engine: None,
+            project: None,
+            intent_class: Some(TALK_TO_AGENT_CLASS.into()),
+            dictation: None,
+        };
+        // Medium confidence: switches directly, p = min.
+        assert_eq!(
+            run(&talk(mig(), 0.9, 0.62), "háblale a auth", &[]),
+            Outcome::SwitchTarget {
+                target: VoiceTarget::Agent("migracion-auth".into()),
+                p: 0.62
+            }
+        );
+        // Low confidence on the agent: clarify with the agent's top-2.
+        assert_eq!(
+            run(&talk(mig(), 0.9, 0.5), "habla con el de docs", &[]),
+            Outcome::Conversation {
+                reason: ConversationReason::LowConfidence,
+                top2: vec![("top".into(), 0.5), ("second".into(), 0.5)],
+            }
+        );
+        // Low confidence on the intent.
+        assert_eq!(
+            run(&talk(mig(), 0.4, 0.9), "háblale", &[]).label(),
+            "conversation"
+        );
+        // Unknown, `all` and missing agents never switch.
+        for target in [
+            AgentTarget::Agent("ghost".into()),
+            AgentTarget::All,
+            AgentTarget::None,
+        ] {
+            let out = run(&talk(target, 0.99, 0.99), "háblale a todos", &[]);
+            assert!(
+                matches!(
+                    out,
+                    Outcome::Conversation {
+                        reason: ConversationReason::MissingTarget,
+                        ..
+                    }
+                ),
+                "{out:?}"
+            );
+        }
+        let mut d = talk(mig(), 0.99, 0.99);
+        d.agent = None;
+        assert_eq!(run(&d, "háblale", &[]).label(), "conversation");
+
+        // "vuelve": intent alone.
+        let back = |pi: f64| Decision {
+            intent: ans(Intent::Control, pi),
+            agent: None,
+            action: None,
+            engine: None,
+            project: None,
+            intent_class: Some(BACK_TO_PANDO_CLASS.into()),
+            dictation: None,
+        };
+        for (pi, transcript) in [(0.6, "vuelve"), (0.8, "vuelve a Pando"), (0.99, "volver")] {
+            assert_eq!(
+                run(&back(pi), transcript, &[]),
+                Outcome::SwitchTarget {
+                    target: VoiceTarget::Primary,
+                    p: pi
+                }
+            );
+        }
+        assert_eq!(run(&back(0.59), "vuelve", &[]).label(), "conversation");
+        // A conversation intent with the class still goes to the chat.
+        let mut d = back(0.99);
+        d.intent = ans(Intent::Conversation, 0.99);
+        assert_eq!(run(&d, "vuelve", &[]).label(), "conversation");
+    }
+
     #[test]
     fn thresholds_have_floors() {
         let t = Thresholds {
@@ -829,6 +983,9 @@ mod tests {
             pt in arb_p(),
             pe in arb_p(),
             pp in arb_p(),
+            class in prop::option::of(prop::sample::select(vec![
+                "switch_project", TALK_TO_AGENT_CLASS, BACK_TO_PANDO_CLASS, "stop_agent",
+            ])),
         ) -> Decision {
             fn a<T>(value: T, p: Option<f64>) -> Answered<T> {
                 Answered { value, p, confidence: None, ranked: vec![] }
@@ -839,7 +996,7 @@ mod tests {
                 action: action.map(|x| a(x, pa)),
                 engine: Some(Answered { value: Engine::Pando, p: pe, confidence: None, ranked: vec![] }),
                 project: Some(Answered { value: ProjectChoice::Current, p: pp, confidence: None, ranked: vec![] }),
-                intent_class: None,
+                intent_class: class.map(str::to_string),
                 dictation: None,
             }
         }
@@ -944,8 +1101,32 @@ mod tests {
             lower(lo_d.engine.as_mut(), ks[3]);
             lower(lo_d.project.as_mut(), ks[4]);
             let lo = run(&lo_d, transcript, &pending);
-            if lo.label() == "execute" {
-                prop_assert_eq!(hi.label(), "execute", "lowered {:?} executes but original gives {:?}", lo_d, hi);
+            for acting in ["execute", "switch_target", "switch_project"] {
+                if lo.label() == acting {
+                    prop_assert_eq!(hi.label(), acting, "lowered {:?} acts but original gives {:?}", lo_d, hi);
+                }
+            }
+        }
+
+        /// A target switch never happens below the reversible threshold, and only ever
+        /// lands on a live agent or the primary session (PDA-SP-0008.R8).
+        #[test]
+        fn switch_target_is_safe(d in arb_decision(), pending in arb_pending()) {
+            if let Outcome::SwitchTarget { target, p } = run(&d, "háblale a migracion auth", &pending) {
+                let t = Thresholds::default();
+                prop_assert!(p >= t.reversible);
+                prop_assert!(valid_p(Some(&d.intent)) >= t.reversible);
+                prop_assert_eq!(d.intent.value, Intent::Control);
+                prop_assert!(d.action.is_none());
+                match target {
+                    VoiceTarget::Agent(id) => {
+                        prop_assert!(agents().iter().any(|a| a.id == id), "unknown {}", id);
+                        prop_assert!(valid_p(d.agent.as_ref()) >= t.reversible);
+                    }
+                    VoiceTarget::Primary => {
+                        prop_assert_eq!(d.intent_class.as_deref(), Some(BACK_TO_PANDO_CLASS));
+                    }
+                }
             }
         }
 

@@ -94,6 +94,9 @@ voice:
   pill:
     project: "proyecto · %{name} · %{p} %"
     switched: "Proyecto %{name}."
+  target:
+    talking: "Ahora hablas con %{label}."
+    back: De vuelta con Pando.
   hands_free:
     on: "Manos libres: te escucho (Oye Pando)"
     toggle: Manos libres

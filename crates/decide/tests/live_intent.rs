@@ -17,6 +17,7 @@ use decide::state::StateInput;
 use decide::transport::{ClientOptions, SystemOneClient, block_on};
 
 const PHRASES: &str = include_str!("fixtures/intent_phrases.tsv");
+const TARGET_PHRASES: &str = include_str!("fixtures/target_phrases.tsv");
 
 fn phrases() -> Vec<(Intent, &'static str)> {
     PHRASES
@@ -27,6 +28,85 @@ fn phrases() -> Vec<(Intent, &'static str)> {
             (Intent::from_key(label).expect("known label"), text)
         })
         .collect()
+}
+
+fn target_phrases() -> Vec<(&'static str, &'static str)> {
+    TARGET_PHRASES
+        .lines()
+        .filter(|l| !l.starts_with('#') && !l.trim().is_empty())
+        .map(|l| l.split_once('\t').expect("class<TAB>text"))
+        .collect()
+}
+
+/// PDA-SP-0008.R8: every "háblale a" / "vuelve" variant is caught by rule, the near
+/// misses ("vuelve a lanzar ...") are not, and no phrase of the labelled intent set is
+/// hijacked by the rule (so the live intent accuracy cannot regress through it).
+#[test]
+fn target_phrases_by_rule() {
+    use decide::questions::{TargetTrigger, target_trigger};
+    let p = target_phrases();
+    assert!(p.len() >= 15);
+    for (class, text) in &p {
+        let want = match *class {
+            "talk_to_agent" => Some(TargetTrigger::Talk),
+            "back_to_pando" => Some(TargetTrigger::Back),
+            other => {
+                assert!(
+                    decide::questions::intent_of_class(other).is_some(),
+                    "{other}"
+                );
+                None
+            }
+        };
+        assert_eq!(target_trigger(text), want, "{text:?}");
+    }
+    for (_, text) in phrases() {
+        assert_eq!(target_trigger(text), None, "{text:?}");
+    }
+}
+
+/// The near misses of the target fixture still reach their model class with
+/// `tev1:0.8b` (the rule must not be needed for them, nor steal them).
+#[test]
+#[ignore = "needs a running Ollama with tev1:0.8b"]
+fn target_near_misses_keep_their_class() {
+    let base = std::env::var("DECIDE_BASE_URL").unwrap_or_else(|_| http::DEFAULT_BASE.into());
+    let model = std::env::var("DECIDE_MODEL").unwrap_or_else(|_| "tev1:0.8b".into());
+    let transport = http::StdHttpTransport::new(&base, None).expect("base url");
+    let mut opts = ClientOptions::new(model);
+    opts.timeout = http::EVAL_TIMEOUT;
+    let client = SystemOneClient::new(transport, opts);
+    let misses: Vec<_> = target_phrases()
+        .into_iter()
+        .filter(|(c, _)| !matches!(*c, "talk_to_agent" | "back_to_pando"))
+        .collect();
+    let mut ok = 0usize;
+    for (class, text) in &misses {
+        let o = client.options();
+        let cascade = Cascade::new(
+            StateInput {
+                transcript: (*text).into(),
+                ..StateInput::default()
+            },
+            o.model.clone(),
+            o.keep_alive.clone(),
+            o.context_tokens,
+        );
+        let req = cascade.next_request().expect("intent request (no rule)");
+        let resp = block_on(client.decide(&req)).expect("decision call").value;
+        let got = resp
+            .answers
+            .get("intent")
+            .and_then(|a| a.choice.clone())
+            .unwrap_or_default();
+        if got == *class {
+            ok += 1;
+        } else {
+            println!("MISS {class} <- {text:?}: {got}");
+        }
+    }
+    println!("near-miss classes: {ok}/{}", misses.len());
+    assert_eq!(ok, misses.len());
 }
 
 #[test]

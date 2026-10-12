@@ -13,7 +13,7 @@ use std::time::Duration;
 use decide::SystemOneClient;
 use decide::command::{Capabilities, Dispatched, dispatch};
 use decide::log::DecisionLog;
-use decide::policy::{ControlRequest, Outcome, Thresholds};
+use decide::policy::{ControlRequest, Outcome, Thresholds, VoiceTarget};
 use decide::questions::AgentTarget;
 use decide::questions::ProjectChoice;
 use pando_client::PandoClient;
@@ -615,6 +615,36 @@ impl Assistant {
                 } else {
                     self.feed(Input::Decided(Decided::SwitchProject), cx);
                 }
+            }
+            Outcome::SwitchTarget { target, .. } => {
+                // "háblale a <agente>" / "vuelve" (PDA-SP-0008.R8): reversible, no confirmation.
+                self.log_record(&resolved.record, true);
+                self.feed(Input::Decided(Decided::SwitchTarget), cx);
+                let speech = match target {
+                    VoiceTarget::Primary => {
+                        let _ = self
+                            .pane
+                            .update(cx, |p, cx| p.voice_switch_target(None, cx));
+                        t!("voice.target.back").to_string()
+                    }
+                    VoiceTarget::Agent(slug) => match directory.resolve(&slug) {
+                        Some(entry) => {
+                            let cell = entry.cell_id.clone();
+                            match self
+                                .pane
+                                .update(cx, |p, cx| p.voice_switch_target(Some(&cell), cx))
+                            {
+                                Ok(Some(label)) => {
+                                    t!("voice.target.talking", label = label).to_string()
+                                }
+                                Ok(None) => t!("voice.target.back").to_string(),
+                                Err(notice) => notice,
+                            }
+                        }
+                        None => t!("voice.cmd.missing_target").to_string(),
+                    },
+                };
+                self.notify(speech, Priority::Direct, None, cx);
             }
             Outcome::Dictate { text } => {
                 self.log_record(&resolved.record, true);

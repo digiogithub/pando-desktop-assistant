@@ -51,6 +51,8 @@ pub enum Decided {
     Dictate,
     /// Project switch (a pill update).
     SwitchProject,
+    /// Voice target switch ("háblale a" / "vuelve"): a pane target update.
+    SwitchTarget,
 }
 
 /// Events from the stages.
@@ -298,7 +300,10 @@ impl Session {
             Input::Decided(kind) if self.stage == Stage::Deciding => match kind {
                 Decided::Command => self.stage = Stage::Acting,
                 Decided::Confirm => self.stage = Stage::Confirming,
-                Decided::ExplicitOnly | Decided::Dictate | Decided::SwitchProject => self.settle(),
+                Decided::ExplicitOnly
+                | Decided::Dictate
+                | Decided::SwitchProject
+                | Decided::SwitchTarget => self.settle(),
                 Decided::Conversation => {
                     // Chat text is sent by the caller, which still has the transcript.
                     self.stage = Stage::Thinking;
@@ -667,6 +672,7 @@ mod tests {
             Decided::ExplicitOnly,
             Decided::Dictate,
             Decided::SwitchProject,
+            Decided::SwitchTarget,
         ] {
             let mut s = Session::new();
             to_deciding(&mut s);

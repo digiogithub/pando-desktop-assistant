@@ -321,6 +321,83 @@ pub fn dictation_trigger(transcript: &str) -> Option<String> {
     Some(rest.trim_end().to_string())
 }
 
+/// A voice-target command recognised by rule (`PDA-SP-0008.R8`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TargetTrigger {
+    /// "háblale a <agente>": the agent question follows.
+    Talk,
+    /// "vuelve": back to the primary session; nothing else to ask.
+    Back,
+}
+
+/// Lead-ins of "háblale a <agente>", matched on the normalized transcript, longest first.
+/// The agent name must follow.
+const TALK_TRIGGERS: &[&str] = &[
+    "quiero hablar con",
+    "pasame con",
+    "ponme con",
+    "hablale al",
+    "hablale a",
+    "habla con",
+    "hablar con",
+];
+
+/// Whole utterances (after fillers) that mean "back to the primary session".
+const BACK_PHRASES: &[&str] = &[
+    "vuelve",
+    "volver",
+    "vuelve a pando",
+    "vuelve con pando",
+    "volver a pando",
+    "vuelve a mesnada",
+    "vuelve a la sesion principal",
+    "vuelve al principal",
+    "regresa a pando",
+];
+
+/// Words dropped from both ends before matching a back phrase ("ya está, vuelve a Pando",
+/// "Pando, vuelve", "vuelve por favor").
+const FILLERS: &[&str] = &[
+    "ya", "esta", "vale", "bueno", "venga", "ok", "oye", "pando", "por", "favor", "y",
+];
+
+/// "háblale a auth" / "vuelve" by rule, before any model call (`PDA-SP-0008.R8`).
+///
+/// The 0.8b decision model got worse when these became intent classes: two extra
+/// control classes pulled conversation requests to `control` (live eval 96/100 → 88/100)
+/// and confused "volver" with "vuelve a lanzar". A short lead-in list is unambiguous and
+/// costs no round trip, like the dictation lead-ins. "vuelve a lanzar ..." is not a back
+/// phrase: back phrases must be the whole utterance.
+pub fn target_trigger(transcript: &str) -> Option<TargetTrigger> {
+    let norm = crate::text::normalize(transcript);
+    let words: Vec<&str> = norm.split(' ').filter(|w| !w.is_empty()).collect();
+    let talk = TALK_TRIGGERS.iter().any(|t| {
+        let tw: Vec<&str> = t.split(' ').collect();
+        words.len() > tw.len() && words.starts_with(&tw)
+    });
+    if talk {
+        return Some(TargetTrigger::Talk);
+    }
+    let mut core: &[&str] = &words;
+    while let [first, rest @ ..] = core
+        && FILLERS.contains(first)
+    {
+        core = rest;
+    }
+    while let [rest @ .., last] = core
+        && FILLERS.contains(last)
+        // Keep the "pando" of "vuelve a pando".
+        && !(core.len() >= 2 && *last == "pando" && matches!(core[core.len() - 2], "a" | "con"))
+    {
+        core = rest;
+    }
+    let core = core.join(" ");
+    BACK_PHRASES
+        .contains(&core.as_str())
+        .then_some(TargetTrigger::Back)
+}
+
 /// Step 2: target agent over the given agents (first [`MAX_AGENT_CRITERIA`] with a
 /// non-reserved, unique id) plus `all | none`.
 pub fn agent_question(agents: &[AgentInfo]) -> Question {
@@ -503,6 +580,35 @@ mod tests {
         assert_eq!(t("cancela migración auth"), None);
         assert_eq!(t("dictamen del juez"), None);
         assert_eq!(t("¿qué dicta la norma?"), None);
+    }
+
+    #[test]
+    fn target_triggers() {
+        use TargetTrigger::{Back, Talk};
+        for (text, want) in [
+            ("háblale a auth", Some(Talk)),
+            ("Háblale al de los tests", Some(Talk)),
+            ("habla con el de docs", Some(Talk)),
+            ("quiero hablar con migración auth", Some(Talk)),
+            ("pásame con el agente de docs", Some(Talk)),
+            ("vuelve", Some(Back)),
+            ("Vuelve.", Some(Back)),
+            ("vuelve a Pando", Some(Back)),
+            ("volver", Some(Back)),
+            ("ya está, vuelve a Pando", Some(Back)),
+            ("Pando, vuelve por favor", Some(Back)),
+            ("vuelve a la sesión principal", Some(Back)),
+            // Not target switches.
+            ("vuelve a lanzar migración auth", None),
+            ("vuelve a intentarlo", None),
+            ("habla con", None),
+            ("háblale", None),
+            ("¿de qué habla con el cliente?", None),
+            ("cancela migración auth", None),
+            ("pando", None),
+        ] {
+            assert_eq!(target_trigger(text), want, "{text:?}");
+        }
     }
 
     #[test]

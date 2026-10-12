@@ -1,0 +1,18 @@
+# class<TAB>transcript — voice target switch phrases (PDA-SP-0008.R8, PDA-T-0172) and near misses.
+talk_to_agent	háblale a auth
+talk_to_agent	háblale a migración auth
+talk_to_agent	habla con el de docs
+talk_to_agent	quiero hablar con el agente de bitácora
+talk_to_agent	háblale al de los tests
+talk_to_agent	habla con migración auth
+talk_to_agent	pásame con el agente de docs
+talk_to_agent	ponme con el de la interfaz
+back_to_pando	vuelve
+back_to_pando	vuelve a Pando
+back_to_pando	volver
+back_to_pando	vuelve con Pando
+back_to_pando	vuelve a la sesión principal
+back_to_pando	ya está, vuelve a Pando
+rerun_agent	vuelve a lanzar migración auth
+show_agent	abre el agente de docs
+stop_agent	cancela migración auth

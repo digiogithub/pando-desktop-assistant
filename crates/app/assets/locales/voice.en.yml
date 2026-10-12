@@ -94,6 +94,9 @@ voice:
   pill:
     project: "project · %{name} · %{p} %"
     switched: "Project %{name}."
+  target:
+    talking: "Now talking to %{label}."
+    back: Back to Pando.
   hands_free:
     on: "Hands-free on: listening (Oye Pando)"
     toggle: Hands-free

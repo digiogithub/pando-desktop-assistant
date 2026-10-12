@@ -6,7 +6,8 @@
 //! 3. Only for `spawn`: `engine` + `project` in one request.
 //!
 //! The `switch_project` intent class ("cambia a bitácora") asks `project` alone instead
-//! of step 2.
+//! of step 2. Voice-target commands are recognised by rule (`PDA-SP-0008.R8`):
+//! "háblale a auth" asks `agent` alone, and "vuelve" needs no call at all.
 //!
 //! [`Cascade`] is a sans-IO state machine (`next_request` / `feed`) so it is testable
 //! without a transport; [`run`] drives it over a [`SystemOneClient`].
@@ -18,14 +19,19 @@ use serde::{Deserialize, Serialize};
 use crate::error::DecisionError;
 use crate::protocol::{Answer, Question, Request, Response};
 use crate::questions::{
-    Action, AgentTarget, Engine, Intent, ProjectChoice, action_question, agent_question,
-    dictation_trigger, engine_question, intent_of_class, intent_question, names, project_question,
+    Action, AgentTarget, Engine, Intent, ProjectChoice, TargetTrigger, action_question,
+    agent_question, dictation_trigger, engine_question, intent_of_class, intent_question, names,
+    project_question, target_trigger,
 };
 use crate::state::{StateInput, build_state, state_byte_budget};
 use crate::transport::{DecisionTransport, SystemOneClient};
 
 /// Intent class that routes to the project question (`PDA-SP-0008.R6`).
 pub const SWITCH_PROJECT_CLASS: &str = "switch_project";
+/// `intent_class` of a "háblale a <agente>" decision (by rule, `PDA-SP-0008.R8`).
+pub const TALK_TO_AGENT_CLASS: &str = "talk_to_agent";
+/// `intent_class` of a "vuelve" decision (by rule, `PDA-SP-0008.R8`).
+pub const BACK_TO_PANDO_CLASS: &str = "back_to_pando";
 
 /// One answered question: the parsed value, `p(top)` and the ranked options.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -101,6 +107,7 @@ enum Step {
     Target,
     Spawn,
     Project,
+    Talk,
     Done,
 }
 
@@ -156,25 +163,40 @@ impl Cascade {
             let agents = std::mem::take(&mut input.agents);
             input.agents = ranked.into_iter().map(|(_, i)| agents[i].clone()).collect();
         }
-        let dictation = dictation_trigger(&input.transcript);
-        let intent = dictation.as_ref().map(|_| Answered {
-            value: Intent::Dictation,
+        let by_rule = |value: Intent| Answered {
+            value,
             p: Some(1.0),
             confidence: None,
-            ranked: vec![(Intent::Dictation.key().to_string(), 1.0)],
-        });
+            ranked: vec![(value.key().to_string(), 1.0)],
+        };
+        let dictation = dictation_trigger(&input.transcript);
+        let target = if dictation.is_none() {
+            target_trigger(&input.transcript)
+        } else {
+            None
+        };
+        let (intent, intent_class, step) = match (&dictation, target) {
+            (Some(_), _) => (Some(by_rule(Intent::Dictation)), None, Step::Done),
+            (None, Some(TargetTrigger::Talk)) => (
+                Some(by_rule(Intent::Control)),
+                Some(TALK_TO_AGENT_CLASS.to_string()),
+                Step::Talk,
+            ),
+            (None, Some(TargetTrigger::Back)) => (
+                Some(by_rule(Intent::Control)),
+                Some(BACK_TO_PANDO_CLASS.to_string()),
+                Step::Done,
+            ),
+            (None, None) => (None, None, Step::Intent),
+        };
         Self {
             input,
             model: model.into(),
             keep_alive,
             context_tokens,
-            step: if intent.is_some() {
-                Step::Done
-            } else {
-                Step::Intent
-            },
+            step,
             intent,
-            intent_class: None,
+            intent_class,
             dictation,
             agent: None,
             action: None,
@@ -201,6 +223,7 @@ impl Cascade {
                 names::PROJECT.into(),
                 project_question(&self.input.projects),
             )],
+            Step::Talk => vec![(names::AGENT.into(), agent_question(&self.input.agents))],
             Step::Done => return None,
         })
     }
@@ -244,15 +267,14 @@ impl Cascade {
                 if intent == Intent::Dictation {
                     self.dictation = Some(self.input.transcript.trim().to_string());
                 }
-                let switch = class == SWITCH_PROJECT_CLASS;
+                self.step = match (intent, class.as_str()) {
+                    // "cambia a bitácora": a project question instead of agent/action.
+                    (Intent::Control, SWITCH_PROJECT_CLASS) => Step::Project,
+                    (Intent::Control, _) => Step::Target,
+                    (Intent::Conversation | Intent::Dictation, _) => Step::Done,
+                };
                 self.intent = Some(answered);
                 self.intent_class = Some(class);
-                self.step = match intent {
-                    // "cambia a bitácora": a project question instead of agent/action.
-                    Intent::Control if switch => Step::Project,
-                    Intent::Control => Step::Target,
-                    Intent::Conversation | Intent::Dictation => Step::Done,
-                };
             }
             Step::Target => {
                 let ag = get(names::AGENT)?;
@@ -289,6 +311,14 @@ impl Cascade {
                 self.project = Some(Answered::from_answer(
                     ProjectChoice::from_key(&choice(p)),
                     p,
+                ));
+                self.step = Step::Done;
+            }
+            Step::Talk => {
+                let ag = get(names::AGENT)?;
+                self.agent = Some(Answered::from_answer(
+                    AgentTarget::from_key(&choice(ag)),
+                    ag,
                 ));
                 self.step = Step::Done;
             }
@@ -591,6 +621,48 @@ mod tests {
         );
         let seen = c.transport().seen_json();
         assert_eq!(seen[1]["questions"].as_object().unwrap().len(), 1);
+    }
+
+    /// PDA-SP-0008.R8: "háblale a auth" asks the agent question alone.
+    #[test]
+    fn talk_to_agent_asks_only_the_agent() {
+        let c = client(vec![Reply::Answer(vec![("agent", "migracion-auth", 0.88)])]);
+        let run = block_on(run(&c, input("háblale a auth"))).unwrap();
+        let d = run.decision;
+        assert_eq!(d.intent.value, Intent::Control);
+        assert_eq!(d.intent.p, Some(1.0), "decided by rule");
+        assert_eq!(d.intent_class.as_deref(), Some(TALK_TO_AGENT_CLASS));
+        assert!(d.action.is_none() && d.project.is_none());
+        assert_eq!(
+            d.agent.as_ref().map(|a| &a.value),
+            Some(&AgentTarget::Agent("migracion-auth".into()))
+        );
+        let seen = c.transport().seen_json();
+        assert_eq!(seen.len(), 1, "no intent call");
+        let q = seen[0]["questions"].as_object().unwrap();
+        assert_eq!(q.keys().collect::<Vec<_>>(), ["agent"]);
+    }
+
+    /// PDA-SP-0008.R8: "vuelve" needs no call; "vuelve a lanzar" is a normal command.
+    #[test]
+    fn back_to_pando_needs_no_call() {
+        let c = client(vec![]);
+        let run = block_on(run(&c, input("vuelve a Pando"))).unwrap();
+        let d = run.decision;
+        assert_eq!(d.intent.value, Intent::Control);
+        assert_eq!(d.intent_class.as_deref(), Some(BACK_TO_PANDO_CLASS));
+        assert!(d.action.is_none() && d.agent.is_none());
+        assert!(run.exchanges.is_empty());
+
+        let c = client(vec![
+            Reply::Answer(vec![("intent", "rerun_agent", 0.9)]),
+            Reply::Answer(vec![
+                ("agent", "migracion-auth", 0.9),
+                ("action", "retry", 0.9),
+            ]),
+        ]);
+        let retry = block_on(super::run(&c, input("vuelve a lanzar migración auth"))).unwrap();
+        assert_eq!(retry.decision.action.map(|a| a.value), Some(Action::Retry));
     }
 
     #[test]

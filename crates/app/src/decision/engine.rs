@@ -105,9 +105,10 @@ pub fn card_from(record: &DecisionRecord) -> ActionCard {
 #[must_use]
 pub fn tone_of(outcome: &Outcome) -> ResultTone {
     match outcome {
-        Outcome::Execute { .. } | Outcome::SwitchProject { .. } | Outcome::Dictate { .. } => {
-            ResultTone::Ok
-        }
+        Outcome::Execute { .. }
+        | Outcome::SwitchProject { .. }
+        | Outcome::SwitchTarget { .. }
+        | Outcome::Dictate { .. } => ResultTone::Ok,
         Outcome::Confirm { .. } | Outcome::ExplicitOnly { .. } => ResultTone::NeedsUser,
         Outcome::Conversation { .. } => ResultTone::Ok,
     }
@@ -134,6 +135,10 @@ pub fn describe(outcome: &Outcome) -> String {
             )
         }
         Outcome::SwitchProject { project, .. } => format!("proyecto {project:?} → switch_project"),
+        Outcome::SwitchTarget { target, .. } => match target {
+            decide::policy::VoiceTarget::Agent(slug) => format!("háblale a {slug} → switch_target"),
+            decide::policy::VoiceTarget::Primary => "vuelve → switch_target".to_owned(),
+        },
         Outcome::Dictate { .. } => "dictado → composer".to_owned(),
         Outcome::Conversation { reason, .. } => format!("conversación ({reason:?})"),
     }
