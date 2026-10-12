@@ -26,6 +26,13 @@ voice-proto = { path = "../voice-proto" }
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
+sherpa-onnx = { version = "=1.13.8", optional = true, default-features = false, features = ["static"] }
 
 [dev-dependencies]
 hound = "3.5"
+
+[features]
+# Parakeet-TDT v3 fallback through sherpa-onnx. OFF by default: it needs a sherpa-onnx built
+# from source with TTS OFF (`scripts/build-sherpa-stt.sh`, then SHERPA_ONNX_LIB_DIR=...), because
+# the prebuilt libraries embed espeak-ng (GPL-3). See ADR 0007 and docs.
+parakeet = ["dep:sherpa-onnx"]

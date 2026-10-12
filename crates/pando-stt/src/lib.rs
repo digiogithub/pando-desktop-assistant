@@ -4,7 +4,10 @@
 //! This crate must never link a prebuilt sherpa-onnx (it embeds espeak-ng, GPL-3).
 
 pub mod chunking;
+pub mod engine;
 pub mod keywords;
+#[cfg(feature = "parakeet")]
+pub mod parakeet;
 pub mod server;
 pub mod stt;
 pub mod whistle;

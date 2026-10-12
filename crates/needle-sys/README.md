@@ -23,3 +23,10 @@ macOS links the system `c++`. Windows (`x86_64-pc-windows-gnullvm`) needs the ll
 `libunwind.a` in `$LIBCXX_DIR`.
 
 Do not link this crate into a process that also loads sherpa-onnx/libstdc++ code (ADR 0007, spike S3).
+
+## Sharing a process with sherpa-onnx (Linux)
+
+The static libc++ inside libneedle interposes libstdc++'s `__cxa_throw` / `operator new`, which aborts
+C++ exceptions and crashes `new[]`/`delete[]` pairs of sherpa-onnx/onnxruntime (spike S3, measured again for
+PDA-T-0093: `free(): invalid pointer`). `scripts/privatize-needle.sh` produces `libneedle_private.a` (libc++ bundled and
+hidden); `build.rs` prefers it when present. `pando-stt --features parakeet` requires it on Linux.

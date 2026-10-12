@@ -14,8 +14,6 @@ pub struct Pkg {
     pub deps: BTreeSet<String>,
     /// Declared (normal/build) dependencies: (name, version requirement).
     pub declared: Vec<(String, String)>,
-    /// Cargo features enabled on this package in the resolved graph.
-    pub features: BTreeSet<String>,
 }
 
 /// Crates the pure layers (`organism`, `decide`) must never reach, even transitively.
@@ -28,13 +26,14 @@ fn allowed_edges() -> BTreeMap<&'static str, BTreeSet<&'static str>> {
     BTreeMap::from([
         ("organism", set(&[])),
         ("audio", set(&[])),
+        ("speech", set(&[])),
         ("needle-sys", set(&[])),
         ("decide", set(&[])),
         ("voice-proto", set(&[])),
         ("pando-client", set(&[])),
         ("claude-bridge", set(&["voice-proto"])),
         ("pando-stt", set(&["voice-proto", "needle-sys"])),
-        ("pando-tts", set(&["voice-proto"])),
+        ("pando-tts", set(&["voice-proto", "speech"])),
         (
             "app",
             set(&[
@@ -43,15 +42,13 @@ fn allowed_edges() -> BTreeMap<&'static str, BTreeSet<&'static str>> {
                 "pando-client",
                 "voice-proto",
                 "audio",
+                "speech",
                 "claude-bridge",
             ]),
         ),
         ("xtask", set(&[])),
     ])
 }
-
-/// Features of the sherpa-onnx crates that fetch prebuilt (TTS-enabled) libraries.
-const PREBUILT_FEATURES: [&str; 2] = ["download-binaries", "static"];
 
 fn is_sherpa(n: &str) -> bool {
     n == "sherpa-onnx"
@@ -103,11 +100,10 @@ pub fn run() -> Result<bool> {
             is_member: members.contains(&node.id),
             deps,
             declared,
-            features: node.features.iter().map(|f| f.to_string()).collect(),
         });
     }
 
-    let errors = check(&pkgs);
+    let errors = check_with(&pkgs, std::env::var_os("SHERPA_ONNX_LIB_DIR").is_some());
     if errors.is_empty() {
         let n = pkgs.iter().filter(|p| p.is_member).count();
         println!("check-deps: OK ({n} workspace crates, dependency direction, GPUI pin)");
@@ -122,7 +118,13 @@ pub fn run() -> Result<bool> {
 }
 
 /// Pure check over a package graph; returns human-readable violations.
+#[cfg(test)]
 pub fn check(pkgs: &[Pkg]) -> Vec<String> {
+    check_with(pkgs, false)
+}
+
+/// Like [`check`]; `sherpa_source_build` is true when `SHERPA_ONNX_LIB_DIR` is set.
+pub fn check_with(pkgs: &[Pkg], sherpa_source_build: bool) -> Vec<String> {
     let mut errors = Vec::new();
     let by_name: BTreeMap<&str, &Pkg> = pkgs.iter().map(|p| (p.name.as_str(), p)).collect();
     let allowed = allowed_edges();
@@ -176,19 +178,15 @@ pub fn check(pkgs: &[Pkg]) -> Vec<String> {
                 p.name
             ));
         }
-        if p.name == "pando-stt" {
-            for d in reach.iter().filter(|d| is_sherpa(d)) {
-                let prebuilt = by_name.get(d.as_str()).is_some_and(|q| {
-                    q.features
-                        .iter()
-                        .any(|f| PREBUILT_FEATURES.contains(&f.as_str()))
-                });
-                if prebuilt {
-                    errors.push(format!(
-                        "`pando-stt` reaches prebuilt sherpa-onnx (`{d}` with a download/static feature); build from source with TTS off (ADR 0007)"
-                    ));
-                }
-            }
+        // The sherpa-onnx crate downloads prebuilt (TTS-enabled, espeak-ng) libraries unless
+        // `SHERPA_ONNX_LIB_DIR` points at a TTS-off source build; `pando-stt` must use the latter.
+        if p.name == "pando-stt"
+            && !sherpa_source_build
+            && let Some(sh) = reach.iter().find(|d| is_sherpa(d))
+        {
+            errors.push(format!(
+                "`pando-stt` reaches `{sh}` but SHERPA_ONNX_LIB_DIR is not set: the prebuilt libraries embed espeak-ng; build sherpa-onnx from source with TTS off (ADR 0007)"
+            ));
         }
         // 3. no direct `gpui` dependency anywhere; gpui-kit must be pinned with `=`.
         for (dep, req) in &p.declared {
@@ -234,7 +232,6 @@ mod tests {
             is_member: member,
             deps: deps.iter().map(|s| s.to_string()).collect(),
             declared: vec![],
-            features: Default::default(),
         }
     }
 
@@ -347,21 +344,15 @@ mod tests {
     }
 
     #[test]
-    fn prebuilt_sherpa_in_stt_fails() {
+    fn sherpa_in_stt_needs_a_source_build() {
         let mut v = with_workers();
         add_dep(&mut v, "pando-stt", "sherpa-onnx");
-        for p in v.iter_mut().filter(|p| p.name == "sherpa-onnx-sys") {
-            p.features.insert("download-binaries".into());
-        }
-        let errs = check(&v);
-        assert!(errs.iter().any(|e| e.contains("prebuilt")), "{errs:?}");
-    }
-
-    #[test]
-    fn source_built_sherpa_in_stt_passes() {
-        let mut v = with_workers();
-        add_dep(&mut v, "pando-stt", "sherpa-onnx");
-        assert_eq!(check(&v), Vec::<String>::new());
+        let errs = check_with(&v, false);
+        assert!(
+            errs.iter().any(|e| e.contains("SHERPA_ONNX_LIB_DIR")),
+            "{errs:?}"
+        );
+        assert_eq!(check_with(&v, true), Vec::<String>::new());
     }
 
     #[test]
