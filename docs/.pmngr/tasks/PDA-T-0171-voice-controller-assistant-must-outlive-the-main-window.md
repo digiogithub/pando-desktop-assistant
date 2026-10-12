@@ -2,13 +2,15 @@
 id: PDA-T-0171
 type: task
 title: Voice controller/assistant must outlive the main window (background mode PTT)
-status: backlog
+status: in_review
 priority: high
 parent: PDA-US-0033
+assignees: [claude-sonnet]
 author: mcp
 labels: [voice-in, shell, bug]
 created: 2026-10-12T08:58:35Z
-updated: 2026-10-12T08:58:35Z
+updated: 2026-10-12T09:04:27Z
+started: 2026-10-12T09:04:21Z
 ---
 
 ## Description
