@@ -11,6 +11,7 @@ pub mod events;
 pub mod fonts;
 pub mod i18n;
 pub mod logging;
+pub mod organism_view;
 pub mod paths;
 pub mod settings;
 pub mod tokio_bridge;

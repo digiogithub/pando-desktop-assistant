@@ -14,6 +14,10 @@ pub struct Args {
     /// throwaway data root so it never touches the user's files; a 30 s watchdog exits with 2.
     #[arg(long)]
     pub smoke_test: bool,
+
+    /// Open the organism demo (fake agents, state selector) instead of the app; needs no Pando.
+    #[arg(long)]
+    pub demo: bool,
 }
 
 #[cfg(test)]
@@ -26,5 +30,6 @@ mod tests {
         assert!(args.smoke_test);
         assert_eq!(args.log_level.as_deref(), Some("debug"));
         assert!(!Args::parse_from(["pando-assistant"]).smoke_test);
+        assert!(Args::parse_from(["pando-assistant", "--demo"]).demo);
     }
 }

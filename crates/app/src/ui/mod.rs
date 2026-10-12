@@ -308,6 +308,7 @@ pub fn key_binding(
 }
 
 pub mod assets;
+pub mod paint;
 
 /// Builds an icon element from a Lucide icon name.
 pub fn icon(name: IconName) -> Icon {

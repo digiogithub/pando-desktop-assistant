@@ -1,0 +1,37 @@
+organism:
+  aria: "Organism: agent cells"
+  state:
+    idle: Idle
+    listening: Listening
+    thinking: Thinking
+    speaking: Speaking
+    delegating: Delegating
+  engine:
+    pando: Pando
+    acp: Claude Code · ACP
+    external: Claude Code · external session
+    cli: CLI · output only
+  status:
+    pending: Queued
+    working: Working
+    waiting: Waiting
+    paused: Paused
+    done: Done
+    error: Error
+  cell:
+    aria: "%{label}, %{engine}, %{status}"
+    fold_label: "+%{count}"
+    fold_aria: "%{count} more agents"
+    unnamed: Agent
+  demo:
+    title: Organism demo
+    states: Body state (keys 1–5)
+    add: Add agent (N)
+    remove: Remove the oldest (X)
+    cycle: Cycle status of the selected cell (S)
+    engines: Engines
+    statuses: Task statuses
+    selected: "Selected: %{label}"
+    none_selected: No cell selected
+    fps: "%{fps} fps · CPU %{cpu} ms (p95 %{p95} ms)"
+    overlay: Show timings (F)

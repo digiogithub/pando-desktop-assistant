@@ -2,14 +2,16 @@
 id: PDA-T-0039
 type: task
 title: "Interaction: pointer, hover, click, keyboard and a11y"
-status: backlog
+status: in_review
 parent: PDA-US-0011
 milestone: PDA-M-0002
+assignees: [claude-sonnet]
 author: mcp
 labels: [organism, a11y]
 estimate: 3
 created: 2026-10-11T21:48:44Z
-updated: 2026-10-11T22:02:51Z
+updated: 2026-10-12T07:32:40Z
+started: 2026-10-12T07:32:25Z
 ---
 
 ## Description

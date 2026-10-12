@@ -1,0 +1,37 @@
+organism:
+  aria: "Organismo: células de agentes"
+  state:
+    idle: Reposo
+    listening: Escuchando
+    thinking: Pensando
+    speaking: Hablando
+    delegating: Delegando
+  engine:
+    pando: Pando
+    acp: Claude Code · ACP
+    external: Claude Code · sesión externa
+    cli: CLI · solo salida
+  status:
+    pending: En cola
+    working: Trabajando
+    waiting: Esperando
+    paused: Pausado
+    done: Hecho
+    error: Error
+  cell:
+    aria: "%{label}, %{engine}, %{status}"
+    fold_label: "+%{count}"
+    fold_aria: "%{count} agentes más"
+    unnamed: Agente
+  demo:
+    title: Demo del organismo
+    states: Estado del cuerpo (teclas 1–5)
+    add: Añadir agente (N)
+    remove: Quitar el más antiguo (X)
+    cycle: Cambiar estado del seleccionado (S)
+    engines: Motores
+    statuses: Estados de tarea
+    selected: "Seleccionado: %{label}"
+    none_selected: Ninguna célula seleccionada
+    fps: "%{fps} fps · CPU %{cpu} ms (p95 %{p95} ms)"
+    overlay: Mostrar tiempos (F)

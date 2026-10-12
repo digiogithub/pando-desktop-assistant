@@ -7,6 +7,7 @@ use std::time::{Duration, Instant};
 use anyhow::Context as _;
 
 use crate::cli::Args;
+use crate::organism_view::demo::DemoView;
 use crate::paths::AppDirs;
 use crate::settings::{AppSettings, LoadOutcome};
 use crate::ui::{self, AppContext as _};
@@ -52,8 +53,9 @@ pub fn run(args: &Args) -> anyhow::Result<()> {
     let failure: Rc<RefCell<Option<anyhow::Error>>> = Rc::default();
     let startup_failure = failure.clone();
     let smoke = args.smoke_test;
+    let demo = args.demo;
     ui::application().run(move |cx| {
-        if let Err(err) = start(cx, &settings, smoke, started) {
+        if let Err(err) = start(cx, &settings, smoke, demo, started) {
             tracing::error!("startup failed: {err:#}");
             *startup_failure.borrow_mut() = Some(err);
             cx.quit();
@@ -74,9 +76,11 @@ fn start(
     cx: &mut ui::App,
     settings: &AppSettings,
     smoke: bool,
+    demo: bool,
     started: Instant,
 ) -> anyhow::Result<()> {
     ui::init(cx);
+    crate::organism_view::bind_keys(cx);
     ui::kit_theme::install(cx);
     cx.set_reduce_motion(settings.reduce_motion);
     fonts::register(cx);
@@ -97,10 +101,20 @@ fn start(
         bounds,
         ui::size(ui::px(title_bar::MIN_SIZE.0), ui::px(title_bar::MIN_SIZE.1)),
     );
-    let (handle, _view) = ui::open_main_window(options, cx, |window, cx| {
-        cx.new(|cx| MainView::new(window, cx, tokio_handle, pando_url))
-    })
-    .context("opening the main window")?;
+    let reduced_motion = settings.reduce_motion;
+    let handle = if demo {
+        ui::open_main_window(options, cx, |window, cx| {
+            cx.new(|cx| DemoView::new(window, cx, reduced_motion))
+        })
+        .context("opening the demo window")?
+        .0
+    } else {
+        ui::open_main_window(options, cx, |window, cx| {
+            cx.new(|cx| MainView::new(window, cx, tokio_handle, pando_url))
+        })
+        .context("opening the main window")?
+        .0
+    };
     tracing::info!("window opened");
 
     handle.update(cx, |_, window, cx| {
