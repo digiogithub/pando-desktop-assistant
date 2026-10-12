@@ -28,3 +28,54 @@ pub fn stroke_style(width: f32, round: bool) -> PathStyle {
 pub fn px_len(v: f32) -> Pixels {
     px(v)
 }
+
+/// Raster images for the CPU fallback (PDA-T-0042).
+#[cfg(feature = "raster")]
+pub mod raster_image {
+    use std::sync::Arc;
+
+    use gpui_kit::gpui::{Bounds, Corners, Pixels, RenderImage, Window};
+
+    /// A premultiplied BGRA frame uploaded to the GPU.
+    pub struct Frame(Arc<RenderImage>);
+
+    impl std::fmt::Debug for Frame {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            f.write_str("Frame")
+        }
+    }
+
+    impl Frame {
+        /// Wraps premultiplied **RGBA** pixels (tiny-skia order); `None` when the size does
+        /// not match the buffer. GPUI's image shader expects straight-alpha BGRA, so the
+        /// colour is un-premultiplied here.
+        #[must_use]
+        pub fn from_rgba(width: u32, height: u32, rgba: &[u8]) -> Option<Self> {
+            let mut bgra = rgba.to_vec();
+            for px in bgra.as_chunks_mut::<4>().0 {
+                let a = u32::from(px[3]);
+                if a > 0 && a < 255 {
+                    for c in &mut px[..3] {
+                        *c = ((u32::from(*c) * 255 + a / 2) / a).min(255) as u8;
+                    }
+                }
+                px.swap(0, 2);
+            }
+            let img = image::RgbaImage::from_raw(width, height, bgra)?;
+            Some(Self(Arc::new(RenderImage::new(vec![image::Frame::new(
+                img,
+            )]))))
+        }
+
+        /// Paints the frame stretched over `bounds`.
+        pub fn paint(&self, window: &mut Window, bounds: Bounds<Pixels>) {
+            let _ =
+                window.paint_image(bounds, bounds, Corners::default(), self.0.clone(), 0, false);
+        }
+
+        /// Releases the GPU copy (call before replacing the frame).
+        pub fn drop_from(&self, window: &mut Window) {
+            let _ = window.drop_image(self.0.clone());
+        }
+    }
+}

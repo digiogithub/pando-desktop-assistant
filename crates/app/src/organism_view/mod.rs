@@ -27,6 +27,10 @@ pub mod demo;
 pub mod demo_source;
 pub mod geometry;
 pub mod paint;
+#[cfg(feature = "raster")]
+pub mod raster;
+#[cfg(all(test, feature = "raster"))]
+mod visual;
 
 pub use core::{Core, FrameStats};
 
@@ -97,9 +101,61 @@ pub fn aria_label(c: &organism::CellSemantics) -> String {
     .to_string()
 }
 
+/// Which backend paints the geometry.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum RenderMode {
+    /// GPUI paths, or the CPU raster when GPUI reports a software renderer.
+    #[default]
+    Auto,
+    /// Always GPUI paths.
+    Gpu,
+    /// Always the tiny-skia raster (needs the `raster` feature, else behaves as `Gpu`).
+    Raster,
+}
+
+impl RenderMode {
+    /// Parses `auto` / `gpu` / `raster` (the `PANDO_ORGANISM_RENDER` override).
+    #[must_use]
+    pub fn parse(s: &str) -> Option<Self> {
+        match s.trim().to_ascii_lowercase().as_str() {
+            "auto" => Some(Self::Auto),
+            "gpu" => Some(Self::Gpu),
+            "raster" => Some(Self::Raster),
+            _ => None,
+        }
+    }
+
+    /// Whether the raster backend should paint, given the GPU report.
+    #[must_use]
+    pub fn use_raster(self, software_gpu: bool) -> bool {
+        cfg!(feature = "raster")
+            && match self {
+                Self::Auto => software_gpu,
+                Self::Gpu => false,
+                Self::Raster => true,
+            }
+    }
+}
+
+/// Minimum time between raster frames (30 fps).
+#[cfg(feature = "raster")]
+const RASTER_INTERVAL: Duration = Duration::from_millis(33);
+
+/// The last raster frame and when / at which size it was drawn.
+#[cfg(feature = "raster")]
+#[derive(Default)]
+struct RasterState {
+    frame: Option<crate::ui::paint::raster_image::Frame>,
+    at: Option<Instant>,
+    side: u32,
+}
+
 /// The organism canvas entity.
 #[allow(missing_debug_implementations)]
 pub struct OrganismView {
+    mode: RenderMode,
+    #[cfg(feature = "raster")]
+    raster: Rc<RefCell<RasterState>>,
     core: Rc<RefCell<Core>>,
     text: Rc<RefCell<paint::TextCache>>,
     focus: FocusHandle,
@@ -131,7 +187,14 @@ impl OrganismView {
                 }
             })
         };
+        let mode = std::env::var("PANDO_ORGANISM_RENDER")
+            .ok()
+            .and_then(|v| RenderMode::parse(&v))
+            .unwrap_or_default();
         Self {
+            mode,
+            #[cfg(feature = "raster")]
+            raster: Rc::default(),
             core,
             text: Rc::default(),
             focus: cx.focus_handle(),
@@ -190,6 +253,12 @@ impl OrganismView {
         self.inactive_interval = interval;
     }
 
+    /// Chooses the paint backend.
+    pub fn set_render_mode(&mut self, mode: RenderMode, cx: &mut Context<Self>) {
+        self.mode = mode;
+        cx.notify();
+    }
+
     /// Shows the frame-time overlay (PDA-T-0043).
     pub fn set_show_timings(&mut self, on: bool, cx: &mut Context<Self>) {
         self.show_timings = on;
@@ -243,6 +312,38 @@ impl OrganismView {
     fn pointer_to_local(&self, p: Point<Pixels>) -> [f32; 2] {
         let o = self.core.borrow().origin_px;
         [f32::from(p.x) - o[0], f32::from(p.y) - o[1]]
+    }
+}
+
+/// Paints the geometry with the CPU raster, redrawing the pixmap at most every 33 ms.
+#[cfg(feature = "raster")]
+fn paint_raster(
+    window: &mut Window,
+    _bounds: crate::ui::Bounds<Pixels>,
+    origin: Point<Pixels>,
+    side: f32,
+    core: &Core,
+    st: &mut RasterState,
+) {
+    let pixels = raster::fallback_side(side, window.scale_factor());
+    let due = st.at.is_none_or(|t| t.elapsed() >= RASTER_INTERVAL) || st.side != pixels;
+    if due
+        && let Some(pm) = raster::render(&core.draw, side, pixels, None)
+        && let Some(frame) =
+            crate::ui::paint::raster_image::Frame::from_rgba(pm.width(), pm.height(), pm.data())
+    {
+        if let Some(old) = st.frame.replace(frame) {
+            old.drop_from(window);
+        }
+        st.at = Some(Instant::now());
+        st.side = pixels;
+    }
+    if let Some(frame) = &st.frame {
+        let b = crate::ui::Bounds {
+            origin,
+            size: crate::ui::size(px(side), px(side)),
+        };
+        frame.paint(window, b);
     }
 }
 
@@ -344,6 +445,9 @@ impl Render for OrganismView {
             root = root.cursor_pointer();
         }
         let show_timings = self.show_timings;
+        let mode = self.mode;
+        #[cfg(feature = "raster")]
+        let raster = self.raster.clone();
         root.child(
             canvas(
                 |_, _, _| (),
@@ -355,7 +459,14 @@ impl Render for OrganismView {
                     c.view_origin_px = [f32::from(bounds.origin.x), f32::from(bounds.origin.y)];
                     let prev = c.last_frame();
                     c.advance(started, side, window.scale_factor());
-                    let mut counts = paint::paint_paths(window, origin, &c.draw);
+                    let software = window.gpu_specs().is_some_and(|g| g.is_software_emulated);
+                    let mut counts = paint::PaintCounts::default();
+                    if mode.use_raster(software) {
+                        #[cfg(feature = "raster")]
+                        paint_raster(window, bounds, origin, side, &c, &mut raster.borrow_mut());
+                    } else {
+                        counts = paint::paint_paths(window, origin, &c.draw);
+                    }
                     if focused {
                         paint::paint_focus_ring(window, origin, &c, &mut counts);
                     }

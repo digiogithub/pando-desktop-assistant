@@ -20,7 +20,14 @@ path = "src/lib.rs"
 name = "pando-assistant"
 path = "src/main.rs"
 
+[features]
+# CPU raster fallback of the organism for software GPUs (PDA-T-0042).
+default = ["raster"]
+raster = ["dep:tiny-skia", "dep:image"]
+
 [dependencies]
+tiny-skia = { version = "0.11", optional = true }
+image = { version = "0.25", default-features = false, optional = true }
 gpui-kit.workspace = true
 pando-client = { path = "../pando-client" }
 anyhow.workspace = true
@@ -40,5 +47,6 @@ lyon_tessellation = "1.0.22"
 organism = { path = "../organism" }
 
 [dev-dependencies]
+image = { version = "0.25", default-features = false, features = ["png"] }
 gpui-kit = { workspace = true, features = ["test-support"] }
 tempfile.workspace = true

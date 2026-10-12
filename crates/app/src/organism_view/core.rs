@@ -298,6 +298,32 @@ mod tests {
         assert_eq!(core.focused, first);
     }
 
+    /// `cargo test -p app --release core_frame_cost -- --ignored --nocapture`
+    #[test]
+    #[ignore = "timing probe, run in release"]
+    fn core_frame_cost() {
+        for side in [300.0_f32, 640.0, 1000.0, 1600.0] {
+            let mut core = Core::new();
+            core.cells = (0..14)
+                .map(|i| CellInput::new(&format!("c{i}"), Engine::Pando, Status::Working))
+                .collect();
+            let t0 = Instant::now();
+            for i in 0..120 {
+                core.advance(t0 + Duration::from_millis(16 * i), side, 1.0);
+            }
+            let start = Instant::now();
+            for i in 120..720 {
+                core.advance(t0 + Duration::from_millis(16 * i), side, 1.0);
+            }
+            let per = start.elapsed().as_secs_f64() * 1000.0 / 600.0;
+            println!(
+                "side {side}: step+shape+semantics {per:.3} ms/frame, {} prims, {} pts",
+                core.draw.prims.len(),
+                core.draw.points.len()
+            );
+        }
+    }
+
     #[test]
     fn stats_report_percentiles() {
         let mut s = FrameStats::default();

@@ -2,14 +2,17 @@
 id: PDA-T-0042
 type: task
 title: tiny-skia raster backend (raster feature)
-status: backlog
+status: done
 parent: PDA-US-0011
 milestone: PDA-M-0002
+assignees: [claude-sonnet]
 author: mcp
 labels: [organism]
 estimate: 5
 created: 2026-10-11T21:48:44Z
-updated: 2026-10-11T22:02:51Z
+updated: 2026-10-12T07:41:29Z
+started: 2026-10-12T07:41:16Z
+closed: 2026-10-12T07:41:29Z
 ---
 
 ## Description
