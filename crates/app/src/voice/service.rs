@@ -217,6 +217,7 @@ impl VoiceService {
             let speech = g.vad.frame(frame);
             match g.barge.frame(playing, speech) {
                 BargeAction::Duck => {
+                    tracing::debug!("hands-free barge-in: duck");
                     if let Some(p) = &playback {
                         p.set_duck(true);
                     }
@@ -227,6 +228,7 @@ impl VoiceService {
                     }
                 }
                 BargeAction::Stop => {
+                    tracing::debug!("hands-free barge-in: stop");
                     if let Some(p) = &playback {
                         p.set_duck(false);
                         p.stop();
@@ -372,6 +374,7 @@ impl VoiceService {
         };
         if pressed.barge_in {
             self.stop_speaking();
+            tracing::debug!("push-to-talk barge-in: playback stopped");
         }
         pressed
     }

@@ -128,3 +128,74 @@ fn capture_delivers_16k_frames_and_preroll() {
     assert!(cap.preroll().len() >= 16_000);
     assert_eq!(cap.restarts(), 0);
 }
+
+/// Soak: `PANDO_AUDIO_SOAK_SECS` (default 60) of capture must deliver every frame and never
+/// restart. With `PANDO_AUDIO_SUSPEND_SOURCE=<pulse source name>` (Linux, needs `pactl`) the
+/// source is suspended mid-run, as a stalled device, to exercise the watchdog.
+#[test]
+#[ignore = "needs an audio input device; takes a minute"]
+fn capture_soak_and_stall_watchdog() {
+    let secs: u64 = std::env::var("PANDO_AUDIO_SOAK_SECS")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(60);
+    let frames = Arc::new(AtomicUsize::new(0));
+    let events = Arc::new(Mutex::new(Vec::<CaptureEvent>::new()));
+    let (f2, e2) = (frames.clone(), events.clone());
+    let cap = Capture::start(
+        CaptureConfig::default(),
+        move |_| {
+            f2.fetch_add(1, Ordering::Relaxed);
+        },
+        move |e| {
+            if let Ok(mut v) = e2.lock() {
+                v.push(e);
+            }
+        },
+    );
+    assert!(wait(
+        || cap.level() >= 0.0 && frames.load(Ordering::Relaxed) > 0,
+        Duration::from_secs(10)
+    ));
+    let t0 = Instant::now();
+    let f0 = frames.load(Ordering::Relaxed);
+    let src = std::env::var("PANDO_AUDIO_SUSPEND_SOURCE").ok();
+    let mut suspended = false;
+    while t0.elapsed() < Duration::from_secs(secs) {
+        std::thread::sleep(Duration::from_millis(200));
+        if let (Some(s), false) = (&src, suspended)
+            && t0.elapsed() > Duration::from_secs(secs / 2)
+        {
+            suspended = true;
+            let ok = std::process::Command::new("pactl")
+                .args(["suspend-source", s, "1"])
+                .status()
+                .is_ok_and(|st| st.success());
+            println!("suspend-source {s}: {ok}");
+            std::thread::sleep(Duration::from_secs(3));
+            let _ = std::process::Command::new("pactl")
+                .args(["suspend-source", s, "0"])
+                .status();
+            println!(
+                "after resume: restarts {}, frames {}",
+                cap.restarts(),
+                frames.load(Ordering::Relaxed)
+            );
+        }
+    }
+    let n = frames.load(Ordering::Relaxed) - f0;
+    println!(
+        "{n} frames in {:.1} s (50/s nominal), restarts {}, events {:?}",
+        t0.elapsed().as_secs_f64(),
+        cap.restarts(),
+        events.lock().expect("lock")
+    );
+    if src.is_none() {
+        let nominal = (t0.elapsed().as_secs_f64() * 50.0) as usize;
+        assert!(
+            n.abs_diff(nominal) < nominal / 20,
+            "{n} frames vs {nominal}"
+        );
+        assert_eq!(cap.restarts(), 0);
+    }
+}

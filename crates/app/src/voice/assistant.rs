@@ -343,6 +343,12 @@ impl Assistant {
             VoiceControllerEvent::PlaybackStarted => {
                 if let Some(job) = &self.job {
                     let id = job.utterance;
+                    // The first audible sample ends the turn's latency path (not the end of the speech).
+                    let now = self.now(cx);
+                    if let Some(mut turn) = self.turn.take() {
+                        turn.mark(Stage::FirstAudio, now);
+                        self.voice.update(cx, |v, _| v.finish_turn(&turn));
+                    }
                     self.feed(Input::SpeechStarted(id), cx);
                 }
             }

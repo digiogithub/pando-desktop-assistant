@@ -1,7 +1,8 @@
 //! Hands-free barge-in policy while the assistant is speaking (`PDA-SP-0011.R4`).
 //!
 //! Pure state machine fed with one VAD decision per 20 ms frame of the echo-cleaned signal. During
-//! TTS: speech must last >= 200 ms to duck the output by 12 dB, and 400 ms to stop it. Without AEC and
+//! TTS: speech must last >= 200 ms to duck the output by 12 dB, and 400 ms to stop it (speech in the
+//! first 400 ms of a playback is ignored: the echo canceller is still converging). Without AEC and
 //! without a headset hands-free barge-in is disabled (push-to-talk still works).
 
 /// Frame duration the machine is driven with.
@@ -26,6 +27,8 @@ pub struct BargeIn {
     speech_ms: u32,
     silence_ms: u32,
     ducked: bool,
+    /// Milliseconds the current playback has been audible.
+    playing_ms: u32,
 }
 
 impl BargeIn {
@@ -36,12 +39,18 @@ impl BargeIn {
             speech_ms: 0,
             silence_ms: 0,
             ducked: false,
+            playing_ms: 0,
         }
     }
 
     pub fn is_enabled(&self) -> bool {
         self.enabled
     }
+
+    /// The echo canceller has not converged on the first words of an utterance (measured on a
+    /// real loopback: 200-250 ms of residual that the VAD takes for speech), so speech is not
+    /// counted until the playback has been audible this long.
+    pub const GRACE_MS: u32 = 400;
 
     /// Output gain to apply while ducked (-12 dB).
     pub const DUCK_GAIN: f32 = 0.251;
@@ -52,12 +61,15 @@ impl BargeIn {
             let was = std::mem::take(&mut self.ducked);
             self.speech_ms = 0;
             self.silence_ms = 0;
+            self.playing_ms = 0;
             return if was {
                 BargeAction::Restore
             } else {
                 BargeAction::None
             };
         }
+        self.playing_ms = self.playing_ms.saturating_add(FRAME_MS);
+        let speech = speech && self.playing_ms > Self::GRACE_MS;
         if speech {
             self.speech_ms += FRAME_MS;
             self.silence_ms = 0;
@@ -107,21 +119,42 @@ mod tests {
     #[test]
     fn duck_at_200_ms_and_stop_at_400_ms() {
         let mut b = BargeIn::new(true);
-        let ev = drive(&mut b, true, &[(true, 500)]);
-        assert_eq!(ev, vec![(200, BargeAction::Duck), (400, BargeAction::Stop)]);
+        let ev = drive(&mut b, true, &[(false, BargeIn::GRACE_MS), (true, 500)]);
+        assert_eq!(ev, vec![(600, BargeAction::Duck), (800, BargeAction::Stop)]);
+    }
+
+    #[test]
+    fn echo_residual_while_the_canceller_converges_is_ignored() {
+        let mut b = BargeIn::new(true);
+        // 400 ms of "speech" right at the start of the playback, then clean signal.
+        assert!(drive(&mut b, true, &[(true, BargeIn::GRACE_MS), (false, 600)]).is_empty());
+        // The grace period restarts with the next playback.
+        drive(&mut b, false, &[(false, 100)]);
+        assert!(drive(&mut b, true, &[(true, BargeIn::GRACE_MS), (false, 600)]).is_empty());
     }
 
     #[test]
     fn a_short_noise_does_not_duck() {
         let mut b = BargeIn::new(true);
-        assert!(drive(&mut b, true, &[(true, 160), (false, 1000)]).is_empty());
+        assert!(
+            drive(
+                &mut b,
+                true,
+                &[(false, BargeIn::GRACE_MS), (true, 160), (false, 1000)]
+            )
+            .is_empty()
+        );
     }
 
     #[test]
     fn duck_is_restored_after_a_pause() {
         let mut b = BargeIn::new(true);
-        let ev = drive(&mut b, true, &[(true, 240), (false, 400)]);
-        assert_eq!(ev[0], (200, BargeAction::Duck));
+        let ev = drive(
+            &mut b,
+            true,
+            &[(false, BargeIn::GRACE_MS), (true, 240), (false, 400)],
+        );
+        assert_eq!(ev[0], (600, BargeAction::Duck));
         assert!(ev.iter().any(|(_, a)| *a == BargeAction::Restore));
     }
 
@@ -141,7 +174,7 @@ mod tests {
     #[test]
     fn playback_ending_while_ducked_restores() {
         let mut b = BargeIn::new(true);
-        drive(&mut b, true, &[(true, 240)]);
+        drive(&mut b, true, &[(false, BargeIn::GRACE_MS), (true, 240)]);
         assert_eq!(b.frame(false, false), BargeAction::Restore);
     }
 }
