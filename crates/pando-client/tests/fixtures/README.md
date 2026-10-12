@@ -14,6 +14,19 @@ them; the API token is scrubbed to `<TOKEN>` and never stored.
 | `session_reattach.sse` | real | `GET /sessions/{id}/stream` replay of the run above |
 | `synthetic_events.sse` | **synthetic** | Hand-written from `docs/research/pando-api.md` section 3.3 for events not captured: permission, question, plan/todos, edit diff, steering, conclusion, resurrected, goal, unknown event, error. |
 
-Not yet recorded from a live server (pending, tracked in PDA-T-0027): permission and question
-round trips, steering, cancel, delegation with `conclusion_*`. They need a configured sandbox /
-mesnada setup and non-trivial LLM spend; `synthetic_events.sse` covers their wire shapes.
+Recorded live later (Pando v1.3.0, scratch project with `[Permissions] AutoApproveTools = false`
+and `[Mesnada.Delegation] Enabled/InjectIntoLiveLoop/ResurrectIdleLoop = true`):
+
+| File | Notes |
+|---|---|
+| `chat_permission.sse`, `session_pending_permission.json` | bash `permission_request`, approved with `POST /permissions/respond {action:"allow"}` |
+| `chat_permission_deny.sse` | same, `deny` -> `tool_result` "Permission denied" |
+| `chat_question_steer.sse` | `AskUserQuestion` -> `question_request`; a `POST /steer` mid-run yields `steering_injected` (no `steering_queued` was emitted) |
+| `chat_cancel.sse` | `POST /cancel` mid-text: `error {"error":"request cancelled by user"}` then `done` (content_delta trimmed to 30) |
+| `chat_cancel_while_permission.sse` | cancel while blocked on a permission does NOT end the run until the request is answered |
+| `chat_delegate_spawn.sse`, `session_resurrected.sse` | `mesnada_spawn_agent` then idle parent; the reattach replay starts with `run` + `resurrected` |
+| `chat_conclusion_injected.sse` | parent still running: `conclusion_injected` (no `conclusion_queued` seen) |
+| `chat_edit_diff.sse` | `edit` tool result with `diff {file_path, old_string, new_string}` and `raw_output.metadata.diff` |
+
+`synthetic_events.sse` remains for the shapes still not captured (plan/todos, goal, `steering_queued`,
+`conclusion_queued`).

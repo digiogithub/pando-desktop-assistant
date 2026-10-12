@@ -1,0 +1,7 @@
+notice System: 🧠 Context enrichment agent gathering project context...
+notice System: ✓ Context enrichment done — no additional context found.
+notice Routing: Auto: no confident match (best Explica p=0.16) → copilot.gpt-6-luna
+tool bash [Failed] kind=execute input={"command":"sleep 100","timeout":120000} -> ERROR Permission denied
+approval 1ece63eb-1611-4b65-b7bb-f2cd035fd823: Denied(ServerExpired)
+-- usage: prompt=15 completion=31028 cache_read=31003 cache_creation=0 reasoning=0 cost=0.000324 window=400000 estimated=false
+-- running=false run_seq=1 seen=1

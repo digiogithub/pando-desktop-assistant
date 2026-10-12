@@ -27,6 +27,42 @@ fn all_real_chat_fixtures_parse_without_unknown_events() {
         ("slash", &include_bytes!("fixtures/chat_slash.sse")[..]),
         ("goal", &include_bytes!("fixtures/chat_goal_status.sse")[..]),
         (
+            "chat_permission",
+            &include_bytes!("fixtures/chat_permission.sse")[..],
+        ),
+        (
+            "chat_permission_deny",
+            &include_bytes!("fixtures/chat_permission_deny.sse")[..],
+        ),
+        (
+            "chat_question_steer",
+            &include_bytes!("fixtures/chat_question_steer.sse")[..],
+        ),
+        (
+            "chat_cancel",
+            &include_bytes!("fixtures/chat_cancel.sse")[..],
+        ),
+        (
+            "chat_cancel_while_permission",
+            &include_bytes!("fixtures/chat_cancel_while_permission.sse")[..],
+        ),
+        (
+            "chat_delegate_spawn",
+            &include_bytes!("fixtures/chat_delegate_spawn.sse")[..],
+        ),
+        (
+            "chat_conclusion_injected",
+            &include_bytes!("fixtures/chat_conclusion_injected.sse")[..],
+        ),
+        (
+            "chat_edit_diff",
+            &include_bytes!("fixtures/chat_edit_diff.sse")[..],
+        ),
+        (
+            "session_resurrected",
+            &include_bytes!("fixtures/session_resurrected.sse")[..],
+        ),
+        (
             "reattach",
             &include_bytes!("fixtures/session_reattach.sse")[..],
         ),
@@ -165,4 +201,52 @@ fn lists_and_pending_parse() {
     let p: Pending = serde_json::from_str(include_str!("fixtures/session_pending.json"))
         .unwrap_or_else(|e| panic!("{e}"));
     assert!(!p.running && p.run_seq == 1);
+}
+
+#[test]
+fn live_permission_stream_carries_a_pending_request() {
+    let evs = events(include_bytes!("fixtures/chat_permission.sse"));
+    let req = evs.iter().find_map(|e| match e {
+        ChatEvent::PermissionRequest(p) => Some(p),
+        _ => None,
+    });
+    let p = req.expect("permission_request in the live capture");
+    assert_eq!(p.tool_name, "bash");
+    assert!(!p.require_explicit_approval && !p.never_auto_approve);
+    assert!(evs.contains(&ChatEvent::Done));
+}
+
+#[test]
+fn live_question_stream_has_steering_injected() {
+    let evs = events(include_bytes!("fixtures/chat_question_steer.sse"));
+    assert!(
+        evs.iter()
+            .any(|e| matches!(e, ChatEvent::QuestionRequest(_)))
+    );
+    assert!(
+        evs.iter()
+            .any(|e| matches!(e, ChatEvent::SteeringInjected { .. }))
+    );
+}
+
+#[test]
+fn live_cancel_ends_with_error_then_done() {
+    let evs = events(include_bytes!("fixtures/chat_cancel.sse"));
+    let n = evs.len();
+    assert!(matches!(&evs[n - 3], ChatEvent::Error(_)));
+    assert!(evs.contains(&ChatEvent::Done));
+}
+
+#[test]
+fn live_delegation_notices_are_typed() {
+    let evs = events(include_bytes!("fixtures/session_resurrected.sse"));
+    assert!(
+        evs.iter()
+            .any(|e| matches!(e, ChatEvent::Resurrected { .. }))
+    );
+    let evs = events(include_bytes!("fixtures/chat_conclusion_injected.sse"));
+    assert!(
+        evs.iter()
+            .any(|e| matches!(e, ChatEvent::ConclusionInjected { .. }))
+    );
 }

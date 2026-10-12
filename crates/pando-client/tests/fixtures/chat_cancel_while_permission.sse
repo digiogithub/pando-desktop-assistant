@@ -1,0 +1,288 @@
+event: session
+data: {"sessionId":"55c1f54d-ef14-4449-9495-f9a790aeacaf","running":true}
+
+event: run
+data: {"runSeq":1,"sessionId":"55c1f54d-ef14-4449-9495-f9a790aeacaf"}
+
+event: system_message
+data: {"session_id":"55c1f54d-ef14-4449-9495-f9a790aeacaf","text":"\n\n🧠 Context enrichment agent gathering project context...\n"}
+
+event: system_message
+data: {"session_id":"55c1f54d-ef14-4449-9495-f9a790aeacaf","text":"✓ Context enrichment done — no additional context found.\n\n"}
+
+event: system_message
+data: {"routing":{"model":"copilot.gpt-6-luna","matched":false,"probability":0.7168868887471402,"confidence":0.44303171447388134,"reason":"no_match","fallbackUsed":false,"routerProvider":"ollama","routerModel":"tev1:0.8b","routerLatencyMs":67,"candidates":["copilot.gpt-6-luna"],"kind":"no_match","notice":"Auto: no confident match (best Programa p=0.09) → copilot.gpt-6-luna"},"session_id":"55c1f54d-ef14-4449-9495-f9a790aeacaf","text":"Auto: no confident match (best Programa p=0.09) → copilot.gpt-6-luna\n"}
+
+event: thinking_delta
+data: {"text":"**Generating a sequence**\n\nI"}
+
+event: thinking_delta
+data: {"text":" need"}
+
+event: thinking_delta
+data: {"text":" to"}
+
+event: thinking_delta
+data: {"text":" produce"}
+
+event: thinking_delta
+data: {"text":" an"}
+
+event: thinking_delta
+data: {"text":" exact"}
+
+event: thinking_delta
+data: {"text":" output"}
+
+event: thinking_delta
+data: {"text":" of"}
+
+event: thinking_delta
+data: {"text":" 200"}
+
+event: thinking_delta
+data: {"text":"0"}
+
+event: thinking_delta
+data: {"text":" numbers"}
+
+event: thinking_delta
+data: {"text":","}
+
+event: thinking_delta
+data: {"text":" which"}
+
+event: thinking_delta
+data: {"text":" is"}
+
+event: thinking_delta
+data: {"text":" quite"}
+
+event: thinking_delta
+data: {"text":" sizable"}
+
+event: thinking_delta
+data: {"text":"!"}
+
+event: thinking_delta
+data: {"text":" I"}
+
+event: thinking_delta
+data: {"text":" could"}
+
+event: thinking_delta
+data: {"text":" generate"}
+
+event: thinking_delta
+data: {"text":" this"}
+
+event: thinking_delta
+data: {"text":" mentally"}
+
+event: thinking_delta
+data: {"text":","}
+
+event: thinking_delta
+data: {"text":" but"}
+
+event: thinking_delta
+data: {"text":" I"}
+
+event: thinking_delta
+data: {"text":" think"}
+
+event: thinking_delta
+data: {"text":" using"}
+
+event: thinking_delta
+data: {"text":" a"}
+
+event: thinking_delta
+data: {"text":" Bash"}
+
+event: thinking_delta
+data: {"text":" sequence"}
+
+event: thinking_delta
+data: {"text":" might"}
+
+event: thinking_delta
+data: {"text":" be"}
+
+event: thinking_delta
+data: {"text":" the"}
+
+event: thinking_delta
+data: {"text":" better"}
+
+event: thinking_delta
+data: {"text":" option"}
+
+event: thinking_delta
+data: {"text":"."}
+
+event: thinking_delta
+data: {"text":" I"}
+
+event: thinking_delta
+data: {"text":" can"}
+
+event: thinking_delta
+data: {"text":" use"}
+
+event: thinking_delta
+data: {"text":" the"}
+
+event: thinking_delta
+data: {"text":" `"}
+
+event: thinking_delta
+data: {"text":"seq"}
+
+event: thinking_delta
+data: {"text":"`"}
+
+event: thinking_delta
+data: {"text":" command"}
+
+event: thinking_delta
+data: {"text":" to"}
+
+event: thinking_delta
+data: {"text":" output"}
+
+event: thinking_delta
+data: {"text":" the"}
+
+event: thinking_delta
+data: {"text":" sequence"}
+
+event: thinking_delta
+data: {"text":" correctly"}
+
+event: thinking_delta
+data: {"text":"."}
+
+event: thinking_delta
+data: {"text":" I"}
+
+event: thinking_delta
+data: {"text":"’ll"}
+
+event: thinking_delta
+data: {"text":" try"}
+
+event: thinking_delta
+data: {"text":" using"}
+
+event: thinking_delta
+data: {"text":" `"}
+
+event: thinking_delta
+data: {"text":"seq"}
+
+event: thinking_delta
+data: {"text":" -"}
+
+event: thinking_delta
+data: {"text":"s"}
+
+event: thinking_delta
+data: {"text":" '"}
+
+event: thinking_delta
+data: {"text":" '"}
+
+event: thinking_delta
+data: {"text":" 1"}
+
+event: thinking_delta
+data: {"text":" 200"}
+
+event: thinking_delta
+data: {"text":"0"}
+
+event: thinking_delta
+data: {"text":"`"}
+
+event: thinking_delta
+data: {"text":" to"}
+
+event: thinking_delta
+data: {"text":" create"}
+
+event: thinking_delta
+data: {"text":" the"}
+
+event: thinking_delta
+data: {"text":" sequence"}
+
+event: thinking_delta
+data: {"text":","}
+
+event: thinking_delta
+data: {"text":" and"}
+
+event: thinking_delta
+data: {"text":" then"}
+
+event: thinking_delta
+data: {"text":" I"}
+
+event: thinking_delta
+data: {"text":" can"}
+
+event: thinking_delta
+data: {"text":" return"}
+
+event: thinking_delta
+data: {"text":" the"}
+
+event: thinking_delta
+data: {"text":" exact"}
+
+event: thinking_delta
+data: {"text":" result"}
+
+event: thinking_delta
+data: {"text":"."}
+
+event: thinking_delta
+data: {"text":" This"}
+
+event: thinking_delta
+data: {"text":" seems"}
+
+event: thinking_delta
+data: {"text":" like"}
+
+event: thinking_delta
+data: {"text":" a"}
+
+event: thinking_delta
+data: {"text":" good"}
+
+event: thinking_delta
+data: {"text":" plan"}
+
+event: thinking_delta
+data: {"text":"!"}
+
+event: tool_call
+data: {"id":"call_Oehp7WIKTPMwr769C7dAfRXp","input":"{\"command\":\"seq -s ' ' 1 2000\",\"head_limit\":1}","kind":"execute","locations":null,"name":"bash","status":"in_progress","title":"seq -s ' ' 1 2000"}
+
+event: token_usage
+data: {"cache_creation_tokens":0,"cache_read_tokens":31003,"completion_tokens":31109,"context_window":400000,"cost":0.00036543,"estimated":false,"prompt_tokens":24,"reasoning_tokens":72,"session_id":"55c1f54d-ef14-4449-9495-f9a790aeacaf"}
+
+event: permission_request
+data: {"action":"execute","description":"Execute command: seq -s ' ' 1 2000","grant_key":"","id":"2e0daaa2-579a-47f1-9ca0-506b9a2b6469","justification":"","never_auto_approve":false,"params":{"command":"seq -s ' ' 1 2000","timeout":0},"path":"/work/project","require_explicit_approval":false,"session_id":"55c1f54d-ef14-4449-9495-f9a790aeacaf","tool_name":"bash"}
+
+event: tool_result
+data: {"content":"Permission denied","is_error":true,"kind":"execute","locations":null,"name":"bash","raw_output":{"output":"Permission denied"},"status":"failed","terminal":{"exit_code":1,"terminal_id":"call_Oehp7WIKTPMwr769C7dAfRXp"},"title":"seq -s ' ' 1 2000","tool_call_id":"call_Oehp7WIKTPMwr769C7dAfRXp"}
+
+event: goal_status
+data: {"goal":null}
+
+event: done
+data: {}
+

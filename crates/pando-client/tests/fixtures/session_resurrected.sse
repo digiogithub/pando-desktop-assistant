@@ -1,0 +1,24 @@
+event: session
+data: {"sessionId":"eeac001b-dd2c-4537-ab35-75f4737fcce7","running":false}
+
+event: goal_status
+data: {"goal":null}
+
+event: run
+data: {"runSeq":2,"sessionId":"eeac001b-dd2c-4537-ab35-75f4737fcce7"}
+
+event: resurrected
+data: {"message":"🔁 Resuming — a delegated task reported its result.","session_id":"eeac001b-dd2c-4537-ab35-75f4737fcce7"}
+
+event: content_delta
+data: {"text":"pong"}
+
+event: token_usage
+data: {"cache_creation_tokens":0,"cache_read_tokens":31919,"completion_tokens":31924,"context_window":400000,"cost":0.00419509,"estimated":false,"prompt_tokens":66,"reasoning_tokens":0,"session_id":"eeac001b-dd2c-4537-ab35-75f4737fcce7"}
+
+event: goal_status
+data: {"goal":null}
+
+event: done
+data: {}
+

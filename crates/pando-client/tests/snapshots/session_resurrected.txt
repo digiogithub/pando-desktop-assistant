@@ -1,0 +1,4 @@
+notice Resurrected: 🔁 Resuming — a delegated task reported its result.
+assistant: pong
+-- usage: prompt=66 completion=31924 cache_read=31919 cache_creation=0 reasoning=0 cost=0.004195 window=400000 estimated=false
+-- running=false run_seq=2 seen=2

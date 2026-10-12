@@ -1,0 +1,42 @@
+event: session
+data: {"sessionId":"46ce7931-39d0-4191-9b5e-94033549353f","running":true}
+
+event: run
+data: {"runSeq":1,"sessionId":"46ce7931-39d0-4191-9b5e-94033549353f"}
+
+event: system_message
+data: {"session_id":"46ce7931-39d0-4191-9b5e-94033549353f","text":"\n\n🧠 Context enrichment agent gathering project context...\n"}
+
+event: system_message
+data: {"session_id":"46ce7931-39d0-4191-9b5e-94033549353f","text":"✓ Context enrichment done — no additional context found.\n\n"}
+
+event: system_message
+data: {"routing":{"model":"copilot.gpt-6-luna","matched":false,"probability":0.6389354367017731,"confidence":0.4186226812056091,"reason":"no_match","fallbackUsed":false,"routerProvider":"ollama","routerModel":"tev1:0.8b","routerLatencyMs":30,"candidates":["copilot.gpt-6-luna"],"kind":"no_match","notice":"Auto: no confident match (best Programa p=0.21) → copilot.gpt-6-luna"},"session_id":"46ce7931-39d0-4191-9b5e-94033549353f","text":"Auto: no confident match (best Programa p=0.21) → copilot.gpt-6-luna\n"}
+
+event: tool_call
+data: {"id":"call_o5QzEQJ24DidkRBHhp5OylsY","input":"{\"command\":\"touch perm_test.txt\"}","kind":"execute","locations":null,"name":"bash","status":"in_progress","title":"touch perm_test.txt"}
+
+event: token_usage
+data: {"cache_creation_tokens":0,"cache_read_tokens":31021,"completion_tokens":31042,"context_window":400000,"cost":0.00032101,"estimated":false,"prompt_tokens":3,"reasoning_tokens":0,"session_id":"46ce7931-39d0-4191-9b5e-94033549353f"}
+
+event: permission_request
+data: {"action":"execute","description":"Execute command: touch perm_test.txt","grant_key":"","id":"43ce40f3-9aec-4f07-83f9-d81ce83f13f3","justification":"","never_auto_approve":false,"params":{"command":"touch perm_test.txt","timeout":0},"path":"/work/project","require_explicit_approval":false,"session_id":"46ce7931-39d0-4191-9b5e-94033549353f","tool_name":"bash"}
+
+event: tool_result
+data: {"content":"no output","is_error":false,"kind":"execute","locations":null,"name":"bash","raw_output":{"metadata":{"end_time":1791801460714,"start_time":1791801460704,"total_lines":0,"truncated":false},"output":"no output"},"status":"completed","terminal":{"exit_code":0,"terminal_id":"call_o5QzEQJ24DidkRBHhp5OylsY"},"title":"touch perm_test.txt","tool_call_id":"call_o5QzEQJ24DidkRBHhp5OylsY"}
+
+event: token_usage
+data: {"cache_creation_tokens":0,"cache_read_tokens":0,"completion_tokens":31042,"context_window":400000,"cost":0,"estimated":true,"prompt_tokens":27,"reasoning_tokens":0,"session_id":"46ce7931-39d0-4191-9b5e-94033549353f"}
+
+event: content_delta
+data: {"text":"done"}
+
+event: token_usage
+data: {"cache_creation_tokens":0,"cache_read_tokens":31055,"completion_tokens":31060,"context_window":400000,"cost":0.00063436,"estimated":false,"prompt_tokens":3,"reasoning_tokens":0,"session_id":"46ce7931-39d0-4191-9b5e-94033549353f"}
+
+event: goal_status
+data: {"goal":null}
+
+event: done
+data: {}
+

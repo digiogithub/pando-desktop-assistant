@@ -1,0 +1,33 @@
+event: session
+data: {"sessionId":"c8f3c770-44cc-489f-bf5c-cca9afa60844","running":true}
+
+event: run
+data: {"runSeq":1,"sessionId":"c8f3c770-44cc-489f-bf5c-cca9afa60844"}
+
+event: system_message
+data: {"session_id":"c8f3c770-44cc-489f-bf5c-cca9afa60844","text":"\n\n🧠 Context enrichment agent gathering project context...\n"}
+
+event: system_message
+data: {"session_id":"c8f3c770-44cc-489f-bf5c-cca9afa60844","text":"✓ Context enrichment done — no additional context found.\n\n"}
+
+event: system_message
+data: {"routing":{"model":"copilot.gpt-6-luna","matched":false,"probability":0.6343385995700069,"confidence":0.37687546696459395,"reason":"no_match","fallbackUsed":false,"routerProvider":"ollama","routerModel":"tev1:0.8b","routerLatencyMs":62,"candidates":["copilot.gpt-6-luna"],"kind":"no_match","notice":"Auto: no confident match (best Explica p=0.16) → copilot.gpt-6-luna"},"session_id":"c8f3c770-44cc-489f-bf5c-cca9afa60844","text":"Auto: no confident match (best Explica p=0.16) → copilot.gpt-6-luna\n"}
+
+event: tool_call
+data: {"id":"call_uYYObZaj59CK8Q6RPrIJnnEh","input":"{\"command\":\"sleep 100\",\"timeout\":120000}","kind":"execute","locations":null,"name":"bash","status":"in_progress","title":"sleep 100"}
+
+event: token_usage
+data: {"cache_creation_tokens":0,"cache_read_tokens":31003,"completion_tokens":31028,"context_window":400000,"cost":0.00032402999999999995,"estimated":false,"prompt_tokens":15,"reasoning_tokens":0,"session_id":"c8f3c770-44cc-489f-bf5c-cca9afa60844"}
+
+event: permission_request
+data: {"action":"execute","description":"Execute command: sleep 100","grant_key":"","id":"1ece63eb-1611-4b65-b7bb-f2cd035fd823","justification":"","never_auto_approve":false,"params":{"command":"sleep 100","timeout":0},"path":"/work/project","require_explicit_approval":false,"session_id":"c8f3c770-44cc-489f-bf5c-cca9afa60844","tool_name":"bash"}
+
+event: tool_result
+data: {"content":"Permission denied","is_error":true,"kind":"execute","locations":null,"name":"bash","raw_output":{"output":"Permission denied"},"status":"failed","terminal":{"exit_code":1,"terminal_id":"call_uYYObZaj59CK8Q6RPrIJnnEh"},"title":"sleep 100","tool_call_id":"call_uYYObZaj59CK8Q6RPrIJnnEh"}
+
+event: goal_status
+data: {"goal":null}
+
+event: done
+data: {}
+

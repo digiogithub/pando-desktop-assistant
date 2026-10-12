@@ -1,0 +1,6 @@
+notice System: 🧠 Context enrichment agent gathering project context...
+notice System: ✓ Context enrichment done — no additional context found.
+notice Routing: Auto: no confident match (best Analiza p=0.47) → copilot.gpt-6-luna
+assistant: # The Sea  The sea is never only water. It is a horizon, a road, a boundary, a source of f...
+notice Error: request cancelled by user
+-- running=false run_seq=1 seen=1

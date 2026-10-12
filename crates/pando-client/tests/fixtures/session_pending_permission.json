@@ -1,0 +1,1 @@
+{"permissions":[{"action":"execute","description":"Execute command: touch perm_test.txt","id":"43ce40f3-9aec-4f07-83f9-d81ce83f13f3","params":{"command":"touch perm_test.txt","timeout":0},"path":"/tmp/scratch","session_id":"46ce7931-39d0-4191-9b5e-94033549353f","tool_name":"bash"}],"questions":[],"run_seq":1,"running":true}

@@ -1,0 +1,45 @@
+event: session
+data: {"sessionId":"088a3969-cb20-4edb-89db-5a819c134cdd","running":true}
+
+event: run
+data: {"runSeq":1,"sessionId":"088a3969-cb20-4edb-89db-5a819c134cdd"}
+
+event: system_message
+data: {"session_id":"088a3969-cb20-4edb-89db-5a819c134cdd","text":"\n\n🧠 Context enrichment agent gathering project context...\n"}
+
+event: system_message
+data: {"session_id":"088a3969-cb20-4edb-89db-5a819c134cdd","text":"✓ Context enrichment done — no additional context found.\n\n"}
+
+event: system_message
+data: {"routing":{"model":"copilot.gpt-6-luna","matched":false,"probability":0.8781120497118895,"confidence":0.7056541455365455,"reason":"no_match","fallbackUsed":false,"routerProvider":"ollama","routerModel":"tev1:0.8b","routerLatencyMs":65,"candidates":["copilot.gpt-6-luna"],"kind":"no_match","notice":"Auto: no confident match (best Explica p=0.05) → copilot.gpt-6-luna"},"session_id":"088a3969-cb20-4edb-89db-5a819c134cdd","text":"Auto: no confident match (best Explica p=0.05) → copilot.gpt-6-luna\n"}
+
+event: tool_call
+data: {"id":"call_XlYzVcfICe5Vl977DhbXFIl0","input":"{\"questions\":[{\"header\":\"Color\",\"question\":\"What’s your favorite color?\",\"options\":[{\"label\":\"Red\",\"description\":\"Red\"},{\"label\":\"Blue\",\"description\":\"Blue\"}]}]}","kind":"other","locations":null,"name":"AskUserQuestion","status":"in_progress","title":"AskUserQuestion"}
+
+event: token_usage
+data: {"cache_creation_tokens":0,"cache_read_tokens":31003,"completion_tokens":31056,"context_window":400000,"cost":0.00033963,"estimated":false,"prompt_tokens":31,"reasoning_tokens":0,"session_id":"088a3969-cb20-4edb-89db-5a819c134cdd"}
+
+event: question_request
+data: {"id":"53990216-f82e-426b-9e45-e37a57f88caa","questions":[{"id":"q1","header":"Color","question":"What’s your favorite color?","multi_select":false,"options":[{"label":"Red","description":"Red"},{"label":"Blue","description":"Blue"}]}],"session_id":"088a3969-cb20-4edb-89db-5a819c134cdd"}
+
+event: tool_result
+data: {"content":"The user answered:\n- What’s your favorite color?: Blue","is_error":false,"kind":"other","locations":null,"name":"AskUserQuestion","raw_output":{"metadata":{"answers":[{"question_id":"q1","selected":["Blue"]}]},"output":"The user answered:\n- What’s your favorite color?: Blue"},"status":"completed","title":"AskUserQuestion","tool_call_id":"call_XlYzVcfICe5Vl977DhbXFIl0"}
+
+event: token_usage
+data: {"cache_creation_tokens":0,"cache_read_tokens":0,"completion_tokens":31056,"context_window":400000,"cost":0,"estimated":true,"prompt_tokens":59,"reasoning_tokens":0,"session_id":"088a3969-cb20-4edb-89db-5a819c134cdd"}
+
+event: steering_injected
+data: {"message":"💬 Feedback injected — continuing with your input.","session_id":"088a3969-cb20-4edb-89db-5a819c134cdd"}
+
+event: content_delta
+data: {"text":"ok"}
+
+event: token_usage
+data: {"cache_creation_tokens":0,"cache_read_tokens":31031,"completion_tokens":31036,"context_window":400000,"cost":0.00066204,"estimated":false,"prompt_tokens":96,"reasoning_tokens":0,"session_id":"088a3969-cb20-4edb-89db-5a819c134cdd"}
+
+event: goal_status
+data: {"goal":null}
+
+event: done
+data: {}
+

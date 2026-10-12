@@ -1,0 +1,108 @@
+event: session
+data: {"sessionId":"e0a6041e-eeaf-432d-bc1d-203b5c20a1ef","running":true}
+
+event: run
+data: {"runSeq":1,"sessionId":"e0a6041e-eeaf-432d-bc1d-203b5c20a1ef"}
+
+event: system_message
+data: {"session_id":"e0a6041e-eeaf-432d-bc1d-203b5c20a1ef","text":"\n\n🧠 Context enrichment agent gathering project context...\n"}
+
+event: system_message
+data: {"session_id":"e0a6041e-eeaf-432d-bc1d-203b5c20a1ef","text":"✓ Context enrichment done — no additional context found.\n\n"}
+
+event: system_message
+data: {"routing":{"model":"copilot.gpt-6-luna","matched":false,"probability":0.7538666676561502,"confidence":0.5026420235594529,"reason":"no_match","fallbackUsed":false,"routerProvider":"ollama","routerModel":"tev1:0.8b","routerLatencyMs":73,"candidates":["copilot.gpt-6-luna"],"kind":"no_match","notice":"Auto: no confident match (best Traduce p=0.10) → copilot.gpt-6-luna"},"session_id":"e0a6041e-eeaf-432d-bc1d-203b5c20a1ef","text":"Auto: no confident match (best Traduce p=0.10) → copilot.gpt-6-luna\n"}
+
+event: tool_call
+data: {"id":"call_B6OfKpKv9gk5IZVAcf5Prj7L","input":"{\"pattern\":\"hello.txt\"}","kind":"search","locations":null,"name":"glob","status":"in_progress","title":"Find `hello.txt`"}
+
+event: token_usage
+data: {"cache_creation_tokens":0,"cache_read_tokens":31669,"completion_tokens":31687,"context_window":400000,"cost":0.00032819,"estimated":false,"prompt_tokens":25,"reasoning_tokens":0,"session_id":"e0a6041e-eeaf-432d-bc1d-203b5c20a1ef"}
+
+event: tool_result
+data: {"content":"/work/project/hello.txt","is_error":false,"kind":"search","locations":null,"name":"glob","raw_output":{"metadata":{"has_more":false,"number_of_files":1,"offset":0,"total_found":1,"truncated":false},"output":"/work/project/hello.txt"},"status":"completed","title":"Find `hello.txt`","tool_call_id":"call_B6OfKpKv9gk5IZVAcf5Prj7L"}
+
+event: token_usage
+data: {"cache_creation_tokens":0,"cache_read_tokens":0,"completion_tokens":31687,"context_window":400000,"cost":0,"estimated":true,"prompt_tokens":74,"reasoning_tokens":0,"session_id":"e0a6041e-eeaf-432d-bc1d-203b5c20a1ef"}
+
+event: tool_call
+data: {"id":"call_SZ0ihU3MHpsgSJ81vrr330yI","input":"{\"file_path\":\"/work/project/hello.txt\"}","kind":"read","locations":[{"path":"/work/project/hello.txt"}],"name":"view","status":"in_progress","title":"Read hello.txt"}
+
+event: token_usage
+data: {"cache_creation_tokens":0,"cache_read_tokens":31691,"completion_tokens":31756,"context_window":400000,"cost":0.0006854,"estimated":false,"prompt_tokens":78,"reasoning_tokens":0,"session_id":"e0a6041e-eeaf-432d-bc1d-203b5c20a1ef"}
+
+event: tool_result
+data: {"content":"\u003cfile\u003e\n     1|hello from the fixture project\n\u003c/file\u003e\n","is_error":false,"kind":"read","locations":[{"path":"/work/project/hello.txt"}],"name":"view","raw_output":{"metadata":{"content":"hello from the fixture project","file_path":"/work/project/hello.txt"},"output":"\u003cfile\u003e\n     1|hello from the fixture project\n\u003c/file\u003e\n"},"status":"completed","title":"Read hello.txt","tool_call_id":"call_SZ0ihU3MHpsgSJ81vrr330yI"}
+
+event: token_usage
+data: {"cache_creation_tokens":0,"cache_read_tokens":0,"completion_tokens":31756,"context_window":400000,"cost":0,"estimated":true,"prompt_tokens":134,"reasoning_tokens":0,"session_id":"e0a6041e-eeaf-432d-bc1d-203b5c20a1ef"}
+
+event: tool_call
+data: {"id":"call_PtsZsJQgsfmNrZp2GqyNrWDU","input":"{\"file_path\":\"/work/project/hello.txt\",\"old_string\":\"hello from the fixture project\",\"new_string\":\"goodbye from the fixture project\"}","kind":"edit","locations":[{"path":"/work/project/hello.txt"}],"name":"edit","status":"in_progress","title":"Edit hello.txt"}
+
+event: token_usage
+data: {"cache_creation_tokens":0,"cache_read_tokens":31766,"completion_tokens":31850,"context_window":400000,"cost":0.00105446,"estimated":false,"prompt_tokens":94,"reasoning_tokens":0,"session_id":"e0a6041e-eeaf-432d-bc1d-203b5c20a1ef"}
+
+event: permission_request
+data: {"action":"write","description":"Replace content in file /work/project/hello.txt","grant_key":"","id":"0b16ba6a-9be2-47fa-bc9a-cd011171333f","justification":"","never_auto_approve":false,"params":{"file_path":"/work/project/hello.txt","diff":"--- a/hello.txt\n+++ b/hello.txt\n@@ -1 +1 @@\n-hello from the fixture project\n+goodbye from the fixture project\n"},"path":"/work/project","require_explicit_approval":false,"session_id":"e0a6041e-eeaf-432d-bc1d-203b5c20a1ef","tool_name":"edit"}
+
+event: tool_result
+data: {"content":"\u003cresult\u003e\nContent replaced in file: /work/project/hello.txt\n\u003c/result\u003e\n","diff":{"file_path":"/work/project/hello.txt","new_string":"goodbye from the fixture project","old_string":"hello from the fixture project"},"is_error":false,"kind":"edit","locations":[{"path":"/work/project/hello.txt"}],"name":"edit","raw_output":{"metadata":{"additions":1,"diff":"--- a/hello.txt\n+++ b/hello.txt\n@@ -1 +1 @@\n-hello from the fixture project\n+goodbye from the fixture project\n","removals":1},"output":"\u003cresult\u003e\nContent replaced in file: /work/project/hello.txt\n\u003c/result\u003e\n"},"status":"completed","title":"Edit hello.txt","tool_call_id":"call_PtsZsJQgsfmNrZp2GqyNrWDU"}
+
+event: token_usage
+data: {"cache_creation_tokens":0,"cache_read_tokens":0,"completion_tokens":31850,"context_window":400000,"cost":0,"estimated":true,"prompt_tokens":172,"reasoning_tokens":0,"session_id":"e0a6041e-eeaf-432d-bc1d-203b5c20a1ef"}
+
+event: content_delta
+data: {"text":"Re"}
+
+event: content_delta
+data: {"text":"placed"}
+
+event: content_delta
+data: {"text":" `"}
+
+event: content_delta
+data: {"text":"hello"}
+
+event: content_delta
+data: {"text":"`"}
+
+event: content_delta
+data: {"text":" with"}
+
+event: content_delta
+data: {"text":" `"}
+
+event: content_delta
+data: {"text":"good"}
+
+event: content_delta
+data: {"text":"bye"}
+
+event: content_delta
+data: {"text":"`"}
+
+event: content_delta
+data: {"text":" in"}
+
+event: content_delta
+data: {"text":" `"}
+
+event: content_delta
+data: {"text":"hello"}
+
+event: content_delta
+data: {"text":".txt"}
+
+event: content_delta
+data: {"text":"`."}
+
+event: token_usage
+data: {"cache_creation_tokens":0,"cache_read_tokens":31857,"completion_tokens":31876,"context_window":400000,"cost":0.0013982299999999999,"estimated":false,"prompt_tokens":157,"reasoning_tokens":0,"session_id":"e0a6041e-eeaf-432d-bc1d-203b5c20a1ef"}
+
+event: goal_status
+data: {"goal":null}
+
+event: done
+data: {}
+

@@ -405,3 +405,72 @@ fn unknown_events_are_shown_not_lost() {
     });
     assert!(matches!(&m.items()[0].kind, ItemKind::Json { label, .. } if label == "future"));
 }
+
+#[test]
+fn snapshot_chat_permission() {
+    run_fixture(
+        "chat_permission",
+        include_bytes!("fixtures/chat_permission.sse"),
+    );
+}
+
+#[test]
+fn snapshot_chat_permission_deny() {
+    run_fixture(
+        "chat_permission_deny",
+        include_bytes!("fixtures/chat_permission_deny.sse"),
+    );
+}
+
+#[test]
+fn snapshot_chat_question_steer() {
+    run_fixture(
+        "chat_question_steer",
+        include_bytes!("fixtures/chat_question_steer.sse"),
+    );
+}
+
+#[test]
+fn snapshot_chat_cancel() {
+    run_fixture("chat_cancel", include_bytes!("fixtures/chat_cancel.sse"));
+}
+
+#[test]
+fn snapshot_chat_cancel_while_permission() {
+    run_fixture(
+        "chat_cancel_while_permission",
+        include_bytes!("fixtures/chat_cancel_while_permission.sse"),
+    );
+}
+
+#[test]
+fn snapshot_chat_delegate_spawn() {
+    run_fixture(
+        "chat_delegate_spawn",
+        include_bytes!("fixtures/chat_delegate_spawn.sse"),
+    );
+}
+
+#[test]
+fn snapshot_chat_conclusion_injected() {
+    run_fixture(
+        "chat_conclusion_injected",
+        include_bytes!("fixtures/chat_conclusion_injected.sse"),
+    );
+}
+
+#[test]
+fn snapshot_chat_edit_diff() {
+    run_fixture(
+        "chat_edit_diff",
+        include_bytes!("fixtures/chat_edit_diff.sse"),
+    );
+}
+
+#[test]
+fn snapshot_session_resurrected() {
+    run_fixture(
+        "session_resurrected",
+        include_bytes!("fixtures/session_resurrected.sse"),
+    );
+}
