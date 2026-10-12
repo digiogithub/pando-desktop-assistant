@@ -26,6 +26,11 @@ const ROW_HEIGHT: f32 = 34.0;
 
 impl Render for ChatPanel {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        if !self.sidebar_decided {
+            // A narrow window starts without the sidebar; the header toggle brings it back.
+            self.sidebar_decided = true;
+            self.show_sidebar = window.viewport_size().width >= px(820.0);
+        }
         if self.focus_composer {
             self.focus_composer = false;
             self.composer.update(cx, |s, cx| s.focus(window, cx));

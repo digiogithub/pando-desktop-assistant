@@ -684,3 +684,81 @@ fn a_history_reload_never_wipes_the_run_being_streamed(cx: &mut TestAppContext) 
     );
     h.finish();
 }
+
+#[gpui_test]
+fn follow_reset_drops_only_the_live_run_and_a_long_transcript_streams_smoothly(
+    cx: &mut TestAppContext,
+) {
+    use pando_client::follow::FollowEvent;
+    let mut h = harness(cx);
+    // A long conversation: 300 turns, each with markdown, a tool call and its result.
+    let messages: Vec<serde_json::Value> = (0..300)
+        .flat_map(|i| {
+            [
+                serde_json::json!({"ID": format!("u{i}"), "Role": "user", "SessionID": "long",
+                    "Parts": [{"text": format!("question {i}")}, {"reason": "stop", "time": 0}]}),
+                serde_json::json!({"ID": format!("a{i}"), "Role": "assistant", "SessionID": "long",
+                    "Parts": [
+                        {"text": format!("# Answer {i}\n\nSome **markdown** with `code`.\n\n```rust\nfn f() {{}}\n```\n")},
+                        {"id": format!("t{i}"), "name": "bash", "input": format!("{{\"command\":\"echo {i}\"}}"), "type": "function", "finished": true},
+                        {"reason": "tool_use", "time": 0}]}),
+                serde_json::json!({"ID": format!("r{i}"), "Role": "tool", "SessionID": "long",
+                    "Parts": [{"tool_call_id": format!("t{i}"), "name": "bash", "content": format!("{i}\n")}]}),
+            ]
+        })
+        .collect();
+    let detail: SessionDetail = serde_json::from_value(serde_json::json!({
+        "session": {"ID": "long", "Title": "long"},
+        "messages": messages,
+        "is_running": false,
+        "run_seq": 1,
+    }))
+    .expect("detail");
+    h.panel
+        .update(&mut h.cx, |p, cx| p.select_session("long", cx));
+    let epoch = h.read(|p| p.epoch);
+    h.msg(ChatMsg::Opened {
+        epoch,
+        result: Ok(detail),
+    });
+    let before = h.read(|p| p.model.items().len());
+    // Stream a long answer in 2,000 deltas (one burst through the channel) and render.
+    h.panel.update(&mut h.cx, |p, _| {
+        p.model.start_local_run("stream please");
+    });
+    let (tx, run) = h.read(|p| (p.tx.clone(), p.run_id));
+    for i in 0..2000 {
+        tx.try_send(ChatMsg::Chat {
+            epoch,
+            run,
+            ev: ChatEvent::ContentDelta(format!("word{i} ")),
+        })
+        .expect("send");
+    }
+    let t = std::time::Instant::now();
+    h.cx.run_until_parked();
+    let apply = t.elapsed();
+    let t = std::time::Instant::now();
+    for _ in 0..5 {
+        h.redraw();
+    }
+    let per_frame = t.elapsed() / 5;
+    assert!(h.read(|p| p.model.items().len()) > before);
+    eprintln!("2000 deltas applied in {apply:?}; {per_frame:?} per frame with {before} items");
+    assert!(
+        per_frame < std::time::Duration::from_millis(250),
+        "a frame took {per_frame:?}"
+    );
+
+    // A follower replay resets only the live run, not the finished conversation.
+    h.msg(ChatMsg::Follow {
+        epoch,
+        ev: FollowEvent::ResetBubble,
+    });
+    assert_eq!(
+        h.read(|p| p.model.items().len()),
+        before + 1,
+        "history kept, partial answer dropped"
+    );
+    h.finish();
+}

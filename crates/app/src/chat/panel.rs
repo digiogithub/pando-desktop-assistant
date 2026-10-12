@@ -98,6 +98,7 @@ pub struct ChatPanel {
     pub(super) rename: Option<RenameState>,
     pub(super) list_scroll: UniformListScrollHandle,
     pub(super) show_sidebar: bool,
+    pub(super) sidebar_decided: bool,
     // models
     pub(super) models: Option<ModelList>,
     pub(super) session_model: Option<String>,
@@ -232,6 +233,7 @@ impl ChatPanel {
             rename: None,
             list_scroll: UniformListScrollHandle::new(),
             show_sidebar: true,
+            sidebar_decided: false,
             models: None,
             session_model: None,
             prev_model: None,
@@ -816,6 +818,17 @@ impl ChatPanel {
 
     /// Applies one message of the service.
     pub fn on_msg(&mut self, msg: ChatMsg, cx: &mut Context<Self>) {
+        // Text deltas are by far the most frequent message and cannot change approvals.
+        let cheap = matches!(
+            &msg,
+            ChatMsg::Chat {
+                ev: ChatEvent::ContentDelta(_) | ChatEvent::ThinkingDelta(_),
+                ..
+            } | ChatMsg::Follow {
+                ev: FollowEvent::Chat(ChatEvent::ContentDelta(_) | ChatEvent::ThinkingDelta(_)),
+                ..
+            }
+        );
         match msg {
             ChatMsg::Sessions { mode, result } => match result {
                 Ok(page) => match mode {
@@ -997,7 +1010,9 @@ impl ChatPanel {
             // Messages of a session that is no longer open.
             _ => {}
         }
-        self.sync_question_flow();
+        if !cheap {
+            self.sync_question_flow();
+        }
         cx.notify();
     }
 
@@ -1022,7 +1037,9 @@ impl ChatPanel {
                 }
             }
         }
-        self.after_events();
+        if !matches!(ev, ChatEvent::ContentDelta(_) | ChatEvent::ThinkingDelta(_)) {
+            self.after_events();
+        }
         if matches!(ev, ChatEvent::Done | ChatEvent::Error(_)) {
             self.after_run_end(cx);
         }
