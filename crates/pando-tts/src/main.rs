@@ -1,7 +1,7 @@
-//! Entry point of `pando-voice` (skeleton).
+//! Entry point of `pando-tts` (skeleton).
 
 fn main() {
-    println!("pando-voice {}", env!("CARGO_PKG_VERSION"));
+    println!("pando-tts {}", env!("CARGO_PKG_VERSION"));
 }
 
 #[cfg(test)]

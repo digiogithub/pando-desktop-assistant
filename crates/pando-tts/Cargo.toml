@@ -1,6 +1,6 @@
 [package]
-name = "voice-worker"
-description = "Voice worker binary pando-voice: STT, VAD and TTS in a separate process."
+name = "pando-tts"
+description = "TTS worker: sherpa-onnx Piper/Kokoro with espeak-ng; GPL-3 as a distributed binary (ADR 0007)."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -13,5 +13,5 @@ publish = false
 workspace = true
 
 [[bin]]
-name = "pando-voice"
+name = "pando-tts"
 path = "src/main.rs"

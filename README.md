@@ -39,7 +39,7 @@ sherpa-onnx) and the decision model (Jev / `tev1` through Pando's System One end
 
 | Path | Contents |
 |---|---|
-| `crates/` | Rust workspace (to be created in milestone M0): `organism`, `decide`, `pando-client`, `voice-proto`, `voice-worker`, `claude-bridge`, `app` |
+| `crates/` | Rust workspace (to be created in milestone M0): `organism`, `decide`, `pando-client`, `voice-proto`, `pando-stt`, `pando-tts`, `claude-bridge`, `app` |
 | `design-system/` | `tokens.json` (source of truth), brand SVGs, `reference/organism.html` (open it in a browser to see the target behaviour) |
 | `docs/` | Planning notes `01`–`06`, verified research in `docs/research/`, ADRs and spike reports (to come) |
 | `docs/.pmngr/` | Backlog managed with gintrack (do not edit by hand) |

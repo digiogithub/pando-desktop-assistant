@@ -14,6 +14,8 @@ pub struct Pkg {
     pub deps: BTreeSet<String>,
     /// Declared (normal/build) dependencies: (name, version requirement).
     pub declared: Vec<(String, String)>,
+    /// Cargo features enabled on this package in the resolved graph.
+    pub features: BTreeSet<String>,
 }
 
 /// Crates the pure layers (`organism`, `decide`) must never reach, even transitively.
@@ -25,11 +27,13 @@ fn allowed_edges() -> BTreeMap<&'static str, BTreeSet<&'static str>> {
     let set = |xs: &[&'static str]| xs.iter().copied().collect::<BTreeSet<_>>();
     BTreeMap::from([
         ("organism", set(&[])),
+        ("audio", set(&[])),
         ("decide", set(&[])),
         ("voice-proto", set(&[])),
         ("pando-client", set(&[])),
         ("claude-bridge", set(&["voice-proto"])),
-        ("voice-worker", set(&["voice-proto"])),
+        ("pando-stt", set(&["voice-proto"])),
+        ("pando-tts", set(&["voice-proto"])),
         (
             "app",
             set(&[
@@ -37,11 +41,22 @@ fn allowed_edges() -> BTreeMap<&'static str, BTreeSet<&'static str>> {
                 "decide",
                 "pando-client",
                 "voice-proto",
+                "audio",
                 "claude-bridge",
             ]),
         ),
         ("xtask", set(&[])),
     ])
+}
+
+/// Features of the sherpa-onnx crates that fetch prebuilt (TTS-enabled) libraries.
+const PREBUILT_FEATURES: [&str; 2] = ["download-binaries", "static"];
+
+fn is_sherpa(n: &str) -> bool {
+    n == "sherpa-onnx"
+        || n.starts_with("sherpa-onnx-")
+        || n == "sherpa-rs"
+        || n.starts_with("sherpa-rs-")
 }
 
 fn is_gpui(n: &str) -> bool {
@@ -87,6 +102,7 @@ pub fn run() -> Result<bool> {
             is_member: members.contains(&node.id),
             deps,
             declared,
+            features: node.features.iter().map(|f| f.to_string()).collect(),
         });
     }
 
@@ -148,6 +164,31 @@ pub fn check(pkgs: &[Pkg]) -> Vec<String> {
                 }
             }
         }
+        // 2b. sherpa-onnx (ADR 0007): never in `app`; `pando-stt` only without prebuilt
+        // libraries (which embed espeak-ng); only `pando-tts` may use it with TTS.
+        if let Some(sh) = reach.iter().find(|d| is_sherpa(d))
+            && p.name != "pando-stt"
+            && p.name != "pando-tts"
+        {
+            errors.push(format!(
+                "`{}` depends (directly or transitively) on `{sh}`; only `pando-stt` (source build, TTS off) and `pando-tts` may use sherpa-onnx",
+                p.name
+            ));
+        }
+        if p.name == "pando-stt" {
+            for d in reach.iter().filter(|d| is_sherpa(d)) {
+                let prebuilt = by_name.get(d.as_str()).is_some_and(|q| {
+                    q.features
+                        .iter()
+                        .any(|f| PREBUILT_FEATURES.contains(&f.as_str()))
+                });
+                if prebuilt {
+                    errors.push(format!(
+                        "`pando-stt` reaches prebuilt sherpa-onnx (`{d}` with a download/static feature); build from source with TTS off (ADR 0007)"
+                    ));
+                }
+            }
+        }
         // 3. no direct `gpui` dependency anywhere; gpui-kit must be pinned with `=`.
         for (dep, req) in &p.declared {
             if dep == "gpui" {
@@ -192,6 +233,7 @@ mod tests {
             is_member: member,
             deps: deps.iter().map(|s| s.to_string()).collect(),
             declared: vec![],
+            features: Default::default(),
         }
     }
 
@@ -274,6 +316,51 @@ mod tests {
             errs.iter().any(|e| e.contains("`organism` -> `app`")),
             "{errs:?}"
         );
+    }
+
+    fn with_workers() -> Vec<Pkg> {
+        let mut v = good();
+        v.push(pkg("pando-stt", true, &[]));
+        v.push(pkg("pando-tts", true, &[]));
+        v.push(pkg("sherpa-onnx", false, &["sherpa-onnx-sys"]));
+        v.push(pkg("sherpa-onnx-sys", false, &[]));
+        v
+    }
+
+    #[test]
+    fn sherpa_in_app_fails() {
+        let mut v = with_workers();
+        add_dep(&mut v, "app", "sherpa-onnx");
+        let errs = check(&v);
+        assert!(
+            errs.iter().any(|e| e.contains("only `pando-stt`")),
+            "{errs:?}"
+        );
+    }
+
+    #[test]
+    fn sherpa_in_tts_passes() {
+        let mut v = with_workers();
+        add_dep(&mut v, "pando-tts", "sherpa-onnx");
+        assert_eq!(check(&v), Vec::<String>::new());
+    }
+
+    #[test]
+    fn prebuilt_sherpa_in_stt_fails() {
+        let mut v = with_workers();
+        add_dep(&mut v, "pando-stt", "sherpa-onnx");
+        for p in v.iter_mut().filter(|p| p.name == "sherpa-onnx-sys") {
+            p.features.insert("download-binaries".into());
+        }
+        let errs = check(&v);
+        assert!(errs.iter().any(|e| e.contains("prebuilt")), "{errs:?}");
+    }
+
+    #[test]
+    fn source_built_sherpa_in_stt_passes() {
+        let mut v = with_workers();
+        add_dep(&mut v, "pando-stt", "sherpa-onnx");
+        assert_eq!(check(&v), Vec::<String>::new());
     }
 
     #[test]

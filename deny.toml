@@ -26,8 +26,8 @@ allow = [
 
 # espeak-ng (GPL-3, linked through sherpa-onnx for Piper/Kokoro) is a bundled C library, not a
 # crate, so cargo-deny does not see it and no exception entry is needed today. It is allowed
-# only inside the separate `pando-voice` worker (PDA-T-0023). If a GPL-licensed crate is ever
-# pulled in by `voice-worker`, add a `[[licenses.exceptions]]` entry scoped to that crate and
+# only inside the separate `pando-tts` worker (PDA-T-0023). If a GPL-licensed crate is ever
+# pulled in by `pando-tts`, add a `[[licenses.exceptions]]` entry scoped to that crate and
 # keep `app` free of it. Embedded fonts, models and voices are data files with their own
 # licences; they are recorded in the NOTICE file, not here.
 
