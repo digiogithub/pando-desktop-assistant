@@ -2,10 +2,13 @@
 //! orchestration of speech in and out (ADR 0007: the app only talks to the workers over
 //! `voice-proto` pipes and never links sherpa-onnx).
 
+pub mod assistant;
 pub mod config;
 pub mod controller;
 pub mod devices;
 pub mod dock;
+#[cfg(test)]
+mod e2e;
 pub mod latency;
 pub mod levels;
 pub mod ptt;

@@ -108,6 +108,7 @@ pub struct PandoExecutor<B, U> {
     backend: Arc<B>,
     ui: Arc<U>,
     directory: AgentDirectory,
+    default_project: Option<String>,
 }
 
 impl<B: Backend, U: UiPort> PandoExecutor<B, U> {
@@ -117,7 +118,15 @@ impl<B: Backend, U: UiPort> PandoExecutor<B, U> {
             backend,
             ui,
             directory,
+            default_project: None,
         }
+    }
+
+    /// The project a spawn uses when the sentence names none (the header pill).
+    #[must_use]
+    pub fn with_default_project(mut self, project: Option<String>) -> Self {
+        self.default_project = project;
+        self
     }
 
     fn slug_task(&self, slug: &str) -> Result<String, ExecError> {
@@ -215,7 +224,7 @@ impl<B: Backend, U: UiPort> CommandExecutor for PandoExecutor<B, U> {
                 project,
                 prompt,
             } => {
-                let work_dir = match project {
+                let work_dir = match project.or_else(|| self.default_project.clone()) {
                     Some(name) => {
                         let projects = self.backend.projects().await.map_err(ExecError::Api)?;
                         let lower = name.to_lowercase();

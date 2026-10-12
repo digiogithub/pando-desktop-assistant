@@ -52,3 +52,40 @@ voice:
     conclusion_partial: "%{agent} finished partially."
     follow_up: "Suggested next step: %{text}."
     claude_done: "Claude in %{session} finished."
+  cmd:
+    done: Done.
+    spawned: I started an agent.
+    no_agents: No agents are running.
+    nothing_pending: Nothing is pending.
+    needs_screen: That needs your confirmation on screen.
+    unknown_agent: "I do not know the agent %{agent}."
+    unavailable: That is not available yet.
+    failed: "I could not do it: %{why}."
+    missing_target: Which agent do you mean?
+    status_running: "%{agent} is at %{pct} percent."
+    status_other: "%{agent} is %{status}."
+    using_tool: "It uses %{tool}."
+    status_word:
+      running: running
+      pending: pending
+      completed: finished
+      failed: failed
+      cancelled: cancelled
+      paused: paused
+  confirm:
+    all_agents: all agents
+    cancel: "Cancel %{agent}?"
+    deny: "Deny the request of %{agent}?"
+    retry: "Relaunch %{agent}?"
+    spawn: "Start a new agent?"
+    approve: "Approve the request of %{agent}?"
+    generic: "Do it?"
+    dismissed: OK, I will not do anything.
+    needs_screen: "That needs your confirmation on screen."
+  error:
+    chat: I could not reach Pando.
+    stt: I could not hear you.
+    tts: I cannot speak right now; I left it in writing.
+  pill:
+    project: "project · %{name} · %{p} %"
+    switched: "Project %{name}."

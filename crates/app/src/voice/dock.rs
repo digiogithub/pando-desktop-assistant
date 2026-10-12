@@ -37,6 +37,8 @@ pub enum Notice {
     VoiceOff,
     /// Nothing intelligible was heard.
     NothingHeard,
+    /// A line of text that could not be spoken (muted or no voice).
+    Info(String),
 }
 
 /// One probability row of the card ("question → answer, p").

@@ -177,10 +177,13 @@ fn start(
                 .ok()
         });
         let (out_tx, out_rx) = async_channel::unbounded::<crate::shell::controller::Output>();
-        // The voice orchestrator will consume these; until then they are only logged.
-        cx.spawn(async move |_cx| {
+        // Push-to-talk edges drive the voice dock; the rest is only logged for now.
+        cx.spawn(async move |cx| {
             while let Ok(o) = out_rx.recv().await {
                 tracing::info!(?o, "shell output");
+                if let crate::shell::controller::Output::Ptt(edge) = o {
+                    cx.update(|cx| crate::voice::controller::ptt_edge(cx, edge));
+                }
             }
         })
         .detach();

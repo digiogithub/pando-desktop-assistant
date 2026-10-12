@@ -1045,6 +1045,30 @@ impl OrganismPane {
         cx.notify();
     }
 
+    /// True when the request needs an explicit click (flagged by Pando or a sandbox escalation).
+    #[must_use]
+    pub fn voice_is_flagged(&self, session: &str, id: &str) -> bool {
+        self.approvals.get(session).is_some_and(|l| {
+            l.is_flagged(id)
+                || matches!(
+                    l.request(id),
+                    Some(pando_client::approvals::RequestBody::Permission(p))
+                        if crate::decision::spoken_approvals::needs_screen(p)
+                )
+        })
+    }
+
+    /// Number of options of a pending question (0 for permissions).
+    #[must_use]
+    pub fn voice_option_count(&self, session: &str, id: &str) -> usize {
+        match self.approvals.get(session).and_then(|l| l.request(id)) {
+            Some(pando_client::approvals::RequestBody::Question(q)) => {
+                q.questions.first().map_or(0, |q| q.options.len())
+            }
+            _ => 0,
+        }
+    }
+
     /// The Pando client while connected.
     #[must_use]
     pub fn voice_client(&self) -> Option<PandoClient> {

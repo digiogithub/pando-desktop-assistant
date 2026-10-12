@@ -7,5 +7,6 @@ pub mod engine;
 pub mod eval_cli;
 pub mod executor;
 pub mod health;
+pub mod speech;
 pub mod spoken_approvals;
 pub mod transport;

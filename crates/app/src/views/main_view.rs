@@ -20,6 +20,7 @@ use crate::ui::{
 };
 use crate::views::layout::{self, Layout};
 use crate::views::title_bar::AppTitleBar;
+use crate::voice::assistant::{Assistant, AssistantEvent};
 use crate::voice::controller::VoiceController;
 use pando_client::ConnectionState;
 
@@ -39,6 +40,8 @@ pub struct MainView {
     url_error: Option<String>,
     pane: Entity<OrganismPane>,
     voice: Entity<VoiceController>,
+    assistant: Entity<Assistant>,
+    _assistant_sub: crate::ui::Subscription,
     _voice_sub: crate::ui::Subscription,
     _pane_sub: crate::ui::Subscription,
     chat: Entity<ChatPanel>,
@@ -104,9 +107,36 @@ impl MainView {
             .map(|s| s.ui)
             .unwrap_or_default();
         let (voice_config, voice_dirs) = crate::voice::startup_config();
+        let voice_data_dir = voice_dirs.data_dir.clone();
         let organism = pane.read(cx).organism().clone();
         let voice = cx.new(|cx| VoiceController::new(cx, voice_config, voice_dirs, Some(organism)));
         let voice_sub = cx.observe(&voice, |_, _, cx| cx.notify());
+        crate::voice::controller::register_handle(cx, &voice);
+        let data_dir = voice_data_dir.clone();
+        let (voice_for_assistant, pane_for_assistant) = (voice.clone(), pane.clone());
+        let assistant =
+            cx.new(|cx| Assistant::new(cx, voice_for_assistant, pane_for_assistant, data_dir));
+        let assistant_sub = cx.subscribe_in(
+            &assistant,
+            window,
+            |this: &mut Self, _, ev: &AssistantEvent, window, cx| {
+                match ev {
+                    AssistantEvent::Dictate(text) => {
+                        this.chat
+                            .update(cx, |c, cx| c.insert_dictation(text, window, cx));
+                    }
+                    AssistantEvent::ChatSession(id) => {
+                        this.chat.update(cx, |c, cx| {
+                            if c.active_session() != Some(id.as_str()) {
+                                c.select_session(id, cx);
+                            }
+                        });
+                    }
+                    AssistantEvent::Project(_) => {}
+                }
+                cx.notify();
+            },
+        );
         let voice_focus = voice.read(cx).focus_handle_clone();
         window.focus(&voice_focus, cx);
         Self {
@@ -116,6 +146,8 @@ impl MainView {
             url_error,
             pane,
             voice,
+            assistant,
+            _assistant_sub: assistant_sub,
             _voice_sub: voice_sub,
             _pane_sub: pane_sub,
             chat,
@@ -316,6 +348,8 @@ impl Render for MainView {
                     .gap_2()
                     .pr_3()
                     .child(connection_chip(chip_spec(&self.state)))
+                    .children(self.assistant.read(cx).project_pill().map(chip))
+                    .child(chip(self.assistant.read(cx).decision_chip()))
                     .child(chip(self.voice.read(cx).status_label())),
             );
         let body = if needs_empty_state(&self.state) {

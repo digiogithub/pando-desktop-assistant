@@ -28,6 +28,28 @@ use crate::ui::{
     div, h_flex, px, rgb, rgba, v_flex,
 };
 
+struct VoiceHandle(crate::ui::WeakEntity<VoiceController>);
+
+impl crate::ui::Global for VoiceHandle {}
+
+/// Remembers the controller so the shell's global push-to-talk can reach it.
+pub fn register_handle(cx: &mut crate::ui::App, voice: &Entity<VoiceController>) {
+    cx.set_global(VoiceHandle(voice.downgrade()));
+}
+
+/// A push-to-talk edge from the shell (global hotkey, `pando-assistant ptt`, tray, mini window).
+pub fn ptt_edge(cx: &mut crate::ui::App, edge: crate::shell::ptt::PttEdge) {
+    let Some(handle) = cx.try_global::<VoiceHandle>().map(|h| h.0.clone()) else {
+        return;
+    };
+    handle
+        .update(cx, |v, cx| match edge {
+            crate::shell::ptt::PttEdge::Started => v.press(cx),
+            crate::shell::ptt::PttEdge::Stopped => v.release(cx),
+        })
+        .ok();
+}
+
 /// The push-to-talk key (hold).
 pub const PTT_KEY: &str = "f9";
 
@@ -54,6 +76,17 @@ pub enum VoiceControllerEvent {
     },
     /// Worker availability changed.
     WorkersChanged,
+    /// Push-to-talk went down and a recording started.
+    Pressed,
+    /// Push-to-talk went up; `submitted` is false for a tap or when nothing could be sent.
+    Released {
+        /// Audio was handed to the STT worker.
+        submitted: bool,
+    },
+    /// Playback started.
+    PlaybackStarted,
+    /// Everything queued has been played (or was stopped).
+    PlaybackDrained,
 }
 
 /// The dock entity.
@@ -246,6 +279,26 @@ impl VoiceController {
         cx.notify();
     }
 
+    /// Shows a line of text under the orb (what could not be spoken).
+    pub fn set_notice_text(&mut self, text: String, cx: &mut Context<Self>) {
+        self.dock.notice = Some(Notice::Info(text));
+        cx.notify();
+    }
+
+    /// The session machine decided the body state: follow it.
+    pub fn set_body(&mut self, body: BodyState, cx: &mut Context<Self>) {
+        let phase = match body {
+            BodyState::Listening => Phase::Listening,
+            BodyState::Thinking => Phase::Thinking,
+            BodyState::Speaking => Phase::Speaking,
+            BodyState::Idle | BodyState::Delegating => Phase::Idle,
+        };
+        if self.dock.phase != phase {
+            self.dock.phase = phase;
+            self.sync_body(cx);
+        }
+    }
+
     /// Puts the body back to Idle after the answer was handled without speech.
     pub fn settle(&mut self, cx: &mut Context<Self>) {
         if self.dock.phase == Phase::Thinking {
@@ -347,6 +400,7 @@ impl VoiceController {
         if pressed.started {
             self.dock.begin_listening();
             self.sync_body(cx);
+            cx.emit(VoiceControllerEvent::Pressed);
         }
     }
 
@@ -365,6 +419,9 @@ impl VoiceController {
         }
         self.dock.apply_ptt(&ev);
         self.sync_body(cx);
+        cx.emit(VoiceControllerEvent::Released {
+            submitted: matches!(ev, PttEvent::Submitted { .. }),
+        });
     }
 
     fn on_event(&mut self, ev: VoiceEvent, cx: &mut Context<Self>) {
@@ -396,6 +453,15 @@ impl VoiceController {
                 }
                 _ => {}
             }
+        }
+        match &ev {
+            VoiceEvent::Output(audio::PlaybackEvent::Started) => {
+                cx.emit(VoiceControllerEvent::PlaybackStarted);
+            }
+            VoiceEvent::Output(audio::PlaybackEvent::Drained) => {
+                cx.emit(VoiceControllerEvent::PlaybackDrained);
+            }
+            _ => {}
         }
         let workers_changed = matches!(&ev, VoiceEvent::Worker(WorkerEvent::State { .. }));
         let before = self.dock.phase;
@@ -461,6 +527,7 @@ fn notice_text(n: &Notice) -> String {
         Notice::NoMic => t!("voice.notice.no_mic").to_string(),
         Notice::VoiceOff => t!("voice.notice.voice_off").to_string(),
         Notice::NothingHeard => t!("voice.notice.nothing_heard").to_string(),
+        Notice::Info(text) => text.clone(),
     }
 }
 

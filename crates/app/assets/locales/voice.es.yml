@@ -52,3 +52,40 @@ voice:
     conclusion_partial: "%{agent} ha terminado a medias."
     follow_up: "Siguiente paso sugerido: %{text}."
     claude_done: "Claude en %{session} ha terminado."
+  cmd:
+    done: Hecho.
+    spawned: He lanzado un agente.
+    no_agents: No hay agentes en marcha.
+    nothing_pending: No hay nada pendiente.
+    needs_screen: Eso requiere confirmación en pantalla.
+    unknown_agent: "No conozco al agente %{agent}."
+    unavailable: Eso todavía no está disponible.
+    failed: "No he podido hacerlo: %{why}."
+    missing_target: ¿A qué agente te refieres?
+    status_running: "%{agent} va al %{pct} por ciento."
+    status_other: "%{agent} está %{status}."
+    using_tool: "Usa %{tool}."
+    status_word:
+      running: en marcha
+      pending: pendiente
+      completed: terminado
+      failed: fallido
+      cancelled: cancelado
+      paused: en pausa
+  confirm:
+    all_agents: todos los agentes
+    cancel: "¿Cancelo %{agent}?"
+    deny: "¿Deniego la petición de %{agent}?"
+    retry: "¿Relanzo %{agent}?"
+    spawn: "¿Lanzo un agente nuevo?"
+    approve: "¿Apruebo la petición de %{agent}?"
+    generic: "¿Lo hago?"
+    dismissed: Vale, no hago nada.
+    needs_screen: "Eso necesita tu confirmación en pantalla."
+  error:
+    chat: No he podido hablar con Pando.
+    stt: No te he podido escuchar.
+    tts: No puedo hablar ahora; lo dejo escrito.
+  pill:
+    project: "proyecto · %{name} · %{p} %"
+    switched: "Proyecto %{name}."
