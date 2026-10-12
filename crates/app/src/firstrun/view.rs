@@ -92,7 +92,7 @@ impl FirstRunView {
         }
     }
 
-    fn detect(&mut self, cx: &mut Context<Self>) {
+    fn detect(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         let typed = self.url.read(cx).value().to_string();
         self.status = Some(t!("firstrun.connection.probing").to_string());
         let task = tokio_bridge::spawn(cx, async move {
@@ -101,16 +101,24 @@ impl FirstRunView {
             d.root_certificate_pem = pando_client::auth::default_ca_path()
                 .and_then(|path| pando_client::auth::load_local_ca(&path).ok().flatten());
             if !typed.trim().is_empty() {
-                d.manual_url = Some(typed.trim().to_owned());
+                let mut manual = d.clone();
+                manual.manual_url = Some(typed.trim().to_owned());
+                if let Ok(found) = manual.discover().await {
+                    return Ok(found);
+                }
             }
-            d.discover().await.map(|s| s.info.version)
+            // Registry, then https and http on the fallback port (docs/research/pando-api.md 1.2).
+            d.discover().await
         });
-        cx.spawn(async move |this, cx| {
+        cx.spawn_in(window, async move |this, cx| {
             let out = task.await;
-            this.update(cx, |this, cx| {
+            this.update_in(cx, |this, window, cx| {
                 this.status = Some(match out {
-                    Ok(Ok(version)) => {
-                        t!("firstrun.connection.found", version = version).to_string()
+                    Ok(Ok(found)) => {
+                        // Show the scheme and port that actually answered.
+                        this.url
+                            .update(cx, |st, cx| st.set_value(found.base_url, window, cx));
+                        t!("firstrun.connection.found", version = found.info.version).to_string()
                     }
                     _ => t!("firstrun.connection.not_found").to_string(),
                 });
@@ -167,8 +175,8 @@ impl FirstRunView {
                     .child(
                         Button::new("fr-detect")
                             .label(t!("firstrun.connection.detect").to_string())
-                            .on_click(move |_, _, cx| {
-                                w.update(cx, |t, cx| t.detect(cx)).ok();
+                            .on_click(move |_, window, cx| {
+                                w.update(cx, |t, cx| t.detect(window, cx)).ok();
                             }),
                     )
                     .into_any_element()
