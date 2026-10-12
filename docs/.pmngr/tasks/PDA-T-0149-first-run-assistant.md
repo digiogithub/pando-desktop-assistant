@@ -2,14 +2,16 @@
 id: PDA-T-0149
 type: task
 title: First-run assistant
-status: backlog
+status: in_progress
 parent: PDA-US-0044
 milestone: PDA-M-0011
+assignees: [claude-sonnet]
 author: mcp
 labels: [packaging, shell]
 estimate: 3
 created: 2026-10-11T21:56:03Z
-updated: 2026-10-11T22:03:01Z
+updated: 2026-10-12T08:19:06Z
+started: 2026-10-12T08:19:06Z
 ---
 
 ## Description
