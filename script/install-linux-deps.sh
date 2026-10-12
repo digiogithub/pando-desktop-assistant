@@ -44,7 +44,7 @@ gui_packages=(
   libfontconfig-dev libfreetype-dev
   libwayland-dev libxkbcommon-dev libxkbcommon-x11-dev libx11-xcb-dev libxcb1-dev
   libvulkan-dev libvulkan1 mesa-vulkan-drivers
-  libasound2-dev libpipewire-0.3-dev libclang-dev # libclang: bindgen for the pipewire feature
+  libasound2-dev libpipewire-0.3-dev libclang-dev # libclang: bindgen for the pipewire host (on by default; build with --no-default-features to skip)
 )
 
 packages=("${minimal_packages[@]}")

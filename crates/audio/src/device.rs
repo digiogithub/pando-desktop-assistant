@@ -22,10 +22,21 @@ pub fn available_hosts() -> Vec<String> {
         .collect()
 }
 
-/// Open a host by name (case-insensitive); `None` is the platform default
-/// (PipeWire when compiled in, then PulseAudio, then ALSA).
+/// Environment variable that forces the host when none is configured (`Alsa`, `PulseAudio`,
+/// `PipeWire`); used to test the fallback and to work around a broken sound server.
+pub const HOST_ENV: &str = "PANDO_AUDIO_HOST";
+
+/// Open a host by name (case-insensitive); `None` is the platform default: PipeWire when
+/// compiled in and its daemon is running, then PulseAudio, then ALSA. An explicit name wins over
+/// [`HOST_ENV`].
 pub fn open_host(name: Option<&str>) -> Result<cpal::Host, AudioError> {
-    match name.filter(|n| !n.is_empty() && !n.eq_ignore_ascii_case("default")) {
+    let forced = std::env::var(HOST_ENV).ok();
+    let wanted = name
+        .filter(|n| !n.is_empty() && !n.eq_ignore_ascii_case("default"))
+        .or(forced
+            .as_deref()
+            .filter(|n| !n.is_empty() && !n.eq_ignore_ascii_case("default")));
+    match wanted {
         None => Ok(cpal::default_host()),
         Some(n) => {
             let id = cpal::available_hosts()
@@ -135,6 +146,16 @@ pub(crate) fn low_latency_config(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_host_can_be_forced_by_name_and_env() {
+        let alsa = open_host(Some("alsa")).expect("alsa host");
+        assert_eq!(format!("{:?}", alsa.id()), "Alsa");
+        assert!(matches!(
+            open_host(Some("nonexistent")),
+            Err(AudioError::HostUnavailable(_))
+        ));
+    }
 
     fn supported(buffer: cpal::SupportedBufferSize) -> cpal::SupportedStreamConfig {
         cpal::SupportedStreamConfig::new(2, 48_000, buffer, cpal::SampleFormat::F32)

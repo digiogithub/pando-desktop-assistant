@@ -13,10 +13,11 @@ publish = false
 workspace = true
 
 [features]
-default = ["pulseaudio"]
+default = ["pulseaudio", "pipewire"]
 # cpal's PulseAudio host is a pure-Rust client (no system library).
 pulseaudio = ["cpal/pulseaudio"]
-# PipeWire host: needs libpipewire-0.3-dev, libspa-0.2-dev and libclang at build time.
+# PipeWire host (preferred at runtime when its daemon runs, else PulseAudio/ALSA; Linux only, a
+# no-op elsewhere): needs libpipewire-0.3-dev, libspa-0.2-dev and libclang at build time.
 pipewire = ["cpal/pipewire"]
 
 # Echo cancellation (PDA-T-0139, S4): sonora AEC3 + NS with the played PCM as render reference.

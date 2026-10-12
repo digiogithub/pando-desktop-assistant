@@ -12,7 +12,9 @@ sdk: org.freedesktop.Sdk
 command: pando-assistant
 
 finish-args:
-  # Audio capture and playback (PulseAudio protocol; PipeWire serves it).
+  # Audio capture and playback: native PipeWire first (preferred host), PulseAudio protocol as
+  # the fallback (PipeWire serves it too).
+  - --filesystem=xdg-run/pipewire-0
   - --socket=pulseaudio
   # Display: Wayland first, X11 fallback; GPU for Vulkan/wgpu.
   - --socket=wayland
