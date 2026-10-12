@@ -67,6 +67,13 @@ stay interpretable; `state` = transcript + the live list of agents and projects.
    user is most likely talking about: state = transcript, candidates pre-filtered by an
    embedding kNN if the list is long (> 12).
 
+5. **Voice target** ("háblale a auth", "habla con el de docs"; "vuelve", "vuelve a Pando",
+   "volver") — recognised **by rule** before the intent call, like the dictation lead-ins:
+   as intent classes they cost the 0.8b model 8 points of intent accuracy (96 → 88/100).
+   "háblale a …" asks only the target-agent question; "vuelve" asks nothing. Both are
+   reversible target switches (same as the "Hablarle" button and Esc), executed without a
+   confirmation from p ≥ 0.6 (`PDA-SP-0008.R8`).
+
 ## Confidence policy (in code)
 
 | p(top) | Action |
@@ -77,6 +84,10 @@ stay interpretable; `state` = transcript + the live list of agents and projects.
 
 Destructive actions (`cancel`, `deny`) always confirm unless p ≥ 0.95 **and** the agent id
 was literally in the transcript.
+
+p of a command is the **minimum** over the questions it depends on (intent, agent, action,
+engine/project), and flagged approvals are approved only by a click — never by a spoken "sí"
+([ADR 0009](adr/0009-decision-confidence-min-and-explicit-only-approvals.md)).
 
 ## Fallbacks
 
