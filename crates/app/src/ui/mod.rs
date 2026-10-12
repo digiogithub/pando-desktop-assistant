@@ -19,11 +19,11 @@ pub use gpui_kit::{
     Application, AsyncApp, Bounds, ClickEvent, Context, Div, ElementId, Entity, EntityId,
     EventEmitter, FocusHandle, Focusable, Global, Hsla, KeyBinding, KeyBindingContextPredicate,
     KeyDownEvent, KeyUpEvent, Keystroke, NoAction, PathPromptOptions, Pixels, Point, Render, Rgba,
-    ScrollHandle, SharedString, Size, StyledImage, Subscription, Task, TextSystem, TitlebarOptions,
-    WeakEntity, Window, WindowAppearance, WindowBounds, WindowOptions, anchored, deferred, div,
-    point, px, size,
+    ScrollHandle, SharedString, Size, Stateful, StyledImage, Subscription, Task, TextSystem,
+    TitlebarOptions, WeakEntity, Window, WindowAppearance, WindowBounds, WindowOptions, anchored,
+    deferred, div, point, px, size,
 };
-pub use gpui_kit::{rgb, rgba};
+pub use gpui_kit::{bounce, ease_in_out, pulsating_between, rgb, rgba};
 
 pub mod kit_theme;
 pub mod theme;
@@ -76,6 +76,11 @@ pub mod menu {
 /// Status bar chrome.
 pub mod status_bar {
     pub use gpui_kit::component::status_bar::StatusBar;
+}
+
+/// Shimmering text (streaming thinking).
+pub mod shimmer {
+    pub use gpui_kit::component::shimmer::ShimmerText;
 }
 
 /// Progress bar.
@@ -365,7 +370,14 @@ pub mod a11y {
 
 /// GPUI Kit text inputs.
 pub mod input {
-    pub use gpui_kit::component::input::{Input, InputEvent, InputState};
+    pub use gpui_kit::component::input::{
+        Input, InputEvent, InputState, Position, Textarea, TextareaState,
+    };
+}
+
+/// Virtualized lists with fixed-height rows (the session sidebar).
+pub mod list {
+    pub use gpui_kit::{UniformListScrollHandle, uniform_list};
 }
 
 /// Test helpers (headless windows, simulated input).

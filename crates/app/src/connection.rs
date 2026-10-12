@@ -167,6 +167,12 @@ impl ConnectionHub {
         self.snapshots.subscribe()
     }
 
+    /// The authenticated client while the service is `Connected`.
+    #[must_use]
+    pub fn client(&self) -> Option<pando_client::PandoClient> {
+        self.snapshots.borrow().client.clone()
+    }
+
     /// Retries now: restarts discovery with the current manual URL.
     pub fn retry(&mut self) {
         let url = self.manual_url.clone();

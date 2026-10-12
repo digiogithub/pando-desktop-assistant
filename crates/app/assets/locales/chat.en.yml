@@ -1,0 +1,206 @@
+chat:
+  nav:
+    chat: Chat
+    organism: Organism
+    chat_pending: "Chat (%{count} to decide)"
+  cancel: Cancel
+  header:
+    new: New conversation
+    running: Running
+    toggle_sidebar: Show or hide conversations
+  sidebar:
+    title: Conversations
+    new: New
+    search: Search conversations
+    loading: Loading conversations…
+    empty: No conversations yet.
+    error: "Could not load them: %{error}"
+    untitled: Untitled
+    load_more: Load more
+    rename: Rename
+    delete: Delete
+    delete_title: Delete the conversation?
+    delete_body: Its history will be deleted in Pando. This cannot be undone.
+    rename_failed: "Could not rename: %{error}"
+    delete_failed: "Could not delete: %{error}"
+    bucket:
+      today: Today
+      yesterday: Yesterday
+      week: This week
+      older: Older
+  history:
+    failed: "Could not load the history: %{error}"
+  transcript:
+    empty_title: What shall we work on?
+    empty: Type a message to start.
+    loading: Loading the history…
+    offline: Not connected to Pando.
+    to_end: Jump to end
+    copy: Copy answer
+    steered: Steering message
+  code:
+    label: code
+    copy: Copy
+  thinking:
+    streaming: Thinking…
+    done: Reasoning
+  notice:
+    routing: Routing
+    system: System
+    resurrected: Run resumed
+    conclusion_queued: Conclusion queued
+    conclusion_injected: Conclusion received
+    cancelled: Cancelled
+    max_tokens: Answer cut by the token limit
+    permission_denied: Permission denied
+    error: Error
+  conclusion:
+    title: Delegated result
+    none: The task finished without a conclusion.
+    follow_up: "Follow-up:"
+  approval:
+    pending: Waiting for your decision
+    approved: Allowed
+    approved_session: Allowed for the session
+    answered: Answered
+    denied: "Denied (%{reason})"
+    reason:
+      user_denied: by you
+      timeout: no answer in time
+      panel_closed: panel closed
+      session_switch: session switch
+      quit: app closed
+      cancelled: run cancelled
+      server_expired: already resolved
+  activity:
+    running: "%{count} running"
+    failed: "%{count} failed"
+    execute_one: ran 1 command
+    execute_other: ran %{count} commands
+    edit_one: edited 1 file
+    edit_other: made %{count} edits
+    write_one: wrote 1 file
+    write_other: wrote %{count} files
+    read_one: read 1 file
+    read_other: read %{count} files
+    search_one: made 1 search
+    search_other: made %{count} searches
+    fetch_one: fetched 1 page
+    fetch_other: fetched %{count} pages
+    think_one: reasoned once
+    think_other: reasoned %{count} times
+    other_one: used 1 tool
+    other_other: used %{count} tools
+  tool:
+    class:
+      execute: command
+      edit: edit
+      write: write
+      read: read
+      search: search
+      fetch: fetch
+      think: reason
+      other: tool
+    input: input
+    output: output
+    exit_code: "exit code %{code}"
+    results: "%{count} results"
+    more_results: "…and %{count} more"
+    show_more: "Show all (%{total} characters)"
+    show_less: Show less
+    image_unavailable: Image unavailable
+  diff:
+    open: View diff
+    unified: Unified
+    split: Side by side
+    more_lines: "…%{count} more lines"
+  files:
+    summary_one: 1 file changed
+    summary_other: "%{count} files changed"
+  plan:
+    title: Plan
+  todos:
+    title: Tasks
+  goal:
+    label: Goal
+    cancel: Cancel goal
+    next: "Next:"
+    status:
+      running: running
+      completed: achieved
+      failed: failed
+      cancelled: cancelled
+      blocked: blocked
+      timeout: timed out
+      stalled: stalled
+  usage:
+    title: Token usage
+    estimated: estimated
+    confirmed: confirmed
+    prompt: Input
+    completion: Output
+    cache_read: Cache read
+    cache_creation: Cache write
+    reasoning: Reasoning
+    cost: Cost
+    window: Context window
+    confirmed_so_far: "Confirmed so far:"
+  composer:
+    placeholder: Type a message, or / for commands
+    send: Send
+    steer: Send as steering to the running task
+    stop: Stop
+    accepts_args: takes arguments
+    dictated: dictated
+  mention:
+    hint: Type a file name…
+  model:
+    default: Default model
+    search: Search models
+    loading: Loading models…
+    session_only: Only changes the model of this conversation.
+    failed: "Could not change the model: %{error}"
+  steering:
+    sending: Sending…
+    queued: Queued
+    failed: "Not sent: %{error}"
+    discard: Discard
+  stop:
+    failed: "Could not stop: %{error}"
+  auto:
+    label: Auto-approve
+    active: Auto-approve on
+    tooltip: Automatically approves requests of this conversation that do not require confirmation (Shift+Tab)
+    failed: "Could not change auto-approve: %{error}"
+  pending:
+    indicator: "To decide: %{count}"
+  permission:
+    title: Permission requested
+    title_escalation: Leave the sandbox
+    escalation_warning: This command would run outside the sandbox, with full access to your machine.
+    tool: Tool
+    description: Description
+    path: Path
+    command: Command
+    justification: Model's justification
+    params: Parameters
+    queued: "+%{count} queued"
+    allow: Allow
+    allow_session: Allow for the session
+    deny: Deny
+    scope_prefix: "“Allow for the session” will approve commands starting with: %{value}"
+    scope_exact: "“Allow for the session” will approve only this command: %{value}"
+    scope_other: "“Allow for the session” applies to: %{value}"
+    explicit_only: This request needs your explicit approval; it is never approved automatically.
+    escape_hint: Esc denies. Only clicking “Allow” approves.
+    refused: The decision could not be applied.
+  questions:
+    title: Pando is asking
+    step: "Question %{n} of %{total}"
+    review: Review
+    other: Other
+    other_placeholder: Type your answer
+    back: Back
+    next: Next
+    send: Send answers
+    cancel: Cancel

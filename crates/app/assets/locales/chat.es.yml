@@ -1,0 +1,206 @@
+chat:
+  nav:
+    chat: Chat
+    organism: Organismo
+    chat_pending: "Chat (%{count} por decidir)"
+  cancel: Cancelar
+  header:
+    new: Nueva conversación
+    running: Ejecutando
+    toggle_sidebar: Mostrar u ocultar conversaciones
+  sidebar:
+    title: Conversaciones
+    new: Nueva
+    search: Buscar conversaciones
+    loading: Cargando conversaciones…
+    empty: Aún no hay conversaciones.
+    error: "No se pudieron cargar: %{error}"
+    untitled: Sin título
+    load_more: Cargar más
+    rename: Renombrar
+    delete: Borrar
+    delete_title: ¿Borrar la conversación?
+    delete_body: Se borrará su historial en Pando. No se puede deshacer.
+    rename_failed: "No se pudo renombrar: %{error}"
+    delete_failed: "No se pudo borrar: %{error}"
+    bucket:
+      today: Hoy
+      yesterday: Ayer
+      week: Esta semana
+      older: Antes
+  history:
+    failed: "No se pudo cargar el historial: %{error}"
+  transcript:
+    empty_title: ¿En qué trabajamos?
+    empty: Escribe un mensaje para empezar.
+    loading: Cargando el historial…
+    offline: Sin conexión con Pando.
+    to_end: Ir al final
+    copy: Copiar respuesta
+    steered: Mensaje dirigido
+  code:
+    label: código
+    copy: Copiar
+  thinking:
+    streaming: Pensando…
+    done: Razonamiento
+  notice:
+    routing: Enrutado
+    system: Sistema
+    resurrected: Ejecución retomada
+    conclusion_queued: Conclusión en cola
+    conclusion_injected: Conclusión recibida
+    cancelled: Cancelado
+    max_tokens: Respuesta cortada por el límite
+    permission_denied: Permiso denegado
+    error: Error
+  conclusion:
+    title: Resultado delegado
+    none: La tarea terminó sin una conclusión.
+    follow_up: "Seguimiento:"
+  approval:
+    pending: Esperando tu decisión
+    approved: Permitido
+    approved_session: Permitido en la sesión
+    answered: Respondido
+    denied: "Denegado (%{reason})"
+    reason:
+      user_denied: por ti
+      timeout: sin respuesta a tiempo
+      panel_closed: panel cerrado
+      session_switch: cambio de sesión
+      quit: aplicación cerrada
+      cancelled: ejecución cancelada
+      server_expired: ya resuelto
+  activity:
+    running: "%{count} en curso"
+    failed: "%{count} con error"
+    execute_one: ejecutó 1 comando
+    execute_other: ejecutó %{count} comandos
+    edit_one: editó 1 fichero
+    edit_other: hizo %{count} ediciones
+    write_one: escribió 1 fichero
+    write_other: escribió %{count} ficheros
+    read_one: leyó 1 fichero
+    read_other: leyó %{count} ficheros
+    search_one: hizo 1 búsqueda
+    search_other: hizo %{count} búsquedas
+    fetch_one: descargó 1 página
+    fetch_other: descargó %{count} páginas
+    think_one: razonó 1 vez
+    think_other: razonó %{count} veces
+    other_one: usó 1 herramienta
+    other_other: usó %{count} herramientas
+  tool:
+    class:
+      execute: comando
+      edit: edición
+      write: escritura
+      read: lectura
+      search: búsqueda
+      fetch: descarga
+      think: razonar
+      other: herramienta
+    input: entrada
+    output: salida
+    exit_code: "código de salida %{code}"
+    results: "%{count} resultados"
+    more_results: "…y %{count} más"
+    show_more: "Mostrar todo (%{total} caracteres)"
+    show_less: Mostrar menos
+    image_unavailable: Imagen no disponible
+  diff:
+    open: Ver diff
+    unified: Unificado
+    split: Lado a lado
+    more_lines: "…%{count} líneas más"
+  files:
+    summary_one: 1 fichero cambiado
+    summary_other: "%{count} ficheros cambiados"
+  plan:
+    title: Plan
+  todos:
+    title: Tareas
+  goal:
+    label: Objetivo
+    cancel: Cancelar objetivo
+    next: "Siguiente:"
+    status:
+      running: en curso
+      completed: cumplido
+      failed: fallido
+      cancelled: cancelado
+      blocked: bloqueado
+      timeout: sin tiempo
+      stalled: atascado
+  usage:
+    title: Uso de tokens
+    estimated: estimado
+    confirmed: confirmado
+    prompt: Entrada
+    completion: Salida
+    cache_read: Caché leída
+    cache_creation: Caché escrita
+    reasoning: Razonamiento
+    cost: Coste
+    window: Ventana de contexto
+    confirmed_so_far: "Confirmado hasta ahora:"
+  composer:
+    placeholder: Escribe un mensaje o / para comandos
+    send: Enviar
+    steer: Enviar como indicación a la ejecución
+    stop: Parar
+    accepts_args: con argumentos
+    dictated: dictado
+  mention:
+    hint: Escribe el nombre de un fichero…
+  model:
+    default: Modelo por defecto
+    search: Buscar modelo
+    loading: Cargando modelos…
+    session_only: Solo cambia el modelo de esta conversación.
+    failed: "No se pudo cambiar el modelo: %{error}"
+  steering:
+    sending: Enviando…
+    queued: En cola
+    failed: "No se envió: %{error}"
+    discard: Descartar
+  stop:
+    failed: "No se pudo parar: %{error}"
+  auto:
+    label: Auto-aprobar
+    active: Auto-aprobar activo
+    tooltip: Aprueba solas las peticiones de esta conversación que no exigen confirmación (Mayús+Tab)
+    failed: "No se pudo cambiar el auto-aprobado: %{error}"
+  pending:
+    indicator: "Por decidir: %{count}"
+  permission:
+    title: Permiso solicitado
+    title_escalation: Salir del sandbox
+    escalation_warning: Este comando se ejecutaría fuera del sandbox, con acceso completo a tu equipo.
+    tool: Herramienta
+    description: Descripción
+    path: Ruta
+    command: Comando
+    justification: Justificación del modelo
+    params: Parámetros
+    queued: "+%{count} en cola"
+    allow: Permitir
+    allow_session: Permitir en la sesión
+    deny: Denegar
+    scope_prefix: "«Permitir en la sesión» aprobará los comandos que empiecen por: %{value}"
+    scope_exact: "«Permitir en la sesión» aprobará solo este comando: %{value}"
+    scope_other: "«Permitir en la sesión» se aplica a: %{value}"
+    explicit_only: Esta petición exige tu aprobación explícita; nunca se aprueba automáticamente.
+    escape_hint: Esc deniega. Solo un clic en «Permitir» aprueba.
+    refused: No se pudo aplicar la decisión.
+  questions:
+    title: Pando te pregunta
+    step: "Pregunta %{n} de %{total}"
+    review: Revisar
+    other: Otro
+    other_placeholder: Escribe tu respuesta
+    back: Atrás
+    next: Siguiente
+    send: Enviar respuestas
+    cancel: Cancelar

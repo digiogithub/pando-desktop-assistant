@@ -157,6 +157,7 @@ fn start(
     crate::organism_view::bind_keys(cx);
     crate::cells::pane::bind_keys(cx);
     ui::kit_theme::install(cx);
+    crate::chat::init(cx);
     crate::os_prefs::install(cx, settings.reduce_motion);
     fonts::register(cx);
     tokio_bridge::init(cx).context("starting the tokio runtime")?;

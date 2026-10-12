@@ -5,6 +5,7 @@ use rust_i18n::t;
 
 use crate::cells::mapping::CustomEngines;
 use crate::cells::pane::OrganismPane;
+use crate::chat::ChatPanel;
 use crate::connection::{ChipSpec, ConnectionHub, Tone, chip_spec, needs_empty_state, reason_text};
 use crate::events::EventPump;
 use crate::ui::assets::WORDMARK_ON_DARK;
@@ -14,8 +15,8 @@ use crate::ui::input::{Input, InputState};
 use crate::ui::theme::palette;
 use crate::ui::{
     AppContext as _, Context, Entity, Hsla, InteractiveElement as _, IntoElement,
-    ParentElement as _, Render, Styled as _, Task, Window, div, h_flex, px, rgb, rgba,
-    text_edit::img, v_flex,
+    ParentElement as _, Render, StatefulInteractiveElement as _, Styled as _, Task, Window, div,
+    h_flex, px, rgb, rgba, text_edit::img, v_flex,
 };
 use crate::views::title_bar::AppTitleBar;
 use pando_client::ConnectionState;
@@ -29,6 +30,9 @@ pub struct MainView {
     url_error: Option<String>,
     pane: Entity<OrganismPane>,
     _pane_sub: crate::ui::Subscription,
+    chat: Entity<ChatPanel>,
+    /// The body shows the chat instead of the organism.
+    show_chat: bool,
     _pump: Task<()>,
 }
 
@@ -41,6 +45,7 @@ impl MainView {
         manual_url: Option<String>,
     ) -> Self {
         let (tx, rx) = async_channel::unbounded();
+        let chat_handle = handle.clone();
         let mut hub = ConnectionHub::new(handle.clone(), tx);
         let mut url_error = None;
         if let Err(err) = hub.start(manual_url.as_deref()) {
@@ -57,8 +62,10 @@ impl MainView {
             }
             state
         });
-        let pump = EventPump::attach(cx, rx, |this: &mut Self, state, _| {
+        let chat = cx.new(|cx| ChatPanel::new(window, cx, chat_handle));
+        let pump = EventPump::attach(cx, rx, |this: &mut Self, state, cx| {
             this.state = state;
+            this.sync_chat(cx);
         });
         let custom = directories::BaseDirs::new()
             .map(|d| CustomEngines::load_dir(&d.home_dir().join(".pando/mesnada/engines")))
@@ -75,8 +82,60 @@ impl MainView {
             url_error,
             pane,
             _pane_sub: pane_sub,
+            chat,
+            show_chat: false,
             _pump: pump,
         }
+    }
+
+    /// Gives the chat the connected client, or none while Pando is unreachable.
+    fn sync_chat(&mut self, cx: &mut Context<Self>) {
+        let client = if needs_empty_state(&self.state) {
+            None
+        } else {
+            self.hub.client()
+        };
+        self.chat.update(cx, |chat, cx| chat.set_client(client, cx));
+    }
+
+    /// The chip that switches the body between the organism and the chat; it also carries the
+    /// number of items waiting for the user, so a pending approval is visible from either view.
+    fn view_toggle(&self, cx: &mut Context<Self>) -> impl IntoElement {
+        let pending = self.chat.read(cx).pending_total();
+        let label = if self.show_chat {
+            t!("chat.nav.organism").to_string()
+        } else if pending > 0 {
+            t!("chat.nav.chat_pending", count = pending).to_string()
+        } else {
+            t!("chat.nav.chat").to_string()
+        };
+        let weak = cx.weak_entity();
+        h_flex()
+            .id("view-toggle")
+            .cursor_pointer()
+            .px(px(10.0))
+            .py(px(3.0))
+            .rounded_full()
+            .border_1()
+            .border_color(if pending > 0 && !self.show_chat {
+                rgb(palette::ALAMO).into()
+            } else {
+                marfil_alpha(palette::MARFIL_ALPHA_22)
+            })
+            .text_color(if pending > 0 && !self.show_chat {
+                rgb(palette::ALAMO).into()
+            } else {
+                marfil_alpha(palette::MARFIL_ALPHA_62)
+            })
+            .text_size(px(11.0))
+            .on_click(move |_, _, cx| {
+                weak.update(cx, |this, cx| {
+                    this.show_chat = !this.show_chat;
+                    cx.notify();
+                })
+                .ok();
+            })
+            .child(label)
     }
 
     fn retry(&mut self, cx: &mut Context<Self>) {
@@ -157,6 +216,7 @@ impl Render for MainView {
             )
             .left(chip(project))
             .left(chip(target_label))
+            .left(self.view_toggle(cx))
             .left(
                 div().children(waiting.then(|| chip(format!("? {}", t!("cells.header.waiting"))))),
             )
@@ -173,7 +233,11 @@ impl Render for MainView {
             div()
                 .flex_1()
                 .min_h_0()
-                .child(self.pane.clone())
+                .child(if self.show_chat {
+                    self.chat.clone().into_any_element()
+                } else {
+                    self.pane.clone().into_any_element()
+                })
                 .into_any_element()
         };
         window_border().child(
