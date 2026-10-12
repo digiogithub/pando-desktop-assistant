@@ -8,7 +8,7 @@ use crate::ui::button::{Button, ButtonVariants as _};
 use crate::ui::theme::palette;
 use crate::ui::{
     AnyElement, Context, Hsla, InteractiveElement as _, IntoElement, ParentElement as _,
-    Styled as _, div, h_flex, px, rgb, rgba, v_flex,
+    StatefulInteractiveElement as _, Styled as _, div, h_flex, px, rgb, rgba, v_flex,
 };
 
 fn marfil(c: palette::Rgba) -> Hsla {
@@ -60,8 +60,17 @@ impl VoiceController {
 
     /// The inline panel of the dock (everything), shown while the gear is toggled.
     pub(super) fn settings_view(&self, cx: &mut Context<Self>) -> Option<AnyElement> {
-        self.settings_open_flag()
-            .then(|| self.settings_body(cx, true, true))
+        // Capped and scrollable: an unbounded body (long device lists) pushed the dock row out
+        // of the window and drew over the content above it.
+        self.settings_open_flag().then(|| {
+            div()
+                .id("voice-settings-scroll")
+                .w_full()
+                .max_h(px(240.0))
+                .overflow_y_scroll()
+                .child(self.settings_body(cx, true, true))
+                .into_any_element()
+        })
     }
 
     /// The settings body: `voice` = switches, hands-free and latency; `audio` = devices and
