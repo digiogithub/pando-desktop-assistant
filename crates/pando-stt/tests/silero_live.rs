@@ -16,9 +16,13 @@ fn speech_clip_between_silences_is_one_segment() {
         Into::into,
     );
     let mut seg = SileroSegmenter::new(&model).expect("model");
-    let wav = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/oye_pando_es.wav");
+    let wav =
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/oye_pando_es.wav");
     let mut r = hound::WavReader::open(wav).expect("fixture");
-    let speech: Vec<f32> = r.samples::<i16>().map(|s| f32::from(s.expect("s")) / 32768.0).collect();
+    let speech: Vec<f32> = r
+        .samples::<i16>()
+        .map(|s| f32::from(s.expect("s")) / 32768.0)
+        .collect();
     let mut pcm = vec![0.0f32; 16_000];
     pcm.extend(&speech);
     pcm.extend(vec![0.0f32; 16_000 * 2]);
@@ -27,7 +31,10 @@ fn speech_clip_between_silences_is_one_segment() {
         seg.push(c, &mut ev);
     }
     seg.flush(&mut ev);
-    let ends: Vec<_> = ev.iter().filter(|e| matches!(e, VadEvent::End(_))).collect();
+    let ends: Vec<_> = ev
+        .iter()
+        .filter(|e| matches!(e, VadEvent::End(_)))
+        .collect();
     assert_eq!(ends.len(), 1, "{ev:?}");
     assert!(ev.contains(&VadEvent::Start));
     // idle CPU: 60 s of silence is far below 3 % of a core

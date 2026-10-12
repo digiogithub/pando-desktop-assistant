@@ -20,16 +20,19 @@ path = "src/lib.rs"
 name = "pando-stt"
 path = "src/main.rs"
 
+[[bin]]
+name = "wake-eval"
+path = "src/bin/wake_eval.rs"
+
 [dependencies]
 needle-sys = { path = "../needle-sys" }
 voice-proto = { path = "../voice-proto" }
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
+hound = "3.5"
 sherpa-onnx = { version = "=1.13.8", optional = true, default-features = false, features = ["static"] }
 
-[dev-dependencies]
-hound = "3.5"
 
 [features]
 # Parakeet-TDT v3 fallback through sherpa-onnx. OFF by default: it needs a sherpa-onnx built
