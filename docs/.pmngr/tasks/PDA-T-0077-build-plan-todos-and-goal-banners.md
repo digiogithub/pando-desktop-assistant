@@ -2,7 +2,7 @@
 id: PDA-T-0077
 type: task
 title: Build plan, todos and goal banners
-status: in_review
+status: done
 parent: PDA-US-0022
 milestone: PDA-M-0004
 assignees: [claude-sonnet]
@@ -10,8 +10,9 @@ author: mcp
 labels: [chat]
 estimate: 3
 created: 2026-10-11T21:51:27Z
-updated: 2026-10-12T08:10:58Z
+updated: 2026-10-12T08:20:17Z
 started: 2026-10-11T22:46:56Z
+closed: 2026-10-12T08:20:17Z
 ---
 
 ## Description
