@@ -96,10 +96,12 @@ impl FirstRunView {
         let typed = self.url.read(cx).value().to_string();
         self.status = Some(t!("firstrun.connection.probing").to_string());
         let task = tokio_bridge::spawn(cx, async move {
-            let mut d = pando_client::Discovery::default();
             // `pando serve` is https with a local CA: without it every probe fails verification.
-            d.root_certificate_pem = pando_client::auth::default_ca_path()
-                .and_then(|path| pando_client::auth::load_local_ca(&path).ok().flatten());
+            let d = pando_client::Discovery {
+                root_certificate_pem: pando_client::auth::default_ca_path()
+                    .and_then(|path| pando_client::auth::load_local_ca(&path).ok().flatten()),
+                ..pando_client::Discovery::default()
+            };
             if !typed.trim().is_empty() {
                 let mut manual = d.clone();
                 manual.manual_url = Some(typed.trim().to_owned());
@@ -196,6 +198,7 @@ impl FirstRunView {
                         .into_any_element()
                 } else {
                     v_flex()
+                        .w_full()
                         .gap(px(6.0))
                         .children(needs.iter().enumerate().map(|(i, m)| {
                             let state = self.models.state(&m.id);
@@ -228,16 +231,17 @@ impl FirstRunView {
                                         })
                                 });
                             h_flex()
+                                .w_full()
                                 .gap(px(8.0))
                                 .items_center()
-                                .child(div().flex_1().child(format!(
+                                .child(div().flex_1().min_w_0().child(format!(
                                     "{} · {} · {}",
                                     m.label,
                                     human_bytes(m.bytes),
                                     m.licence
                                 )))
-                                .child(div().text_color(rgba(0xF4F1E8A0)).child(text))
-                                .children(button)
+                                .child(div().flex_none().text_color(rgba(0xF4F1E8A0)).child(text))
+                                .children(button.map(|b| div().flex_none().child(b)))
                         }))
                         .child(
                             div()
