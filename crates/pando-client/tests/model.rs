@@ -151,6 +151,13 @@ fn replay_keeps_the_user_message_of_a_local_run() {
         m.apply(&e);
     }
     m.reset_live();
+    // The cut happens when the replay's `Run` event shows it is the same run again.
+    for e in events(include_bytes!("fixtures/chat_simple.sse"))
+        .iter()
+        .take(2)
+    {
+        m.apply(e);
+    }
     assert_eq!(m.items().len(), 1);
     assert!(matches!(&m.items()[0].kind, ItemKind::User { text, .. } if text == "hello"));
 }
@@ -473,4 +480,23 @@ fn snapshot_session_resurrected() {
         "session_resurrected",
         include_bytes!("fixtures/session_resurrected.sse"),
     );
+}
+
+#[test]
+fn a_resurrected_run_keeps_the_rows_of_the_finished_run() {
+    let mut m = model();
+    for e in events(include_bytes!("fixtures/chat_delegate_spawn.sse")) {
+        m.apply(&e);
+    }
+    assert!(!m.is_running());
+    m.reset_live();
+    for e in events(include_bytes!("fixtures/session_resurrected.sse")) {
+        m.apply(&e);
+    }
+    let after = m.render_debug();
+    assert!(
+        after.contains("tool mesnada_spawn_agent"),
+        "run 1 rows dropped:\n{after}"
+    );
+    assert!(after.contains("Resuming"), "{after}");
 }

@@ -145,12 +145,27 @@ pub fn label_for_task(t: &TaskResponse) -> String {
     if let Some(tag) = tag {
         return tag.trim().to_owned();
     }
-    let src = if t.name.trim().is_empty() {
-        &t.prompt
+    let name = t.name.trim();
+    let src = if name.is_empty() || name.starts_with(PREAMBLE) {
+        // Pando truncates `name` inside the preamble: the prompt has the real text.
+        strip_task_preamble(&t.prompt)
     } else {
-        &t.name
+        name
     };
-    src.trim().chars().take(LABEL_CHARS).collect()
+    src.chars().take(LABEL_CHARS).collect()
+}
+
+const PREAMBLE: &str = "You are the task_id:";
+
+/// Pando prefixes delegated prompts with `You are the task_id: task-1234\n\n` and suffixes a
+/// `---` conclusion instruction: the label is the real prompt between them.
+fn strip_task_preamble(src: &str) -> &str {
+    let mut src = src.trim();
+    if src.starts_with(PREAMBLE) {
+        src = src.split_once("\n\n").map_or(src, |(_, rest)| rest.trim());
+    }
+    src.split_once("\n\n---")
+        .map_or(src, |(head, _)| head.trim())
 }
 
 /// The cell for a task (`is_new` is the diff's business, not the mapping's).
@@ -173,7 +188,7 @@ pub fn cell_for_instance(i: &InstanceInfo) -> CellInput {
     let name = Path::new(&i.path)
         .file_name()
         .and_then(|n| n.to_str())
-        .filter(|n| !n.is_empty())
+        .filter(|n| !n.is_empty() && *n != ".")
         .unwrap_or(&i.instance_id);
     c.label = Arc::from(name.chars().take(LABEL_CHARS).collect::<String>());
     c
@@ -238,6 +253,15 @@ mod tests {
         t.name.clear();
         t.prompt = "añade pruebas al módulo de pagos y despliega".into();
         assert_eq!(label_for_task(&t), "añade pruebas al módulo ");
+    }
+
+    #[test]
+    fn label_skips_the_delegation_preamble() {
+        let mut t = task("pando", "running");
+        t.tags = None;
+        t.name = "You are the task_id: tas".into();
+        t.prompt = "You are the task_id: task-06767be4\n\nReply with exactly the word: pong\n\n---\nIMPORTANT".into();
+        assert_eq!(label_for_task(&t), "Reply with exactly the w");
     }
 
     #[test]

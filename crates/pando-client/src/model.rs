@@ -235,6 +235,8 @@ pub struct ChatModel {
     run_active: bool,
     run_seq: i64,
     run_start: Option<usize>,
+    /// A replay is about to start: `Some(run was active)` until its `Run` event says which run.
+    pending_reset: Option<bool>,
     seen_run_seq: i64,
     approvals: Approvals,
     steering: SteeringQueue,
@@ -277,6 +279,7 @@ impl ChatModel {
             run_active: false,
             run_seq: 0,
             run_start: None,
+            pending_reset: None,
             seen_run_seq: -1,
             approvals: Approvals::default(),
             steering: SteeringQueue::new(),
@@ -520,7 +523,19 @@ impl ChatModel {
     }
 
     /// Drops the in-flight run's rows (a replay re-delivers all of them) and the live state.
+    ///
+    /// The cut is deferred to the replay's `Run` event: a run newer than the last one seen (a
+    /// resurrected run) starts after the rows of the finished run, which are kept.
     pub fn reset_live(&mut self) {
+        if self.run_active {
+            self.drop_live_rows();
+        } else {
+            self.pending_reset = Some(false);
+            self.bump();
+        }
+    }
+
+    fn drop_live_rows(&mut self) {
         let keep = self.run_start.unwrap_or_else(|| {
             self.items
                 .iter()
@@ -577,6 +592,15 @@ impl ChatModel {
 
     /// Applies one chat event.
     pub fn apply(&mut self, ev: &ChatEvent) {
+        if self.pending_reset.is_some()
+            && !matches!(
+                ev,
+                ChatEvent::Session { .. } | ChatEvent::GoalStatus(_) | ChatEvent::Run { .. }
+            )
+        {
+            self.pending_reset = None;
+            self.drop_live_rows();
+        }
         match ev {
             ChatEvent::Session {
                 session_id,
@@ -592,6 +616,14 @@ impl ChatModel {
                 }
             }
             ChatEvent::Run { run_seq, .. } => {
+                if let Some(was_active) = self.pending_reset.take() {
+                    if was_active || *run_seq <= self.run_seq {
+                        self.drop_live_rows();
+                    } else {
+                        self.run_start = Some(self.items.len());
+                        self.open = Open::None;
+                    }
+                }
                 self.run_seq = *run_seq;
                 self.seen_run_seq = self.seen_run_seq.max(*run_seq);
                 self.run_active = true;
