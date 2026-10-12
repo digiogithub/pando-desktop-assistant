@@ -97,6 +97,9 @@ impl FirstRunView {
         self.status = Some(t!("firstrun.connection.probing").to_string());
         let task = tokio_bridge::spawn(cx, async move {
             let mut d = pando_client::Discovery::default();
+            // `pando serve` is https with a local CA: without it every probe fails verification.
+            d.root_certificate_pem = pando_client::auth::default_ca_path()
+                .and_then(|path| pando_client::auth::load_local_ca(&path).ok().flatten());
             if !typed.trim().is_empty() {
                 d.manual_url = Some(typed.trim().to_owned());
             }
