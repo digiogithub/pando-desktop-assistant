@@ -2,14 +2,16 @@
 id: PDA-T-0141
 type: task
 title: FAR/FRR evaluation script and dataset
-status: backlog
+status: in_review
 parent: PDA-US-0042
 milestone: PDA-M-0010
+assignees: [claude-sonnet]
 author: mcp
 labels: [wake-word, testing]
 estimate: 3
 created: 2026-10-11T21:56:03Z
-updated: 2026-10-11T22:02:45Z
+updated: 2026-10-12T08:13:08Z
+started: 2026-10-12T08:12:36Z
 ---
 
 ## Description

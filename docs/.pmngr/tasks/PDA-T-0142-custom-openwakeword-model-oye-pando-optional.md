@@ -2,14 +2,16 @@
 id: PDA-T-0142
 type: task
 title: Custom openWakeWord model "Oye Pando" (optional)
-status: backlog
+status: in_review
 parent: PDA-US-0042
 milestone: PDA-M-0010
+assignees: [claude-sonnet]
 author: mcp
 labels: [wake-word]
 estimate: 5
 created: 2026-10-11T21:56:03Z
-updated: 2026-10-11T22:02:45Z
+updated: 2026-10-12T08:13:09Z
+started: 2026-10-12T08:12:36Z
 ---
 
 ## Description

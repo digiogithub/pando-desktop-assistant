@@ -2,14 +2,17 @@
 id: PDA-T-0137
 type: task
 title: Wake verification with Whistle and fuzzy matching
-status: backlog
+status: done
 parent: PDA-US-0041
 milestone: PDA-M-0010
+assignees: [claude-sonnet]
 author: mcp
 labels: [wake-word]
 estimate: 3
 created: 2026-10-11T21:56:03Z
-updated: 2026-10-11T22:02:45Z
+updated: 2026-10-12T08:13:17Z
+started: 2026-10-12T08:12:36Z
+closed: 2026-10-12T08:13:17Z
 ---
 
 ## Description

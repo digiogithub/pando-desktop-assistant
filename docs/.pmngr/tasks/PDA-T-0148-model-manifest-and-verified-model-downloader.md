@@ -2,14 +2,17 @@
 id: PDA-T-0148
 type: task
 title: Model manifest and verified model downloader
-status: backlog
+status: done
 parent: PDA-US-0044
 milestone: PDA-M-0011
+assignees: [claude-sonnet]
 author: mcp
 labels: [packaging, security]
 estimate: 3
 created: 2026-10-11T21:56:03Z
-updated: 2026-10-11T22:03:01Z
+updated: 2026-10-12T08:13:17Z
+started: 2026-10-12T08:12:36Z
+closed: 2026-10-12T08:13:17Z
 ---
 
 ## Description
