@@ -2,7 +2,7 @@
 id: PDA-T-0023
 type: task
 title: S7 · espeak-ng license decision (GPL-3)
-status: in_review
+status: done
 parent: PDA-US-0006
 milestone: PDA-M-0001
 assignees: [claude-opus]
@@ -10,8 +10,9 @@ author: mcp
 labels: [spike, legal]
 estimate: 1
 created: 2026-10-11T21:47:41Z
-updated: 2026-10-11T22:43:09Z
+updated: 2026-10-12T07:23:56Z
 started: 2026-10-11T22:22:20Z
+closed: 2026-10-12T07:23:56Z
 ---
 
 ## Description

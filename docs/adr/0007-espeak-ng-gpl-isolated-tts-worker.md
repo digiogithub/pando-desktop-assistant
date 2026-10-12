@@ -1,6 +1,6 @@
 # 0007 · espeak-ng (GPL-3) is confined to a dedicated `pando-tts` process; STT stays in a permissive worker
 
-- **Status:** proposed (awaiting project-owner sign-off, PDA-T-0023). When accepted it supersedes the
+- **Status:** accepted (2026-10-12, project owner). When accepted it supersedes the
   "one `pando-voice` worker" part of [0004](0004-voice-worker-separate-process.md); everything else in 0004 stands.
 - **Date:** 2026-10-12
 - **Deciders:** project owner (sign-off pending), claude-opus (spike S7)

@@ -245,7 +245,8 @@ pando-assistant/
 │   ├── decide/                # decision layer: typed questions, policy (no UI, transport trait)
 │   ├── pando-client/          # Pando HTTP + SSE API, discovery, chat model (based on Bitácora's pando-rs)
 │   ├── voice-proto/           # app ↔ voice worker protocol
-│   ├── voice-worker/          # bin `pando-voice`: Whistle STT, sherpa-onnx VAD/TTS (separate process)
+│   ├── pando-stt/             # bin `pando-stt`: Whistle STT, VAD, wake word — no GPL (separate process)
+│   ├── pando-tts/             # bin `pando-tts`: sherpa-onnx Piper/Kokoro TTS, GPL-3 as distributed binary (ADR 0007)
 │   ├── claude-bridge/         # Claude Code hooks receiver, messaging socket, channel
 │   └── app/                   # bin `pando-assistant`: GPUI app (only crate that uses gpui-kit)
 ├── xtask/                     # tokens, check-deps, bundle, release
@@ -277,8 +278,9 @@ pando-assistant/
   (MIT, Apache-2.0, BSD, ISC, Zlib, Unicode, Unlicense, CC0, MPL-2.0 file-level) —
   `cargo deny` enforces the allow-list. **No GPL/LGPL/AGPL code in the `app` binary.**
   espeak-ng (GPL-3, pulled in by Piper/Kokoro through sherpa-onnx) is allowed **only**
-  inside the separate `pando-voice` worker process, whose distributed binary is therefore
-  a GPL-3 combined work (see `README.md` § License and `PDA-T-0023`). Never copy code
+  inside the separate `pando-tts` worker process, whose distributed binary is therefore
+  a GPL-3 combined work shipped with its corresponding source (see ADR 0007,
+  `README.md` § License and `PDA-T-0023`). Never copy code
   from Zed's GPL crates (`editor`, `ui`, `theme`, …); GPUI/GPUI Kit (Apache-2.0) and
   Bitácora/Pando (MIT) are fine to reuse with their copyright notices. Models, voices
   and fonts keep their own licences and go into the NOTICE file.

@@ -1,6 +1,6 @@
 # 0004 · Voice (STT, VAD, TTS) runs in a separate `pando-voice` worker process
 
-- **Status:** accepted
+- **Status:** accepted; partially superseded by 0007
 - **Date:** 2026-10-12
 - **Deciders:** project owner, planning agents
 - **Refs:** PDA-T-0019, PDA-T-0023, PDA-T-0087, PDA-T-0090, PDA-T-0091, [`docs/research/voice-stack.md`](../research/voice-stack.md) §1.3–1.4, §3.3, §8

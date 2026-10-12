@@ -1,6 +1,6 @@
 # 0008 · STT engines: Whistle default for commands, Parakeet v3 optional, Whisper dropped
 
-- **Status:** proposed
+- **Status:** accepted (2026-10-12)
 - **Date:** 2026-10-12
 - **Deciders:** claude-opus (spike S1), pending project owner
 - **Refs:** PDA-T-0018, PDA-T-0019, PDA-T-0022, [S1](../spikes/S1-whistle.md), [S2](../spikes/S2-windows-stt-sidecar.md), [S5](../spikes/S5-wake-word.md), `docs/research/voice-stack.md` §1, R1/R2/R5

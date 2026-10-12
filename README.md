@@ -108,13 +108,13 @@ with every package (task `PDA-T-0151`):
 | sonora (echo cancellation) | BSD-3-Clause | |
 | Piper voice `es_ES-davefx-medium` | CC0 | other voices may require attribution (CC-BY) |
 | Space Grotesk, JetBrains Mono, Zen Kaku Gothic New | SIL OFL 1.1 | |
-| espeak-ng (phonemizer used by Piper/Kokoro) | GPL-3.0-or-later | linked **only** into the separate `pando-voice` worker |
+| espeak-ng (phonemizer used by Piper/Kokoro) | GPL-3.0-or-later | linked **only** into the separate `pando-tts` worker |
 
-Because espeak-ng is GPL-3, the distributed `pando-voice` worker binary is a GPL-3
-combined work; our own code inside it stays MIT (MIT is GPL-compatible), and releases
-ship the corresponding source for that binary. The main `pando-assistant` binary is a
-separate process and contains no GPL code (enforced with `cargo deny`). The decision and
-its alternatives are tracked in `PDA-T-0023`.
+The voice workers are split (ADR 0007). `pando-tts` (Piper/Kokoro TTS with espeak-ng) is
+distributed as a GPL-3.0-or-later combined work, and every release ships its corresponding
+source. `pando-stt` (Whistle STT, VAD, wake word) and the `pando-assistant` app are separate
+processes with permissive licences (MIT and compatible) and contain no GPL code, enforced
+with `cargo deny`. The decision is tracked in `PDA-T-0023`.
 
 The "Pando" name and logos are covered by the MIT licence as files, but this does not
 grant trademark rights.
