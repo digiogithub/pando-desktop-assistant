@@ -28,11 +28,12 @@ fn allowed_edges() -> BTreeMap<&'static str, BTreeSet<&'static str>> {
     BTreeMap::from([
         ("organism", set(&[])),
         ("audio", set(&[])),
+        ("needle-sys", set(&[])),
         ("decide", set(&[])),
         ("voice-proto", set(&[])),
         ("pando-client", set(&[])),
         ("claude-bridge", set(&["voice-proto"])),
-        ("pando-stt", set(&["voice-proto"])),
+        ("pando-stt", set(&["voice-proto", "needle-sys"])),
         ("pando-tts", set(&["voice-proto"])),
         (
             "app",

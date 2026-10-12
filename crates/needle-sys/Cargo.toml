@@ -1,0 +1,15 @@
+[package]
+name = "needle-sys"
+description = "Raw FFI bindings and linking for the binary-only libneedle (Whistle STT engine, Apache-2.0)."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish = false
+links = "needle"
+build = "build.rs"
+
+[lints]
+workspace = true
