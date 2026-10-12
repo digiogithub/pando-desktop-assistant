@@ -15,6 +15,7 @@ pub mod logging;
 pub mod organism_view;
 pub mod paths;
 pub mod settings;
+pub mod shell;
 pub mod tokio_bridge;
 pub mod ui;
 pub mod views;

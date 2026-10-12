@@ -2,7 +2,7 @@
 id: PDA-T-0120
 type: task
 title: global-hotkey on Windows, macOS and X11 (press/release)
-status: in_progress
+status: in_review
 parent: PDA-US-0036
 milestone: PDA-M-0008
 assignees: [claude-sonnet]
@@ -10,7 +10,7 @@ author: mcp
 labels: [shell]
 estimate: 3
 created: 2026-10-11T21:54:29Z
-updated: 2026-10-12T07:55:07Z
+updated: 2026-10-12T08:08:31Z
 started: 2026-10-12T07:55:07Z
 ---
 

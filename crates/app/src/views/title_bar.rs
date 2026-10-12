@@ -230,9 +230,9 @@ impl AppTitleBar {
     }
 }
 
-fn close_window(_window: &mut Window, cx: &mut App) {
-    // Single-window app: closing the window quits.
-    cx.quit();
+fn close_window(window: &mut Window, cx: &mut App) {
+    // Hides to the tray when the shell runs in background mode, else quits.
+    crate::shell::runtime::close_window(window, cx);
 }
 
 fn control_button(control: Control, pal: Colors) -> impl IntoElement {

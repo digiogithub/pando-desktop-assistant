@@ -1,0 +1,20 @@
+shell:
+  tray:
+    listen: Listen
+    hands_free: Hands-free
+    mute: Mute voice
+    open: Open window
+    mini: Mini window
+    quit: Quit
+    pending: "%{count} pending"
+  notify:
+    waiting_title: "An agent needs you"
+    waiting_body: "%{label} needs your answer."
+    finished_title: "Agent finished"
+    failed_title: "Agent failed"
+    finished_body: "%{label} has finished."
+    lost_title: "Lost connection to Pando"
+    lost_body: "Pando is not answering. Retrying…"
+  mini:
+    idle_hint: 'Say "Hey Pando" or press the shortcut.'
+    hotkey_hint: "Hold %{key} to talk"

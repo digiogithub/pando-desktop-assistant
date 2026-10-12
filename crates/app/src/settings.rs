@@ -24,6 +24,45 @@ pub struct AppSettings {
     pub pando_url: Option<String>,
     /// Disable decorative animation (organism idle motion, transitions).
     pub reduce_motion: bool,
+    /// Desktop shell behaviour (tray, shortcuts, mini window, notifications).
+    pub shell: ShellSettings,
+}
+
+/// Desktop shell toggles (PDA-US-0035..0038). The settings screen (PDA-T-0126) edits them.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct ShellSettings {
+    /// Closing the window keeps the app alive in the tray (only effective with a tray).
+    pub keep_running: bool,
+    /// Start with the user session.
+    pub autostart: bool,
+    /// Start hidden in the tray instead of opening the main window.
+    pub start_minimized: bool,
+    /// Hold-to-talk shortcut, `global-hotkey` syntax (`ctrl+alt+space`).
+    pub ptt_shortcut: String,
+    /// Show the floating mini window.
+    pub mini_enabled: bool,
+    /// Hide the mini window while the main window has focus.
+    pub mini_auto_hide: bool,
+    /// Last position of the mini window (logical px).
+    pub mini_position: Option<(i32, i32)>,
+    /// OS notifications while the app is unfocused.
+    pub system_notifications: bool,
+}
+
+impl Default for ShellSettings {
+    fn default() -> Self {
+        Self {
+            keep_running: true,
+            autostart: false,
+            start_minimized: false,
+            ptt_shortcut: "ctrl+alt+space".to_owned(),
+            mini_enabled: false,
+            mini_auto_hide: false,
+            mini_position: None,
+            system_notifications: true,
+        }
+    }
 }
 
 impl Default for AppSettings {
@@ -33,6 +72,7 @@ impl Default for AppSettings {
             language: None,
             pando_url: None,
             reduce_motion: false,
+            shell: ShellSettings::default(),
         }
     }
 }

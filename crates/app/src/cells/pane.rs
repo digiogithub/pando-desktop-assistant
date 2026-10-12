@@ -33,6 +33,20 @@ use crate::ui::{
     rgba, v_flex,
 };
 
+/// Weak handle to the live pane, so the shell can select a cell (OS notification click).
+#[allow(missing_debug_implementations)]
+struct PaneHandle(crate::ui::WeakEntity<OrganismPane>);
+
+impl crate::ui::Global for PaneHandle {}
+
+/// Selects `id` in the live pane (no-op when there is none).
+pub fn select_cell(cx: &mut crate::ui::App, id: &str) {
+    let Some(h) = cx.try_global::<PaneHandle>().map(|h| h.0.clone()) else {
+        return;
+    };
+    h.update(cx, |pane, cx| pane.select_cell(id, cx)).ok();
+}
+
 /// Key context of the pane.
 pub const KEY_CONTEXT: &str = "OrganismPane";
 
@@ -74,6 +88,9 @@ pub struct OrganismPane {
     clock: SystemClock,
     _pump: Task<()>,
     _sub: Subscription,
+    _activation: Subscription,
+    _toasts: crate::shell::notify::ToastService,
+    _toast_pump: Task<()>,
 }
 
 fn marfil(c: palette::Rgba) -> Hsla {
@@ -102,6 +119,30 @@ impl OrganismPane {
             }
             cx.notify();
         });
+        let weak = cx.weak_entity();
+        cx.set_global(PaneHandle(weak));
+        let activation = cx.observe_window_activation(window, |_, window, cx| {
+            crate::shell::runtime::on_main_activation(cx, window.is_window_active());
+        });
+        // Toasts from /notifications/stream.
+        let (toast_tx, toast_rx) = async_channel::unbounded::<crate::shell::notify::ToastSpec>();
+        let toasts = crate::shell::notify::ToastService::start(handle, snapshot.clone(), toast_tx);
+        let toast_pump = cx.spawn_in(window, async move |this, cx| {
+            while let Ok(t) = toast_rx.recv().await {
+                let alive = this.update_in(cx, |_, window, cx| {
+                    use crate::shell::notify::ToastLevel;
+                    let level = match t.level {
+                        ToastLevel::Info => Level::Info,
+                        ToastLevel::Warning => Level::Warning,
+                        ToastLevel::Error => Level::Error,
+                    };
+                    crate::ui::notify(window, cx, level, t.message.clone());
+                });
+                if alive.is_err() {
+                    break;
+                }
+            }
+        });
         let (tx, rx) = async_channel::unbounded();
         let poller = Poller::start(handle, snapshot.clone(), tx);
         let pump = EventPump::attach(cx, rx, |this: &mut Self, msg, cx| match msg {
@@ -125,6 +166,9 @@ impl OrganismPane {
             clock: SystemClock::default(),
             _pump: pump,
             _sub: sub,
+            _activation: activation,
+            _toasts: toasts,
+            _toast_pump: toast_pump,
         }
     }
 
@@ -173,6 +217,14 @@ impl OrganismPane {
         }
     }
 
+    /// Selects a cell programmatically (notification click, voice).
+    pub fn select_cell(&mut self, id: &str, cx: &mut Context<Self>) {
+        let id = CellId::new(id);
+        if self.source.cells().iter().any(|c| c.id == id) {
+            self.organism.update(cx, |o, cx| o.select(id, cx));
+        }
+    }
+
     // ---------------------------------------------------------------- polling
 
     fn disconnected(&mut self, cx: &mut Context<Self>) {
@@ -207,6 +259,13 @@ impl OrganismPane {
             self.organism.update(cx, |o, cx| o.set_selected(None, cx));
         }
         self.deliver(cx);
+        let pending = self
+            .approvals
+            .values()
+            .map(|a| a.pending_ids().len() as u32)
+            .sum();
+        let state = self.organism.read(cx).core().borrow().state;
+        crate::shell::runtime::publish(cx, &update.cells, pending, state);
         cx.notify();
     }
 

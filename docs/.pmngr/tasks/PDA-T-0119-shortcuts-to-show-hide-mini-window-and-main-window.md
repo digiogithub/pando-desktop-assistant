@@ -2,7 +2,7 @@
 id: PDA-T-0119
 type: task
 title: Shortcuts to show/hide mini window and main window
-status: in_progress
+status: done
 parent: PDA-US-0035
 milestone: PDA-M-0008
 assignees: [claude-sonnet]
@@ -10,8 +10,9 @@ author: mcp
 labels: [shell]
 estimate: 1
 created: 2026-10-11T21:54:29Z
-updated: 2026-10-12T07:55:07Z
+updated: 2026-10-12T08:08:31Z
 started: 2026-10-12T07:55:07Z
+closed: 2026-10-12T08:08:31Z
 ---
 
 ## Description

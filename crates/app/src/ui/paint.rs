@@ -3,7 +3,7 @@
 
 pub use gpui_kit::gpui::{
     CursorStyle, Font, FontWeight, KeyDownEvent, MouseButton, MouseDownEvent, MouseMoveEvent, Path,
-    PathBuilder, PathStyle, ShapedLine, SharedString, StrokeOptions, TextAlign, TextRun,
+    PathBuilder, PathStyle, QuitMode, ShapedLine, SharedString, StrokeOptions, TextAlign, TextRun,
     WindowVisibility, canvas,
 };
 
@@ -78,4 +78,17 @@ pub mod raster_image {
             let _ = window.drop_image(self.0.clone());
         }
     }
+}
+
+/// Window kinds for the floating mini window (PDA-T-0118, spike T-0025).
+pub mod mini_window {
+    pub use gpui_kit::gpui::layer_shell::{
+        Anchor, KeyboardInteractivity, Layer, LayerShellOptions,
+    };
+    pub use gpui_kit::gpui::{WindowBackgroundAppearance, WindowKind};
+}
+
+/// Builds an action from its registered name (user keymap entries).
+pub fn build_action(cx: &gpui_kit::App, name: &str) -> Result<Box<dyn gpui_kit::Action>, String> {
+    cx.build_action(name, None).map_err(|e| e.to_string())
 }

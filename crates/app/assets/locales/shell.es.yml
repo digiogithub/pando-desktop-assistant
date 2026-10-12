@@ -1,0 +1,20 @@
+shell:
+  tray:
+    listen: Escuchar
+    hands_free: Manos libres
+    mute: Silenciar voz
+    open: Abrir ventana
+    mini: Mini ventana
+    quit: Salir
+    pending: "%{count} pendientes"
+  notify:
+    waiting_title: "Un agente te espera"
+    waiting_body: "%{label} necesita tu respuesta."
+    finished_title: "Agente terminado"
+    failed_title: "Agente con error"
+    finished_body: "%{label} ha terminado."
+    lost_title: "Conexión con Pando perdida"
+    lost_body: "Pando ya no responde. Reintentando…"
+  mini:
+    idle_hint: "Di «Oye Pando» o pulsa el atajo."
+    hotkey_hint: "Mantén %{key} para hablar"
