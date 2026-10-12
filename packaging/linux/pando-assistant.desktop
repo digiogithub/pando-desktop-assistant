@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Pando Assistant
+Name[es]=Asistente Pando
+Comment=Voice-first desktop assistant for Pando
+Comment[es]=Asistente de escritorio por voz para Pando
+Exec=pando-assistant
+Icon=pando-assistant
+Terminal=false
+Categories=Development;
+Keywords=pando;voice;assistant;agents;
+StartupWMClass=dev.pando.assistant

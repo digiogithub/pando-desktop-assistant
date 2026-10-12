@@ -1,0 +1,51 @@
+# Flatpak manifest (PDA-T-0144). Build:
+#   flatpak-builder --user --install --force-clean build-dir packaging/flatpak/dev.pando.assistant.yml
+# Prerequisites: the org.freedesktop.Sdk.Extension.rust-stable//24.08 extension, and the release
+# artifacts staged by `cargo xtask bundle --no-build --formats deb` (dist/stage, target/release).
+# A Flathub submission must instead build from source with generated cargo-sources.json
+# (flatpak-cargo-generator.py Cargo.lock) and fetch needle/Whistle and the voice by URL+sha256
+# (scripts/fetch-needle.sh pins); pando-tts must then be built from the same source (GPL-3).
+app-id: dev.pando.assistant
+runtime: org.freedesktop.Platform
+runtime-version: "24.08"
+sdk: org.freedesktop.Sdk
+command: pando-assistant
+
+finish-args:
+  # Audio capture and playback (PulseAudio protocol; PipeWire serves it).
+  - --socket=pulseaudio
+  # Display: Wayland first, X11 fallback; GPU for Vulkan/wgpu.
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --share=ipc
+  - --device=dri
+  # Loopback connection to the local Pando server (http/https) and remote Pando over LAN.
+  - --share=network
+  # Pando's TLS CA and instance discovery (read-only). /tmp cannot be shared in a Flatpak, so
+  # discovery by /tmp/pando-instances falls back to the token endpoint on the default port.
+  - --filesystem=xdg-config/pando/tls:ro
+  # Optional: Claude Code hooks installer writes ~/.claude/settings.json.
+  - --filesystem=~/.claude
+  # Tray icon (StatusNotifierItem) and notifications.
+  - --talk-name=org.kde.StatusNotifierWatcher
+  - --talk-name=org.freedesktop.Notifications
+  # GlobalShortcuts and Background (autostart) portals need no finish-arg: they are D-Bus
+  # portal calls (org.freedesktop.portal.GlobalShortcuts / .Background).
+
+modules:
+  - name: pando-assistant
+    buildsystem: simple
+    build-commands:
+      - install -Dm755 target/release/pando-assistant /app/bin/pando-assistant
+      - install -Dm755 target/release/pando-stt /app/bin/pando-stt
+      - install -Dm755 target/release/pando-tts /app/bin/pando-tts
+      - install -d /app/share/pando-assistant
+      - cp -r dist/stage/models /app/share/pando-assistant/models
+      - cp -r dist/stage/legal /app/share/pando-assistant/legal
+      - install -Dm644 packaging/linux/pando-assistant.desktop /app/share/applications/dev.pando.assistant.desktop
+      - install -Dm644 packaging/flatpak/dev.pando.assistant.metainfo.xml /app/share/metainfo/dev.pando.assistant.metainfo.xml
+      - install -Dm644 packaging/icons/pando-256.png /app/share/icons/hicolor/256x256/apps/dev.pando.assistant.png
+      - install -Dm644 packaging/icons/pando-512.png /app/share/icons/hicolor/512x512/apps/dev.pando.assistant.png
+    sources:
+      - type: dir
+        path: ../..

@@ -1,0 +1,82 @@
+# cargo-packager configuration (PDA-T-0143/0145/0146), run through `cargo xtask bundle`.
+# cargo-packager resolves every path below relative to THIS file (packaging/).
+name = "pando-assistant"
+product-name = "Pando Assistant"
+version = "0.1.0"
+identifier = "dev.pando.assistant"
+description = "Voice-first desktop assistant for Pando"
+long-description = """
+Pando Assistant is a native desktop client for Pando: a living organism view driven by
+voice, a full chat client, local speech-to-text (Whistle) and text-to-speech (Piper).
+The text-to-speech worker pando-tts is GPL-3.0-or-later (its source is offered in
+SOURCE-OFFER.md); the app and the speech-to-text worker are MIT.
+"""
+homepage = "https://github.com/sevir/pando-assistant"
+authors = ["Pando Assistant contributors"]
+publisher = "Pando Assistant contributors"
+copyright = "Copyright (c) Pando Assistant contributors"
+license-file = "licenses/MIT-pando-assistant.txt"
+out-dir = "../dist/packages"
+binaries-dir = "../target/release"
+icons = [
+  "icons/pando-32.png",
+  "icons/pando-128.png",
+  "icons/pando-256.png",
+  "icons/pando-512.png",
+  "icons/pando.ico",
+]
+
+# The app and both voice workers (ADR 0007). The workers sit next to the app binary.
+[[binaries]]
+path = "pando-assistant"
+main = true
+
+[[binaries]]
+path = "pando-stt"
+
+[[binaries]]
+path = "pando-tts"
+
+# Staged by `cargo xtask bundle` into dist/stage: models, NOTICE, SOURCE-OFFER, licences.
+[[resources]]
+src = "../dist/stage/models"
+target = "models"
+
+[[resources]]
+src = "../dist/stage/legal"
+target = "legal"
+
+[deb]
+section = "utils"
+priority = "optional"
+desktop-template = "linux/pando-assistant.desktop"
+depends = [
+  "libvulkan1",
+  "libxkbcommon0",
+  "libxkbcommon-x11-0",
+  "libwayland-client0",
+  "libasound2 | libasound2t64",
+  "libxcb1",
+  "libfontconfig1",
+  "libpipewire-0.3-0 | pipewire-audio-client-libraries | libpulse0",
+]
+
+[appimage]
+# Libraries the AppImage must not bundle: GPU drivers and the sound server come from the host.
+excluded-libraries = ["libvulkan.so.1", "libasound.so.2", "libpipewire-0.3.so.0", "libpulse.so.0"]
+
+[macos]
+minimum-system-version = "12.0"
+info-plist-path = "macos/Info.plist"
+entitlements = "macos/entitlements.plist"
+# signing-identity comes from the environment (APPLE_SIGNING_IDENTITY) in the signing script.
+
+[nsis]
+installer-icon = "icons/pando.ico"
+installer-mode = "both"
+languages = ["Spanish", "English"]
+display-language-selector = true
+appdata-paths = ["$APPDATA/pando-assistant"]
+
+[wix]
+languages = ["es-ES", "en-US"]

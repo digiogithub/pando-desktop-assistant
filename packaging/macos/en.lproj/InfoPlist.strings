@@ -1,0 +1,2 @@
+"NSMicrophoneUsageDescription" = "Pando Assistant uses the microphone to hear your voice commands. Audio is processed locally on this computer.";
+"CFBundleDisplayName" = "Pando Assistant";

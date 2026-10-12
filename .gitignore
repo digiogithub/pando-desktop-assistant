@@ -2,3 +2,5 @@
 target/
 vendor/needle/
 *.onnx
+/vendor/voices/
+/dist/

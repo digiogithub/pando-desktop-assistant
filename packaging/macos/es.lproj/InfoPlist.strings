@@ -1,0 +1,3 @@
+/* Localised Info.plist strings (Spanish is the source language). */
+"NSMicrophoneUsageDescription" = "Pando Assistant usa el micrófono para oír tus órdenes de voz. El audio se procesa localmente en este equipo.";
+"CFBundleDisplayName" = "Pando Assistant";

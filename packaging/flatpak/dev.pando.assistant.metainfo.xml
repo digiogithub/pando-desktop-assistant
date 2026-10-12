@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>dev.pando.assistant</id>
+  <name>Pando Assistant</name>
+  <summary>Voice-first desktop assistant for Pando</summary>
+  <summary xml:lang="es">Asistente de escritorio por voz para Pando</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT AND GPL-3.0-or-later</project_license>
+  <developer id="dev.pando"><name>Pando Assistant contributors</name></developer>
+  <description>
+    <p>A native client for Pando: a living organism view driven by voice, a full chat client, and local speech recognition and synthesis.</p>
+    <p xml:lang="es">Un cliente nativo para Pando: una vista de organismo vivo controlada por voz, un chat completo y reconocimiento y síntesis de voz locales.</p>
+  </description>
+  <launchable type="desktop-id">dev.pando.assistant.desktop</launchable>
+  <url type="homepage">https://github.com/sevir/pando-assistant</url>
+  <content_rating type="oars-1.1"/>
+  <provides><binary>pando-assistant</binary></provides>
+  <releases>
+    <release version="0.1.0" date="2026-10-12"/>
+  </releases>
+</component>

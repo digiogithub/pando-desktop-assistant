@@ -1,0 +1,69 @@
+Pando Desktop Assistant - NOTICE
+================================
+
+Pando Desktop Assistant is Copyright (c) the Pando Assistant contributors and is licensed
+under the MIT License (licenses/MIT-pando-assistant.txt). This NOTICE ships with every
+package (deb, AppImage, Flatpak, dmg, NSIS/MSI) together with the licences/ directory.
+
+The product is made of three programs that run as separate processes and talk over stdio
+(crate `voice-proto`): they are an aggregate, not one combined work (ADR 0007).
+
+  pando-assistant   the GPUI desktop app          MIT (+ the dependencies listed below)
+  pando-stt         speech-to-text worker         MIT (+ dependencies, + libneedle blob)
+  pando-tts         text-to-speech worker         GPL-3.0-or-later AS DISTRIBUTED
+
+Per-binary Rust dependency inventories (generated with `cargo xtask notice`):
+
+  THIRD-PARTY-pando-assistant.md
+  THIRD-PARTY-pando-stt.md
+  THIRD-PARTY-pando-tts.md
+
+1. GPL-3 notice for pando-tts
+-----------------------------
+pando-tts statically links sherpa-onnx, which contains espeak-ng (GPL-3.0-or-later) and the
+piper-phonemize glue. The pando-tts binary is therefore distributed under the GNU General
+Public License, version 3 or (at your option) any later version (licenses/GPL-3.0.txt).
+The Corresponding Source of pando-tts is published at the same place and release tag as the
+binary; see SOURCE-OFFER.md. You may replace pando-tts with your own build: the app uses the
+program configured in its settings and only warns, never refuses, when it differs.
+The app and pando-stt contain no espeak-ng code (checked at release time with
+`cargo xtask check-nm`).
+
+2. Engines and runtimes
+-----------------------
+- Whistle STT: weights `whistle.cact` (Cactus Compute, Apache-2.0, repo Cactus-Compute/whistle,
+  commit ca5287601bef25af26dcf2e1b2bdc0843a7c19e5) and the needle engine `libneedle.a`
+  (Cactus Compute, Apache-2.0 licence tag; distributed as a prebuilt static library, engine
+  source not published, repo Cactus-Compute/needle3, commit 93e88ede867e4311c39151285e74df513e4b835b).
+  Linked into pando-stt only. Licence text: licenses/Apache-2.0.txt.
+- sherpa-onnx 1.13.8 (k2-fsa, Apache-2.0) in pando-tts (with TTS) and optionally in pando-stt
+  (built from source with SHERPA_ONNX_ENABLE_TTS=OFF).
+- ONNX Runtime (Microsoft, MIT), bundled inside sherpa-onnx.
+- espeak-ng (GPL-3.0-or-later), piper-phonemize (MIT): pando-tts only. espeak-ng-data/ files
+  shipped next to the voices are part of that GPL work.
+- Silero VAD v5 (snakers4, MIT), optional model for pando-stt.
+- GPUI / GPUI Kit (gpui-pre, gpui-kit, Apache-2.0), sonora (BSD-3-Clause), cpal (Apache-2.0).
+
+3. Voices and models (data files, own licences)
+-----------------------------------------------
+- Piper voice es_ES-davefx-medium (rhasspy/piper-voices): CC0-1.0 (licenses/CC0-1.0.txt).
+- Other voices that can be downloaded later may require attribution (CC-BY-3.0, CC-BY-SA-4.0);
+  the About screen shows the licence of every installed voice.
+- Parakeet-TDT-0.6b-v3 (NVIDIA, optional download): CC-BY-4.0.
+
+4. Fonts (embedded in the app, unmodified), SIL Open Font License 1.1
+---------------------------------------------------------------------
+- Space Grotesk, Copyright 2020 The Space Grotesk Project Authors
+- JetBrains Mono, Copyright 2020 The JetBrains Mono Project Authors
+- Zen Kaku Gothic New, Copyright 2022 The Zen Kaku Gothic Project Authors
+Full texts: licenses/OFL-SpaceGrotesk.txt, OFL-JetBrainsMono.txt, OFL-ZenKakuGothicNew.txt.
+
+5. Code adapted from other projects
+-----------------------------------
+Patterns from Bitacora (MIT, Copyright (c) Digio) and the design of Zed's `gpui_tokio`
+(Apache-2.0; no source copied). See crates/app/NOTICE.
+
+6. Trademarks
+-------------
+The "Pando" name and logos are covered by the MIT licence as files, which grants no
+trademark rights.
