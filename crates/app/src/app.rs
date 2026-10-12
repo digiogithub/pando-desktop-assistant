@@ -181,9 +181,7 @@ fn start(
         cx.spawn(async move |cx| {
             while let Ok(o) = out_rx.recv().await {
                 tracing::info!(?o, "shell output");
-                if let crate::shell::controller::Output::Ptt(edge) = o {
-                    cx.update(|cx| crate::voice::controller::ptt_edge(cx, edge));
-                }
+                cx.update(|cx| crate::voice::assistant::shell_output(cx, o));
             }
         })
         .detach();

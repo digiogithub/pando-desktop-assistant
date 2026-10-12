@@ -113,11 +113,13 @@ impl MainView {
         let organism = pane.read(cx).organism().clone();
         let voice = cx.new(|cx| VoiceController::new(cx, voice_config, voice_dirs, Some(organism)));
         let voice_sub = cx.observe(&voice, |_, _, cx| cx.notify());
+        crate::voice::sections::register(cx, &voice);
         crate::voice::controller::register_handle(cx, &voice);
         let data_dir = voice_data_dir.clone();
         let (voice_for_assistant, pane_for_assistant) = (voice.clone(), pane.clone());
         let assistant =
             cx.new(|cx| Assistant::new(cx, voice_for_assistant, pane_for_assistant, data_dir));
+        crate::voice::assistant::register_handle(cx, &assistant);
         let bridge_data = voice_data_dir.clone();
         let (bridge_pane, bridge_assistant) = (pane.clone(), assistant.downgrade());
         let bridge = cx.new(|cx| ClaudeBridge::new(cx, bridge_pane, bridge_assistant, bridge_data));

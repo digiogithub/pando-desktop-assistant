@@ -10,3 +10,7 @@ claude:
     send: Send
     notify_on: "Notify me when done: on"
     notify_off: "Notify me when done: off"
+  firstrun:
+    install: Install the hooks
+    installed: Hooks installed. Restart your Claude Code sessions so they report to me.
+    failed: "Could not install them: %{why}"

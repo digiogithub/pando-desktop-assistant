@@ -34,6 +34,15 @@ pub struct VoiceConfig {
     pub speak: bool,
     /// Speak routine notifications (agent finished, ...), not only direct answers.
     pub speak_notifications: bool,
+    /// Hands-free listening ("Oye Pando"): the microphone streams to the STT worker's VAD and
+    /// wake verification. Off by default; nothing is stored.
+    pub hands_free: bool,
+    /// Wake sensitivity, 0.0 (strict) ..= 1.0 (permissive).
+    pub wake_sensitivity: f32,
+    /// Let the user interrupt the assistant by speaking (needs echo cancellation or a headset).
+    pub barge_in: bool,
+    /// The user wears a headset: hands-free barge-in works without echo cancellation.
+    pub headset: bool,
 }
 
 impl Default for VoiceConfig {
@@ -50,6 +59,10 @@ impl Default for VoiceConfig {
             speed: 1.0,
             speak: true,
             speak_notifications: true,
+            hands_free: false,
+            wake_sensitivity: 0.5,
+            barge_in: true,
+            headset: false,
         }
     }
 }

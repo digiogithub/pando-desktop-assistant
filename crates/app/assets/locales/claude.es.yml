@@ -10,3 +10,7 @@ claude:
     send: Enviar
     notify_on: "Avísame al terminar: sí"
     notify_off: "Avísame al terminar: no"
+  firstrun:
+    install: Instalar los hooks
+    installed: Hooks instalados. Reinicia tus sesiones de Claude Code para que me avisen.
+    failed: "No he podido instalarlos: %{why}"

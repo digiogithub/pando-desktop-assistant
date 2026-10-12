@@ -216,8 +216,12 @@ impl MicProbe for NoMic {
 
 /// Claude Code hooks installer (claude-bridge).
 pub trait HooksInstaller {
-    /// Whether hooks can be installed by this build.
+    /// Whether the hooks are installed (or can be, for stubs).
     fn available(&self) -> bool;
+    /// Installs the hooks (with the user's consent). `Ok` carries a short report.
+    fn install(&self) -> Result<String, String> {
+        Err("not supported".to_owned())
+    }
 }
 
 /// Stub: claude-bridge is not wired into the app yet.

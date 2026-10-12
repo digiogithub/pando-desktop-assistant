@@ -9,15 +9,18 @@ pub mod devices;
 pub mod dock;
 #[cfg(test)]
 mod e2e;
+pub mod firstrun;
 pub mod latency;
 pub mod levels;
 pub mod ptt;
 pub mod resolve;
+pub mod sections;
 pub mod service;
 pub mod session;
 mod settings_panel;
 pub mod speak;
 pub mod supervisor;
+pub mod vad;
 pub mod wer;
 
 /// The voice configuration and directories at startup. Tests and the smoke run never start

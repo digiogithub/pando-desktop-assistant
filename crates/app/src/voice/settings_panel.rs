@@ -58,11 +58,20 @@ impl VoiceController {
         )
     }
 
-    /// The settings panel: enable switch, device lists and the meter.
+    /// The inline panel of the dock (everything), shown while the gear is toggled.
     pub(super) fn settings_view(&self, cx: &mut Context<Self>) -> Option<AnyElement> {
-        if !self.settings_open_flag() {
-            return None;
-        }
+        self.settings_open_flag()
+            .then(|| self.settings_body(cx, true, true))
+    }
+
+    /// The settings body: `voice` = switches, hands-free and latency; `audio` = devices and
+    /// the test meter. Used by the dock panel and by the settings window sections.
+    pub(super) fn settings_body(
+        &self,
+        cx: &mut Context<Self>,
+        voice: bool,
+        audio: bool,
+    ) -> AnyElement {
         let selected_in = self.config().input_device.clone();
         let selected_out = self.config().output_device.clone();
         let level = self
@@ -131,19 +140,68 @@ impl VoiceController {
                 if enabled { "✓" } else { "✗" }
             ))
             .on_click(cx.listener(move |this, _, _, cx| this.set_enabled(!enabled, cx)));
-        Some(
-            v_flex()
-                .id("voice-settings")
-                .gap(px(10.0))
-                .p(px(12.0))
-                .border_t_1()
-                .border_color(marfil(palette::MARFIL_ALPHA_12))
+        let hands_free = self.hands_free();
+        let hf_toggle = Button::new("voice-hands-free-toggle")
+            .label(format!(
+                "{}: {}",
+                t!("voice.hands_free.toggle"),
+                if hands_free { "✓" } else { "✗" }
+            ))
+            .on_click(cx.listener(move |this, _, _, cx| this.set_hands_free(!hands_free, cx)));
+        let sensitivity = self.config().wake_sensitivity;
+        let levels: [(&str, f32, String); 3] = [
+            (
+                "voice-sens-strict",
+                0.25,
+                t!("voice.hands_free.strict").to_string(),
+            ),
+            (
+                "voice-sens-normal",
+                0.5,
+                t!("voice.hands_free.normal").to_string(),
+            ),
+            (
+                "voice-sens-permissive",
+                0.8,
+                t!("voice.hands_free.permissive").to_string(),
+            ),
+        ];
+        let sens = h_flex()
+            .gap(px(4.0))
+            .children(levels.into_iter().map(|(id, v, label)| {
+                let b = Button::new(id)
+                    .label(label)
+                    .on_click(cx.listener(move |this, _, _, cx| this.set_wake_sensitivity(v, cx)));
+                if (sensitivity - v).abs() < 0.13 {
+                    b.primary()
+                } else {
+                    b.ghost()
+                }
+            }));
+        let mut body = v_flex()
+            .id("voice-settings")
+            .gap(px(10.0))
+            .p(px(12.0))
+            .border_t_1()
+            .border_color(marfil(palette::MARFIL_ALPHA_12))
+            .child(
+                div()
+                    .text_size(px(14.0))
+                    .child(t!("voice.settings.title").to_string()),
+            );
+        if voice {
+            body = body
+                .child(toggle)
+                .child(hf_toggle)
                 .child(
                     div()
-                        .text_size(px(14.0))
-                        .child(t!("voice.settings.title").to_string()),
+                        .text_size(px(11.0))
+                        .child(t!("voice.hands_free.sensitivity").to_string()),
                 )
-                .child(toggle)
+                .child(sens);
+        }
+        if audio {
+            body = body
                 .child(
                     div()
                         .text_size(px(11.0))
@@ -189,9 +247,11 @@ impl VoiceController {
                                         .bg(rgb(palette::ALAMO)),
                                 ),
                         ),
-                )
-                .child(latency)
-                .into_any_element(),
-        )
+                );
+        }
+        if voice {
+            body = body.child(latency);
+        }
+        body.into_any_element()
     }
 }

@@ -95,6 +95,12 @@ pub struct DockModel {
     pub mic_open: bool,
     /// The last decision card.
     pub card: Option<ActionCard>,
+    /// Hands-free listening is on (the persistent indicator).
+    pub hands_free: bool,
+    /// The worker's VAD currently hears speech.
+    pub hearing: bool,
+    /// Wake phrases accepted since start (the pulse the view animates).
+    pub wakes: u64,
 }
 
 impl Default for DockModel {
@@ -109,6 +115,9 @@ impl Default for DockModel {
             mic_problem: None,
             mic_open: false,
             card: None,
+            hands_free: false,
+            hearing: false,
+            wakes: 0,
         }
     }
 }
@@ -209,6 +218,12 @@ impl DockModel {
                 self.apply_ptt(p);
                 None
             }
+            VoiceEvent::BargeIn => {
+                if self.phase == Phase::Speaking {
+                    self.phase = Phase::Idle;
+                }
+                None
+            }
             VoiceEvent::Output(audio::PlaybackEvent::Started) => {
                 if self.phase != Phase::Listening {
                     self.phase = Phase::Speaking;
@@ -227,6 +242,38 @@ impl DockModel {
 
     fn apply_message(&mut self, msg: &FromWorker) -> Option<Effect> {
         match msg {
+            FromWorker::SpeechStart if self.hands_free => {
+                self.hearing = true;
+                if self.phase == Phase::Idle {
+                    self.phase = Phase::Listening;
+                    self.notice = None;
+                }
+                None
+            }
+            FromWorker::SpeechEnd if self.hands_free => {
+                self.hearing = false;
+                if self.phase == Phase::Listening && self.caption_id.is_none() {
+                    self.phase = Phase::Idle;
+                }
+                None
+            }
+            FromWorker::WakeWord { .. } => {
+                self.wakes += 1;
+                None
+            }
+            FromWorker::Utterance { text, .. } if self.hands_free => {
+                let text = text.trim().to_owned();
+                self.hearing = false;
+                if text.is_empty() {
+                    self.phase = Phase::Idle;
+                    return None;
+                }
+                self.caption.clone_from(&text);
+                self.caption_id = None;
+                self.notice = None;
+                self.phase = Phase::Thinking;
+                Some(Effect::Transcript { id: 0, text })
+            }
             FromWorker::Partial { id, text }
                 if Some(*id) == self.caption_id || self.phase == Phase::Listening =>
             {
@@ -381,6 +428,45 @@ mod tests {
         d.begin_listening();
         d.apply(&VoiceEvent::Output(audio::PlaybackEvent::Started));
         assert_eq!(d.phase, Phase::Listening);
+    }
+
+    #[test]
+    fn hands_free_utterances_become_transcripts_and_vad_drives_listening() {
+        let mut d = DockModel {
+            hands_free: true,
+            ..DockModel::default()
+        };
+        d.apply(&msg(FromWorker::SpeechStart));
+        assert_eq!(d.phase, Phase::Listening);
+        assert!(d.hearing);
+        d.apply(&msg(FromWorker::WakeWord { score: 0.9 }));
+        assert_eq!(d.wakes, 1);
+        let fx = d.apply(&msg(FromWorker::Utterance {
+            text: " estado de los agentes ".into(),
+            lang: "es".into(),
+        }));
+        assert_eq!(
+            fx,
+            Some(Effect::Transcript {
+                id: 0,
+                text: "estado de los agentes".into()
+            })
+        );
+        assert_eq!(d.phase, Phase::Thinking);
+        // Off: the same events are ignored.
+        let mut off = DockModel::default();
+        assert_eq!(off.apply(&msg(FromWorker::SpeechStart)), None);
+        assert_eq!(off.phase, Phase::Idle);
+    }
+
+    #[test]
+    fn a_hands_free_barge_in_ends_the_speaking_phase() {
+        let mut d = DockModel {
+            phase: Phase::Speaking,
+            ..DockModel::default()
+        };
+        d.apply(&VoiceEvent::BargeIn);
+        assert_eq!(d.phase, Phase::Idle);
     }
 
     #[test]

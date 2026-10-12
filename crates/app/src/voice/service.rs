@@ -8,6 +8,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
 
+use audio::bargein::{BargeAction, BargeIn};
 use audio::{Capture, CaptureConfig, CaptureEvent, Playback, PlaybackConfig, PlaybackEvent};
 use voice_proto::{Role, ToWorker};
 
@@ -19,6 +20,8 @@ use super::supervisor::{
     locate_worker,
 };
 
+/// Hands-free audio is sent in blocks of 100 ms.
+pub const HF_BLOCK_SAMPLES: usize = 1_600;
 /// Samples buffered before a streaming chunk is sent (750 ms at 16 kHz).
 pub const STREAM_CHUNK_SAMPLES: usize = 12_000;
 
@@ -33,6 +36,8 @@ pub enum VoiceEvent {
     Output(PlaybackEvent),
     /// The push-to-talk recording ended.
     Ptt(PttEvent),
+    /// Hands-free barge-in: the user kept talking over the assistant, playback was stopped.
+    BargeIn,
 }
 
 /// Microphone lifecycle.
@@ -73,6 +78,10 @@ pub enum PttEvent {
 }
 
 struct Inner {
+    hands_free: bool,
+    hf_buf: Vec<f32>,
+    vad: super::vad::EnergyVad,
+    barge: BargeIn,
     ptt: Ptt,
     sent: usize,
     request: u64,
@@ -84,13 +93,14 @@ struct Inner {
 pub struct VoiceService {
     inner: Arc<Mutex<Inner>>,
     capture: Option<Capture>,
-    playback: Option<Playback>,
+    playback: Option<Arc<Playback>>,
     stt: Option<Arc<Supervisor>>,
     tts: Option<Supervisor>,
     sink: Arc<dyn Fn(VoiceEvent) + Send + Sync>,
     next_id: AtomicU64,
     epoch: Instant,
     cfg: VoiceConfig,
+    tap: Option<audio::playback::ReferenceTap>,
 }
 
 impl VoiceService {
@@ -100,7 +110,12 @@ impl VoiceService {
         data_dir: &std::path::Path,
         sink: Arc<dyn Fn(VoiceEvent) + Send + Sync>,
     ) -> Self {
+        let barge_ok = cfg.barge_in && (cfg!(feature = "echo-cancel") || cfg.headset);
         let inner = Arc::new(Mutex::new(Inner {
+            hands_free: false,
+            hf_buf: Vec::new(),
+            vad: super::vad::EnergyVad::new(),
+            barge: BargeIn::new(barge_ok),
             ptt: Ptt::new(),
             sent: 0,
             request: 0,
@@ -116,6 +131,7 @@ impl VoiceService {
             next_id: AtomicU64::new(1),
             epoch: Instant::now(),
             cfg,
+            tap: cfg!(feature = "echo-cancel").then(audio::playback::ReferenceTap::new),
         };
         if me.cfg.enabled {
             me.start_stt(data_dir);
@@ -175,14 +191,15 @@ impl VoiceService {
             self.worker_sink(),
         ));
         let sink = self.sink.clone();
-        self.playback = Some(Playback::start(
+        self.playback = Some(Arc::new(Playback::start(
             PlaybackConfig {
                 device: self.cfg.output_device.clone(),
                 host: self.cfg.host.clone(),
+                reference: self.tap.clone(),
                 ..PlaybackConfig::default()
             },
             move |ev| sink(VoiceEvent::Output(ev)),
-        ));
+        )));
     }
 
     fn start_audio(&mut self) {
@@ -190,9 +207,43 @@ impl VoiceService {
         let stt = self.stt.clone();
         let (epoch, lang) = (self.epoch, self.cfg.language.clone());
         let sink = self.sink.clone();
+        let playback = self.playback.clone();
         let on_frame = move |frame: &[f32]| {
             let now = elapsed_ms(epoch);
             let Ok(mut g) = inner.lock() else { return };
+            // Hands-free: stream the cleaned microphone to the STT worker (VAD + wake there)
+            // and watch for the user talking over the assistant.
+            let playing = g.hands_free && playback.as_ref().is_some_and(|p| p.is_playing());
+            let speech = g.vad.frame(frame);
+            match g.barge.frame(playing, speech) {
+                BargeAction::Duck => {
+                    if let Some(p) = &playback {
+                        p.set_duck(true);
+                    }
+                }
+                BargeAction::Restore => {
+                    if let Some(p) = &playback {
+                        p.set_duck(false);
+                    }
+                }
+                BargeAction::Stop => {
+                    if let Some(p) = &playback {
+                        p.set_duck(false);
+                        p.stop();
+                    }
+                    sink(VoiceEvent::BargeIn);
+                }
+                BargeAction::None => {}
+            }
+            if g.hands_free && !g.ptt.is_recording() {
+                g.hf_buf.extend_from_slice(frame);
+                if g.hf_buf.len() >= HF_BLOCK_SAMPLES
+                    && let Some(stt) = &stt
+                {
+                    let pcm = std::mem::take(&mut g.hf_buf);
+                    let _ = stt.send(ToWorker::Audio { pcm });
+                }
+            }
             let finished = g.ptt.frame(frame, now);
             if g.ptt.is_recording()
                 && g.ptt.len().saturating_sub(g.sent) >= STREAM_CHUNK_SAMPLES
@@ -229,10 +280,14 @@ impl VoiceService {
             };
             sink(VoiceEvent::Mic(mic));
         };
+        #[cfg(feature = "echo-cancel")]
+        let echo = self.tap.clone().map(audio::EchoCancel::sonora);
         self.capture = Some(Capture::start(
             CaptureConfig {
                 device: self.cfg.input_device.clone(),
                 host: self.cfg.host.clone(),
+                #[cfg(feature = "echo-cancel")]
+                echo,
                 ..CaptureConfig::default()
             },
             on_frame,
@@ -242,6 +297,47 @@ impl VoiceService {
 
     fn now_ms(&self) -> u64 {
         elapsed_ms(self.epoch)
+    }
+
+    /// Switches hands-free listening on or off (also re-sent when the STT worker restarts).
+    pub fn set_hands_free(&mut self, on: bool) {
+        self.cfg.hands_free = on;
+        self.apply_hands_free();
+    }
+
+    /// Sends the hands-free configuration to the STT worker when it is ready.
+    pub fn apply_hands_free(&self) {
+        let on = self.cfg.hands_free && self.cfg.enabled;
+        let keywords = self
+            .inner
+            .lock()
+            .map(|g| g.keywords.clone())
+            .unwrap_or_default();
+        if let Ok(mut g) = self.inner.lock() {
+            g.hands_free = on;
+            g.hf_buf.clear();
+        }
+        if let Some(stt) = &self.stt {
+            let _ = stt.send(ToWorker::HandsFree {
+                enabled: on,
+                lang: Some(self.cfg.language.clone()),
+                keywords,
+                sensitivity: self.cfg.wake_sensitivity.clamp(0.0, 1.0),
+                vad_model: None,
+            });
+        }
+    }
+
+    /// Changes the wake sensitivity and re-sends the hands-free configuration.
+    pub fn set_wake_sensitivity(&mut self, value: f32) {
+        self.cfg.wake_sensitivity = value;
+        self.apply_hands_free();
+    }
+
+    /// True when hands-free listening is on.
+    #[must_use]
+    pub fn hands_free(&self) -> bool {
+        self.cfg.hands_free && self.cfg.enabled
     }
 
     /// Replaces the keyword bias list sent with every chunk (agent and project names).
@@ -337,13 +433,13 @@ impl VoiceService {
     /// Raw RMS of the speaker output.
     #[must_use]
     pub fn output_rms(&self) -> Option<f32> {
-        self.playback.as_ref().map(Playback::output_rms)
+        self.playback.as_ref().map(|p| p.output_rms())
     }
 
     /// True while audio is playing.
     #[must_use]
     pub fn is_speaking(&self) -> bool {
-        self.playback.as_ref().is_some_and(Playback::is_playing)
+        self.playback.as_ref().is_some_and(|p| p.is_playing())
     }
 
     /// Queues synthesized audio for playback.

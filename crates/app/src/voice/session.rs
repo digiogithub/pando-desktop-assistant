@@ -104,6 +104,8 @@ pub enum Input {
     },
     /// "calla": stop and drop everything.
     Cancel,
+    /// Hands-free barge-in: the user talked over the assistant; playback was already stopped.
+    BargeIn,
 }
 
 /// What the stages must do.
@@ -274,6 +276,19 @@ impl Session {
             Input::Transcript(text) if self.stage == Stage::Transcribing => {
                 self.stage = Stage::Deciding;
                 out.push(Output::Decide(text));
+            }
+            // Hands-free: an utterance arrives without a push-to-talk cycle. Speaking over the
+            // assistant interrupts it first.
+            Input::Transcript(text) if matches!(self.stage, Stage::Idle | Stage::Speaking) => {
+                let actions = self.queue.interrupt();
+                self.drain(actions, &mut out);
+                self.stage = Stage::Deciding;
+                out.push(Output::Decide(text));
+            }
+            Input::BargeIn if self.stage == Stage::Speaking => {
+                let actions = self.queue.interrupt();
+                self.drain(actions, &mut out);
+                self.settle();
             }
             Input::SttFailed if matches!(self.stage, Stage::Transcribing | Stage::Listening) => {
                 let actions = self.queue.set_listening(false);
@@ -569,6 +584,51 @@ mod tests {
             "spoken once the user stops: {out:?}"
         );
         assert_eq!(s.stage(), Stage::Speaking);
+    }
+
+    #[test]
+    fn a_hands_free_utterance_starts_a_turn_without_push_to_talk() {
+        let mut s = Session::new();
+        let out = s.step(Input::Transcript("oye pando, estado".into()));
+        assert_eq!(
+            out,
+            [
+                Output::Decide("oye pando, estado".into()),
+                Output::SetBody(BodyState::Thinking)
+            ]
+        );
+        assert_eq!(s.stage(), Stage::Deciding);
+    }
+
+    #[test]
+    fn a_hands_free_utterance_over_speech_interrupts_it() {
+        let mut s = Session::new();
+        let out = s.step(Input::Notify {
+            text: "hablo mucho".into(),
+            priority: Priority::Direct,
+            source: None,
+        });
+        let u = has_speak(&out).expect("spoken");
+        s.step(Input::SpeechStarted(u.id));
+        let out = s.step(Input::Transcript("calla, estado".into()));
+        assert!(out.contains(&Output::StopAudio));
+        assert!(out.contains(&Output::Decide("calla, estado".into())));
+    }
+
+    #[test]
+    fn a_hands_free_barge_in_stops_the_answer_and_goes_idle() {
+        let mut s = Session::new();
+        let out = s.step(Input::Notify {
+            text: "larga respuesta".into(),
+            priority: Priority::Direct,
+            source: None,
+        });
+        let u = has_speak(&out).expect("spoken");
+        s.step(Input::SpeechStarted(u.id));
+        let out = s.step(Input::BargeIn);
+        assert!(out.contains(&Output::StopAudio));
+        assert_eq!(body(&out), [BodyState::Idle]);
+        assert_eq!(s.stage(), Stage::Idle);
     }
 
     #[test]

@@ -3,8 +3,8 @@
 use rust_i18n::t;
 
 use super::{
-    HooksInstaller, MicProbe, ModelProvisioner, NeedState, NoHooks, NoMic, NoModels, Step,
-    StoreProvisioner, Wizard, human_bytes, missing_bytes,
+    HooksInstaller, MicProbe, ModelProvisioner, NeedState, NoModels, Step, StoreProvisioner,
+    Wizard, human_bytes, missing_bytes,
 };
 use crate::organism_view::tr;
 use crate::settings_view::{self, model::Change};
@@ -37,6 +37,7 @@ pub struct FirstRunView {
     models: Box<dyn ModelProvisioner>,
     mic: Box<dyn MicProbe>,
     hooks: Box<dyn HooksInstaller>,
+    hooks_status: Option<String>,
     _refresh: crate::ui::Task<()>,
 }
 
@@ -80,8 +81,13 @@ impl FirstRunView {
                 },
                 |p| Box::new(p) as Box<dyn ModelProvisioner>,
             ),
-            mic: Box::new(NoMic),
-            hooks: Box::new(NoHooks),
+            mic: Box::new(crate::voice::firstrun::AudioMicProbe::default()),
+            hooks: Box::new(crate::voice::firstrun::BridgeHooks::new(
+                crate::paths::AppDirs::from_project_dirs()
+                    .map(|d| d.data_dir)
+                    .unwrap_or_default(),
+            )),
+            hooks_status: None,
             _refresh: refresh,
         }
     }
@@ -254,13 +260,34 @@ impl FirstRunView {
                     .child(div().text_color(rgba(0xF4F1E8A0)).child(status))
                     .into_any_element()
             }
-            Step::ClaudeHooks => div()
-                .child(if self.hooks.available() {
-                    t!("firstrun.hooks.available").to_string()
-                } else {
-                    t!("firstrun.hooks.pending").to_string()
-                })
-                .into_any_element(),
+            Step::ClaudeHooks => {
+                let w = weak.clone();
+                v_flex()
+                    .gap(px(8.0))
+                    .child(if self.hooks.available() {
+                        t!("firstrun.hooks.available").to_string()
+                    } else {
+                        t!("firstrun.hooks.pending").to_string()
+                    })
+                    .child(
+                        Button::new("fr-hooks-install")
+                            .label(t!("claude.firstrun.install").to_string())
+                            .on_click(move |_, _, cx| {
+                                w.update(cx, |t, cx| {
+                                    t.hooks_status = Some(match t.hooks.install() {
+                                        Ok(_) => t!("claude.firstrun.installed").to_string(),
+                                        Err(why) => {
+                                            t!("claude.firstrun.failed", why = why).to_string()
+                                        }
+                                    });
+                                    cx.notify();
+                                })
+                                .ok();
+                            }),
+                    )
+                    .children(self.hooks_status.clone())
+                    .into_any_element()
+            }
             Step::Hello => div()
                 .child(t!("firstrun.hello.body").to_string())
                 .into_any_element(),

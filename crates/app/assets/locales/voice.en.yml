@@ -24,6 +24,7 @@ voice:
     open_settings: Open privacy settings
     no_link: Check the audio permissions of your system (portal, PipeWire or PulseAudio).
   settings:
+    audio_title: Audio
     title: Voice
     input: Microphone
     output: Speaker
@@ -73,6 +74,10 @@ voice:
       cancelled: cancelled
       paused: paused
   confirm:
+    yes: Yes
+    no: No
+    chat: Talk to Pando
+    pick_prompt: What did you mean?
     all_agents: all agents
     cancel: "Cancel %{agent}?"
     deny: "Deny the request of %{agent}?"
@@ -89,3 +94,10 @@ voice:
   pill:
     project: "project · %{name} · %{p} %"
     switched: "Project %{name}."
+  hands_free:
+    on: "Hands-free on: listening (Oye Pando)"
+    toggle: Hands-free
+    sensitivity: Wake sensitivity
+    strict: Strict
+    normal: Normal
+    permissive: Permissive

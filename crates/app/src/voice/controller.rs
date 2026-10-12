@@ -37,6 +37,14 @@ pub fn register_handle(cx: &mut crate::ui::App, voice: &Entity<VoiceController>)
     cx.set_global(VoiceHandle(voice.downgrade()));
 }
 
+/// Hands-free on/off from the shell (tray, hotkey).
+pub fn set_hands_free(cx: &mut crate::ui::App, on: bool) {
+    let Some(handle) = cx.try_global::<VoiceHandle>().map(|h| h.0.clone()) else {
+        return;
+    };
+    handle.update(cx, |v, cx| v.set_hands_free(on, cx)).ok();
+}
+
 /// A push-to-talk edge from the shell (global hotkey, `pando-assistant ptt`, tray, mini window).
 pub fn ptt_edge(cx: &mut crate::ui::App, edge: crate::shell::ptt::PttEdge) {
     let Some(handle) = cx.try_global::<VoiceHandle>().map(|h| h.0.clone()) else {
@@ -83,10 +91,36 @@ pub enum VoiceControllerEvent {
         /// Audio was handed to the STT worker.
         submitted: bool,
     },
+    /// The user clicked a confirmation or choice button.
+    Confirm(ConfirmChoice),
+    /// Hands-free barge-in: the user talked over the assistant and playback stopped.
+    HandsFreeBargeIn,
     /// Playback started.
     PlaybackStarted,
     /// Everything queued has been played (or was stopped).
     PlaybackDrained,
+}
+
+/// What the user can click while a confirmation or a choice is open (PDA-T-0102).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ConfirmUi {
+    /// The question.
+    pub prompt: String,
+    /// Yes / No buttons (a confirmation) or one button per option (a choice).
+    pub options: Vec<String>,
+    /// True for a yes/no confirmation (`options` is ignored for the buttons).
+    pub yes_no: bool,
+}
+
+/// A click on the confirmation buttons.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ConfirmChoice {
+    /// "Sí".
+    Yes,
+    /// "No".
+    No,
+    /// Option `i` of a choice.
+    Pick(usize),
 }
 
 /// The dock entity.
@@ -105,9 +139,12 @@ pub struct VoiceController {
     last_tick: Instant,
     ticker: Option<Task<()>>,
     focus: FocusHandle,
+    /// The open confirmation or choice, drawn under the caption.
+    pub confirm_ui: Option<ConfirmUi>,
     dirs: VoiceDirs,
     sink: Arc<dyn Fn(VoiceEvent) + Send + Sync>,
     settings_open: bool,
+    section_seen: Option<Instant>,
     input_devices: Vec<DeviceChoice>,
     output_devices: Vec<DeviceChoice>,
     _pump: Task<()>,
@@ -147,6 +184,7 @@ impl VoiceController {
         let dock = DockModel {
             stt: service.worker_state(Role::Stt),
             tts: service.worker_state(Role::Tts),
+            hands_free: config.hands_free && config.enabled,
             ..DockModel::default()
         };
         Self {
@@ -161,13 +199,35 @@ impl VoiceController {
             last_tick: Instant::now(),
             ticker: None,
             focus: cx.focus_handle(),
+            confirm_ui: None,
             dirs,
             sink,
             settings_open: false,
+            section_seen: None,
             input_devices: Vec::new(),
             output_devices: Vec::new(),
             _pump: pump,
         }
+    }
+
+    /// Loads the device lists once (the settings window section needs them).
+    pub fn refresh_devices_if_empty(&mut self) {
+        if self.input_devices.is_empty() {
+            let host = self.config.host.as_deref();
+            let label = t!("voice.settings.default_device").to_string();
+            self.input_devices =
+                devices::choices(&audio::list_input_devices(host).unwrap_or_default(), &label);
+            self.output_devices = devices::choices(
+                &audio::list_output_devices(host).unwrap_or_default(),
+                &label,
+            );
+        }
+    }
+
+    /// Keeps the level ticker alive (the meter of a visible settings section).
+    pub fn keep_ticking(&mut self, cx: &mut Context<Self>) {
+        self.section_seen = Some(Instant::now());
+        self.ensure_ticker(cx);
     }
 
     /// Opens or closes the voice settings panel (device lists are refreshed on open).
@@ -199,6 +259,41 @@ impl VoiceController {
         self.reconfigure(cx);
     }
 
+    /// Hands-free listening on or off (persisted).
+    pub fn set_hands_free(&mut self, on: bool, cx: &mut Context<Self>) {
+        self.config.hands_free = on;
+        self.dock.hands_free = on && self.config.enabled;
+        if let Some(s) = &mut self.service {
+            s.set_hands_free(on);
+        }
+        self.persist();
+        cx.notify();
+    }
+
+    /// Wake sensitivity (0 strict ..= 1 permissive), applied immediately.
+    pub fn set_wake_sensitivity(&mut self, value: f32, cx: &mut Context<Self>) {
+        self.config.wake_sensitivity = value.clamp(0.0, 1.0);
+        if let Some(s) = &mut self.service {
+            s.set_wake_sensitivity(self.config.wake_sensitivity);
+        }
+        self.persist();
+        cx.notify();
+    }
+
+    /// Hands-free listening is on.
+    #[must_use]
+    pub fn hands_free(&self) -> bool {
+        self.config.hands_free && self.config.enabled
+    }
+
+    fn persist(&self) {
+        if let Some(dir) = &self.dirs.config_dir
+            && let Err(err) = self.config.save(dir)
+        {
+            tracing::warn!("could not save voice.json: {err}");
+        }
+    }
+
     /// Switches the voice runtime on or off.
     pub fn set_enabled(&mut self, on: bool, cx: &mut Context<Self>) {
         self.config.enabled = on;
@@ -218,6 +313,7 @@ impl VoiceController {
         self.dock = DockModel {
             stt: service.worker_state(Role::Stt),
             tts: service.worker_state(Role::Tts),
+            hands_free: self.config.hands_free && self.config.enabled,
             ..DockModel::default()
         };
         self.service = Some(service);
@@ -276,6 +372,12 @@ impl VoiceController {
         if let Some(card) = self.dock.card.as_mut() {
             card.result = Some((text, tone));
         }
+        cx.notify();
+    }
+
+    /// Shows or hides the confirmation / choice buttons.
+    pub fn set_confirm_ui(&mut self, ui: Option<ConfirmUi>, cx: &mut Context<Self>) {
+        self.confirm_ui = ui;
         cx.notify();
     }
 
@@ -372,7 +474,15 @@ impl VoiceController {
         if self.settings_open {
             cx.notify();
         }
-        self.settings_open || matches!(self.dock.phase, Phase::Listening | Phase::Speaking)
+        let section = self
+            .section_seen
+            .is_some_and(|t| t.elapsed() < Duration::from_secs(1));
+        if section {
+            cx.notify();
+        }
+        section
+            || self.settings_open
+            || matches!(self.dock.phase, Phase::Listening | Phase::Speaking)
     }
 
     /// Push-to-talk down.
@@ -455,6 +565,16 @@ impl VoiceController {
             }
         }
         match &ev {
+            VoiceEvent::BargeIn => cx.emit(VoiceControllerEvent::HandsFreeBargeIn),
+            VoiceEvent::Worker(WorkerEvent::State {
+                role: Role::Stt,
+                state: WorkerState::Ready,
+                ..
+            }) => {
+                if let Some(s) = &self.service {
+                    s.apply_hands_free();
+                }
+            }
             VoiceEvent::Output(audio::PlaybackEvent::Started) => {
                 cx.emit(VoiceControllerEvent::PlaybackStarted);
             }
@@ -466,7 +586,10 @@ impl VoiceController {
         let workers_changed = matches!(&ev, VoiceEvent::Worker(WorkerEvent::State { .. }));
         let before = self.dock.phase;
         if let Some(Effect::Transcript { id, text }) = self.dock.apply(&ev) {
-            let mut turn = self.turn.take().unwrap_or_default();
+            let mut turn = self
+                .turn
+                .take()
+                .unwrap_or_else(|| Turn::started(self.now_ms()));
             turn.mark(Stage::Transcript, self.now_ms());
             self.turn = Some(turn.clone());
             cx.emit(VoiceControllerEvent::Transcript { id, text, turn });
@@ -613,7 +736,57 @@ impl Render for VoiceController {
                     .text_size(px(11.0))
                     .text_color(secondary)
                     .child(self.status_label()),
-            );
+            )
+            .children(self.confirm_ui.as_ref().map(|ui| {
+                let mut buttons = h_flex().gap(px(6.0));
+                if ui.yes_no {
+                    buttons = buttons
+                        .child(
+                            Button::new("voice-confirm-yes")
+                                .primary()
+                                .label(t!("voice.confirm.yes").to_string())
+                                .on_click(cx.listener(|_, _, _, cx| {
+                                    cx.emit(VoiceControllerEvent::Confirm(ConfirmChoice::Yes));
+                                })),
+                        )
+                        .child(
+                            Button::new("voice-confirm-no")
+                                .label(t!("voice.confirm.no").to_string())
+                                .on_click(cx.listener(|_, _, _, cx| {
+                                    cx.emit(VoiceControllerEvent::Confirm(ConfirmChoice::No));
+                                })),
+                        );
+                } else {
+                    for (i, label) in ui.options.iter().enumerate() {
+                        buttons = buttons.child(
+                            Button::new(("voice-pick", i))
+                                .label(label.clone())
+                                .on_click(cx.listener(move |_, _, _, cx| {
+                                    cx.emit(VoiceControllerEvent::Confirm(ConfirmChoice::Pick(i)));
+                                })),
+                        );
+                    }
+                }
+                v_flex()
+                    .id("voice-confirm")
+                    .gap(px(6.0))
+                    .child(div().text_size(px(13.0)).child(ui.prompt.clone()))
+                    .child(buttons)
+            }))
+            .children(self.dock.hands_free.then(|| {
+                h_flex()
+                    .id("voice-hands-free")
+                    .gap(px(6.0))
+                    .items_center()
+                    .text_size(px(11.0))
+                    .text_color(secondary)
+                    .child(div().size(px(7.0)).rounded_full().bg(if self.dock.hearing {
+                        rgb(palette::ALAMO)
+                    } else {
+                        rgb(palette::ALAMO_OSCURO)
+                    }))
+                    .child(t!("voice.hands_free.on").to_string())
+            }));
         let banner = self.permission_banner(cx);
         let settings = self.settings_view(cx);
         let gear = Button::new("voice-gear")

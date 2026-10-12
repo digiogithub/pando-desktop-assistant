@@ -119,6 +119,8 @@ pub(crate) struct Shared {
     pub latency_us: AtomicU32,
     pub callbacks: AtomicU64,
     pub invalid: AtomicBool,
+    /// Output is ducked by 12 dB (hands-free barge-in).
+    pub duck: AtomicBool,
 }
 
 /// Real-time output state. No allocation, no locks.
@@ -147,6 +149,11 @@ impl OutputCore {
                 sh.consumed.fetch_add(n as u64, Ordering::Relaxed);
             }
         }
+        let gain = if sh.duck.load(Ordering::Relaxed) {
+            crate::bargein::BargeIn::DUCK_GAIN
+        } else {
+            1.0
+        };
         let mut sumsq = 0.0f32;
         let mut played = 0u64;
         let frames = out.len() / self.channels;
@@ -154,7 +161,7 @@ impl OutputCore {
             let v = match self.consumer.pop() {
                 Ok(v) => {
                     played += 1;
-                    v
+                    v * gain
                 }
                 Err(_) => 0.0,
             };
@@ -320,6 +327,11 @@ impl Playback {
     pub fn stop(&self) {
         self.shared.epoch.fetch_add(1, Ordering::SeqCst);
         self.shared.drain_gen.fetch_add(1, Ordering::Release);
+    }
+
+    /// Duck the output by 12 dB (`true`) or restore it; takes effect on the next callback.
+    pub fn set_duck(&self, on: bool) {
+        self.shared.duck.store(on, Ordering::Relaxed);
     }
 
     /// RMS of the last output buffer (raw, not normalised).

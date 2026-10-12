@@ -22,10 +22,12 @@ path = "src/main.rs"
 
 [features]
 # CPU raster fallback of the organism for software GPUs (PDA-T-0042).
-default = ["raster"]
+default = ["raster", "echo-cancel"]
 raster = ["dep:tiny-skia", "dep:image"]
 # PipeWire audio host (Linux release builds; needs libpipewire-0.3-dev, libspa-0.2-dev, libclang).
 pipewire = ["audio/pipewire"]
+# Echo cancellation (sonora AEC3) for hands-free barge-in while the assistant speaks.
+echo-cancel = ["audio/echo-cancel"]
 
 [dependencies]
 tiny-skia = { version = "0.11", optional = true }

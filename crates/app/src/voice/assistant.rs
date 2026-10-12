@@ -25,7 +25,7 @@ use rust_i18n::t;
 use speech::{Lang, Priority, Utterance};
 use voice_proto::Role;
 
-use super::controller::{VoiceController, VoiceControllerEvent};
+use super::controller::{ConfirmChoice, ConfirmUi, VoiceController, VoiceControllerEvent};
 use super::dock::{ActionCard, ResultTone};
 use super::latency::{Stage, Turn};
 use super::session::{Decided, Input, Output, Session};
@@ -213,6 +213,20 @@ impl Assistant {
         }
     }
 
+    /// Mute / unmute the assistant's voice (tray, shell): muting stops what is playing and the
+    /// text stays on screen.
+    pub fn set_muted(&mut self, muted: bool, cx: &mut Context<Self>) {
+        let actions = self.session.queue_mut().set_muted(muted);
+        let outs = actions
+            .into_iter()
+            .map(|a| match a {
+                speech::Action::Speak(u) => Output::Speak(u),
+                speech::Action::Stop { .. } => Output::StopAudio,
+            })
+            .collect();
+        self.run_outputs(outs, cx);
+    }
+
     /// Connects the Claude Code bridge ("dile a <sesión> ...").
     pub fn set_claude(&mut self, bridge: crate::ui::WeakEntity<crate::claude::ClaudeBridge>) {
         self.claude = Some(bridge);
@@ -310,6 +324,10 @@ impl Assistant {
                     cx,
                 );
             }
+            VoiceControllerEvent::Confirm(choice) => self.on_confirm_click(*choice, cx),
+            VoiceControllerEvent::HandsFreeBargeIn => {
+                self.feed(Input::BargeIn, cx);
+            }
             VoiceControllerEvent::BargeIn => {
                 // The service already stopped playback; drop the synthesis of the interrupted utterance.
                 self.cancel_job(cx);
@@ -375,12 +393,14 @@ impl Assistant {
             match c.answer(answer, now) {
                 Verdict::Execute(request) => {
                     self.confirmation = None;
+                    self.voice.update(cx, |v, cx| v.set_confirm_ui(None, cx));
                     self.feed(Input::Decided(Decided::Command), cx);
                     self.run_command(request, c.transcript.clone(), now, cx);
                     return;
                 }
                 Verdict::Dismissed if answer == Some(YesNo::No) => {
                     self.confirmation = None;
+                    self.voice.update(cx, |v, cx| v.set_confirm_ui(None, cx));
                     self.feed(Input::ConfirmationClosed { run: false }, cx);
                     // The machine is still Deciding: settle it.
                     self.feed(Input::Decided(Decided::ExplicitOnly), cx);
@@ -389,7 +409,10 @@ impl Assistant {
                     return;
                 }
                 // Anything else is a new sentence: the confirmation lapses, nothing runs.
-                _ => self.confirmation = None,
+                _ => {
+                    self.confirmation = None;
+                    self.voice.update(cx, |v, cx| v.set_confirm_ui(None, cx));
+                }
             }
         }
         // 2. A spoken answer to a read-aloud approval.
@@ -529,6 +552,16 @@ impl Assistant {
             Outcome::Confirm { request, reason } => {
                 let prompt = cmd_speech::confirm_prompt(&directory, &request, reason);
                 self.confirmation = Some(Confirmation::confirm(&text, request, reason, now));
+                self.voice.update(cx, |v, cx| {
+                    v.set_confirm_ui(
+                        Some(ConfirmUi {
+                            prompt: prompt.clone(),
+                            options: Vec::new(),
+                            yes_no: true,
+                        }),
+                        cx,
+                    );
+                });
                 self.confirmation_gen += 1;
                 let generation = self.confirmation_gen;
                 self.log_record(&resolved.record, false);
@@ -582,6 +615,38 @@ impl Assistant {
                 self.feed(Input::Decided(Decided::Dictate), cx);
                 cx.emit(AssistantEvent::Dictate(text));
             }
+            Outcome::Conversation {
+                reason: decide::policy::ConversationReason::LowConfidence,
+                top2,
+            } if !top2.is_empty() => {
+                self.log_record(&resolved.record, false);
+                let mut options: Vec<(String, f64)> = top2;
+                options.truncate(2);
+                let mut labels: Vec<String> =
+                    options.iter().map(|(k, _)| k.replace('_', " ")).collect();
+                labels.push(t!("voice.confirm.chat").to_string());
+                self.confirmation = Some(Confirmation::pick(&text, options, now));
+                self.confirmation_gen += 1;
+                let generation = self.confirmation_gen;
+                self.voice.update(cx, |v, cx| {
+                    v.set_confirm_ui(
+                        Some(ConfirmUi {
+                            prompt: t!("voice.confirm.pick_prompt").to_string(),
+                            options: labels,
+                            yes_no: false,
+                        }),
+                        cx,
+                    );
+                });
+                self.pending_text = Some(text);
+                self.feed(Input::Decided(Decided::Confirm), cx);
+                let tx = self.tx.clone();
+                tokio_bridge::spawn(cx, async move {
+                    tokio::time::sleep(crate::decision::confirm::CONFIRM_TIMEOUT).await;
+                    let _ = tx.send(Msg::ConfirmExpired(generation)).await;
+                })
+                .detach();
+            }
             Outcome::Conversation { .. } => {
                 self.log_record(&resolved.record, false);
                 self.feed(Input::Decided(Decided::Conversation), cx);
@@ -589,6 +654,47 @@ impl Assistant {
                 let out = self.session.chat_output(text);
                 let _ = steer;
                 self.run_outputs(vec![out], cx);
+            }
+        }
+    }
+
+    /// A click on the confirmation buttons: the same verdicts as a spoken answer.
+    fn on_confirm_click(&mut self, choice: ConfirmChoice, cx: &mut Context<Self>) {
+        let now = self.now(cx);
+        let Some(c) = self.confirmation.clone() else {
+            return;
+        };
+        self.confirmation = None;
+        self.voice.update(cx, |v, cx| v.set_confirm_ui(None, cx));
+        // The last button of a choice is "Hablar con Pando".
+        if let (ConfirmChoice::Pick(i), crate::decision::confirm::Pending::Pick { options }) =
+            (choice, &c.pending)
+            && i >= options.len()
+            && !c.expired(now)
+        {
+            self.feed(Input::ConfirmationClosed { run: false }, cx);
+            self.feed(Input::Transcript(c.transcript.clone()), cx);
+            self.feed(Input::Decided(Decided::Conversation), cx);
+            let out = self.session.chat_output(c.transcript);
+            self.run_outputs(vec![out], cx);
+            return;
+        }
+        let verdict = match choice {
+            ConfirmChoice::Yes => c.answer(Some(YesNo::Yes), now),
+            ConfirmChoice::No => c.answer(Some(YesNo::No), now),
+            ConfirmChoice::Pick(i) => c.choose(i, now),
+        };
+        match verdict {
+            Verdict::Execute(request) => {
+                self.feed(Input::ConfirmationClosed { run: true }, cx);
+                self.run_command(request, c.transcript.clone(), now, cx);
+            }
+            Verdict::Reask(text) => {
+                self.feed(Input::ConfirmationClosed { run: false }, cx);
+                self.feed(Input::Transcript(text), cx);
+            }
+            Verdict::Dismissed | Verdict::Waiting => {
+                self.feed(Input::ConfirmationClosed { run: false }, cx);
             }
         }
     }
@@ -723,6 +829,7 @@ impl Assistant {
             Msg::Projects(p) => self.projects = p,
             Msg::ConfirmExpired(generation) => {
                 if generation == self.confirmation_gen && self.confirmation.take().is_some() {
+                    self.voice.update(cx, |v, cx| v.set_confirm_ui(None, cx));
                     self.feed(Input::ConfirmationClosed { run: false }, cx);
                 }
             }
@@ -993,6 +1100,7 @@ impl Assistant {
         {
             // The timer message normally does this; this is the safety net.
             self.confirmation = None;
+            self.voice.update(cx, |v, cx| v.set_confirm_ui(None, cx));
             self.feed(Input::ConfirmationClosed { run: false }, cx);
         }
         let Some(client) = self.pane.read(cx).voice_client() else {
@@ -1115,4 +1223,27 @@ async fn run_chat(
             failed: false,
         })
         .await;
+}
+
+struct AssistantHandle(crate::ui::WeakEntity<Assistant>);
+
+impl crate::ui::Global for AssistantHandle {}
+
+/// Remembers the assistant so shell signals (mute) can reach it.
+pub fn register_handle(cx: &mut crate::ui::App, assistant: &Entity<Assistant>) {
+    cx.set_global(AssistantHandle(assistant.downgrade()));
+}
+
+/// A signal from the shell (tray, hotkeys): hands-free and mute.
+pub fn shell_output(cx: &mut crate::ui::App, output: crate::shell::controller::Output) {
+    use crate::shell::controller::Output as O;
+    match output {
+        O::Ptt(edge) => super::controller::ptt_edge(cx, edge),
+        O::HandsFree(on) => super::controller::set_hands_free(cx, on),
+        O::Muted(on) => {
+            if let Some(h) = cx.try_global::<AssistantHandle>().map(|h| h.0.clone()) {
+                h.update(cx, |a, cx| a.set_muted(on, cx)).ok();
+            }
+        }
+    }
 }
