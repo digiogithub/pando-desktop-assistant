@@ -12,6 +12,20 @@ publish = false
 [lints]
 workspace = true
 
+[lib]
+name = "pando_stt"
+path = "src/lib.rs"
+
 [[bin]]
 name = "pando-stt"
 path = "src/main.rs"
+
+[dependencies]
+needle-sys = { path = "../needle-sys" }
+voice-proto = { path = "../voice-proto" }
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+hound = "3.5"
