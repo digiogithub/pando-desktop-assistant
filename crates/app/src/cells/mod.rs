@@ -10,6 +10,7 @@
 
 pub mod actions;
 pub mod card;
+pub mod chrome;
 pub mod mapping;
 pub mod new_agent;
 pub mod pane;

@@ -18,8 +18,16 @@ use crate::ui::{
     ParentElement as _, Render, StatefulInteractiveElement as _, Styled as _, Task, Window, div,
     h_flex, px, rgb, rgba, text_edit::img, v_flex,
 };
+use crate::views::layout::{self, Layout};
 use crate::views::title_bar::AppTitleBar;
 use pando_client::ConnectionState;
+
+/// Width of the split divider in px.
+const DIVIDER: f32 = 6.0;
+
+mod gpui_any {
+    pub use crate::ui::AnyElement as E;
+}
 
 /// The window contents.
 #[allow(missing_debug_implementations)]
@@ -31,8 +39,15 @@ pub struct MainView {
     pane: Entity<OrganismPane>,
     _pane_sub: crate::ui::Subscription,
     chat: Entity<ChatPanel>,
-    /// The body shows the chat instead of the organism.
-    show_chat: bool,
+    layout: Layout,
+    /// Share of the width for the organism side in the split layout (permille).
+    split: u16,
+    dragging: bool,
+    /// The chat's own (primary) session, remembered while the composer is routed to a cell.
+    primary_session: Option<String>,
+    /// Session the chat was switched to because the target is a cell.
+    routed_to: Option<String>,
+    _chat_sub: crate::ui::Subscription,
     _pump: Task<()>,
 }
 
@@ -74,7 +89,17 @@ impl MainView {
         let reduced_motion = cx.reduce_motion();
         let pane =
             cx.new(|cx| OrganismPane::new(window, cx, &handle, snapshots, custom, reduced_motion));
-        let pane_sub = cx.observe(&pane, |_, _, cx| cx.notify());
+        let pane_sub = cx.observe(&pane, |this, _, cx| {
+            this.sync_target(cx);
+            cx.notify();
+        });
+        let chat_sub = cx.observe(&chat, |this, _, cx| {
+            this.sync_primary_session(cx);
+            cx.notify();
+        });
+        let saved = crate::settings_view::current(cx)
+            .map(|s| s.ui)
+            .unwrap_or_default();
         Self {
             state: ConnectionState::Connecting,
             hub,
@@ -83,7 +108,12 @@ impl MainView {
             pane,
             _pane_sub: pane_sub,
             chat,
-            show_chat: false,
+            layout: saved.layout,
+            split: layout::clamp_permille(i64::from(saved.split_permille)),
+            dragging: false,
+            primary_session: None,
+            routed_to: None,
+            _chat_sub: chat_sub,
             _pump: pump,
         }
     }
@@ -98,44 +128,94 @@ impl MainView {
         self.chat.update(cx, |chat, cx| chat.set_client(client, cx));
     }
 
-    /// The chip that switches the body between the organism and the chat; it also carries the
-    /// number of items waiting for the user, so a pending approval is visible from either view.
-    fn view_toggle(&self, cx: &mut Context<Self>) -> impl IntoElement {
-        let pending = self.chat.read(cx).pending_total();
-        let label = if self.show_chat {
-            t!("chat.nav.organism").to_string()
-        } else if pending > 0 {
-            t!("chat.nav.chat_pending", count = pending).to_string()
-        } else {
-            t!("chat.nav.chat").to_string()
+    /// Chat <-> organism wiring: while the target is the primary session, the chat's active
+    /// session is the primary one the organism watches for pending permissions.
+    fn sync_primary_session(&mut self, cx: &mut Context<Self>) {
+        if self.routed_to.is_some() {
+            return;
+        }
+        let active = self.chat.read(cx).active_session().map(str::to_owned);
+        if active != self.primary_session {
+            self.primary_session.clone_from(&active);
+            self.pane.update(cx, |p, _| p.set_primary_session(active));
+        }
+    }
+
+    /// Chat <-> organism wiring: "Hablarle" routes the composer to the cell's session by
+    /// showing it in the chat; going back to the primary restores the previous session.
+    fn sync_target(&mut self, cx: &mut Context<Self>) {
+        let (is_cell, session) = {
+            let p = self.pane.read(cx);
+            (
+                p.target().cell().is_some(),
+                p.target().session().map(str::to_owned),
+            )
         };
-        let weak = cx.weak_entity();
-        h_flex()
-            .id("view-toggle")
-            .cursor_pointer()
-            .px(px(10.0))
-            .py(px(3.0))
-            .rounded_full()
-            .border_1()
-            .border_color(if pending > 0 && !self.show_chat {
-                rgb(palette::ALAMO).into()
+        match (is_cell, session) {
+            (true, Some(sid)) if self.routed_to.as_deref() != Some(sid.as_str()) => {
+                if self.routed_to.is_none() {
+                    self.primary_session = self.chat.read(cx).active_session().map(str::to_owned);
+                }
+                self.routed_to = Some(sid.clone());
+                self.chat.update(cx, |c, cx| c.select_session(&sid, cx));
+            }
+            (false, _) if self.routed_to.take().is_some() => {
+                if let Some(p) = self.primary_session.clone() {
+                    self.chat.update(cx, |c, cx| c.select_session(&p, cx));
+                }
+            }
+            _ => {}
+        }
+    }
+
+    /// Switches the layout and persists it.
+    fn set_layout(&mut self, layout: Layout, cx: &mut Context<Self>) {
+        if self.layout != layout {
+            self.layout = layout;
+            crate::shell::runtime::save_layout(cx, self.layout, self.split);
+            cx.notify();
+        }
+    }
+
+    /// Three chips: Orbe | Chat (with the pending count) | Dividida.
+    fn layout_switch(&self, cx: &mut Context<Self>) -> impl IntoElement {
+        let pending = self.chat.read(cx).pending_total();
+        h_flex().gap(px(4.0)).children(Layout::ALL.iter().map(|l| {
+            let l = *l;
+            let active = self.layout == l;
+            let alert = l == Layout::Chat && pending > 0 && !self.layout.shows_chat();
+            let label = if alert {
+                t!("chat.nav.chat_pending", count = pending).to_string()
             } else {
-                marfil_alpha(palette::MARFIL_ALPHA_22)
-            })
-            .text_color(if pending > 0 && !self.show_chat {
+                crate::organism_view::tr(&format!("layout.{}", l.id()))
+            };
+            let weak = cx.weak_entity();
+            let tone: Hsla = if alert {
                 rgb(palette::ALAMO).into()
+            } else if active {
+                rgb(palette::MARFIL).into()
             } else {
                 marfil_alpha(palette::MARFIL_ALPHA_62)
-            })
-            .text_size(px(11.0))
-            .on_click(move |_, _, cx| {
-                weak.update(cx, |this, cx| {
-                    this.show_chat = !this.show_chat;
-                    cx.notify();
+            };
+            h_flex()
+                .id(("layout", l as usize))
+                .cursor_pointer()
+                .px(px(10.0))
+                .py(px(3.0))
+                .rounded_full()
+                .border_1()
+                .border_color(if active {
+                    tone
+                } else {
+                    marfil_alpha(palette::MARFIL_ALPHA_22)
                 })
-                .ok();
-            })
-            .child(label)
+                .text_color(tone)
+                .text_size(px(11.0))
+                .on_click(move |_, _, cx| {
+                    weak.update(cx, |this, cx| this.set_layout(l, cx)).ok();
+                })
+                .child(label)
+        }))
     }
 
     fn retry(&mut self, cx: &mut Context<Self>) {
@@ -195,7 +275,7 @@ fn connection_chip(spec: ChipSpec) -> impl IntoElement {
 }
 
 impl Render for MainView {
-    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let project = match &self.state {
             ConnectionState::Connected {
                 project: Some(name),
@@ -216,7 +296,7 @@ impl Render for MainView {
             )
             .left(chip(project))
             .left(chip(target_label))
-            .left(self.view_toggle(cx))
+            .left(self.layout_switch(cx))
             .left(
                 div().children(waiting.then(|| chip(format!("? {}", t!("cells.header.waiting"))))),
             )
@@ -230,18 +310,23 @@ impl Render for MainView {
         let body = if needs_empty_state(&self.state) {
             self.empty_state(cx).into_any_element()
         } else {
-            div()
-                .flex_1()
-                .min_h_0()
-                .child(if self.show_chat {
-                    self.chat.clone().into_any_element()
-                } else {
-                    self.pane.clone().into_any_element()
-                })
-                .into_any_element()
+            self.body(window, cx)
         };
         window_border().child(
             v_flex()
+                .id("main-view")
+                .key_context(layout::KEY_CONTEXT)
+                .on_action(
+                    cx.listener(|this, _: &layout::ShowOrb, _, cx| {
+                        this.set_layout(Layout::Orb, cx)
+                    }),
+                )
+                .on_action(cx.listener(|this, _: &layout::ShowChat, _, cx| {
+                    this.set_layout(Layout::Chat, cx)
+                }))
+                .on_action(cx.listener(|this, _: &layout::ShowSplit, _, cx| {
+                    this.set_layout(Layout::Split, cx)
+                }))
                 .size_full()
                 .bg(rgb(palette::BOSQUE))
                 .text_color(rgb(palette::MARFIL))
@@ -252,6 +337,59 @@ impl Render for MainView {
 }
 
 impl MainView {
+    /// The body for the current layout. Hidden panels are not in the tree, so a hidden organism
+    /// paints (and requests) no frames.
+    fn body(&mut self, window: &mut Window, cx: &mut Context<Self>) -> gpui_any::E {
+        let weak = cx.weak_entity();
+        let (organism, chat) = (self.layout.shows_organism(), self.layout.shows_chat());
+        let row = h_flex().flex_1().min_h_0().size_full();
+        let compact = organism && chat;
+        self.pane.update(cx, |p, cx| p.set_compact(compact, cx));
+        if organism && chat {
+            let total = f32::from(window.bounds().size.width);
+            let (left, right) = layout::split_widths(total, self.split, DIVIDER);
+            let down = weak;
+            row.id("split")
+                .on_mouse_move(cx.listener(
+                    move |this, e: &crate::ui::paint::MouseMoveEvent, window, cx| {
+                        if this.dragging {
+                            let total = f32::from(window.bounds().size.width);
+                            this.split =
+                                layout::permille_from_drag(f32::from(e.position.x), 0.0, total);
+                            cx.notify();
+                        }
+                    },
+                ))
+                .on_mouse_up(
+                    crate::ui::paint::MouseButton::Left,
+                    cx.listener(move |this, _, _, cx| {
+                        if this.dragging {
+                            this.dragging = false;
+                            crate::shell::runtime::save_layout(cx, this.layout, this.split);
+                        }
+                    }),
+                )
+                .child(div().w(px(left)).h_full().child(self.pane.clone()))
+                .child(
+                    div()
+                        .id("split-divider")
+                        .w(px(DIVIDER))
+                        .h_full()
+                        .cursor_col_resize()
+                        .bg(marfil_alpha(palette::MARFIL_ALPHA_12))
+                        .on_mouse_down(crate::ui::paint::MouseButton::Left, move |_, _, cx| {
+                            down.update(cx, |this, _| this.dragging = true).ok();
+                        }),
+                )
+                .child(div().w(px(right)).h_full().child(self.chat.clone()))
+                .into_any_element()
+        } else if chat {
+            row.child(self.chat.clone()).into_any_element()
+        } else {
+            row.child(self.pane.clone()).into_any_element()
+        }
+    }
+
     /// The "sin Pando" screen: reason, how to start Pando, retry, manual URL and settings.
     fn empty_state(&self, cx: &mut Context<Self>) -> impl IntoElement {
         let weak = cx.weak_entity();

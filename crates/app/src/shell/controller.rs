@@ -47,6 +47,8 @@ pub enum Effect {
     OpenSettings,
     /// Open the first-run assistant.
     OpenFirstRun,
+    /// Open the About window.
+    OpenAbout,
     /// Quit the process.
     Quit,
     /// Something for the voice orchestrator.
@@ -126,6 +128,7 @@ impl ShellState {
             Command::ToggleMini => vec![Effect::ToggleMini],
             Command::OpenSettings => vec![Effect::OpenSettings],
             Command::OpenFirstRun => vec![Effect::OpenFirstRun],
+            Command::OpenAbout => vec![Effect::OpenAbout],
             Command::Quit => vec![Effect::Quit],
             Command::ToggleHandsFree => {
                 self.hands_free = !self.hands_free;

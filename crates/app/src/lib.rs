@@ -4,6 +4,7 @@
 // `rust-i18n` instance). Spanish is the source locale (ADR-0003).
 rust_i18n::i18n!("assets/locales", fallback = "es");
 
+pub mod about;
 pub mod app;
 pub mod cells;
 pub mod chat;

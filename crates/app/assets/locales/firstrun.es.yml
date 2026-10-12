@@ -37,6 +37,7 @@ firstrun:
     none: No hay modelos que descargar en esta versión.
     ready: Instalado
     missing: Pendiente
+    download: "Descargar (%{size})"
     consent: "Se descargarán %{size}. ¿Continuar?"
   hooks:
     available: Los hooks se pueden instalar.

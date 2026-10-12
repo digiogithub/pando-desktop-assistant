@@ -1,0 +1,22 @@
+chrome:
+  hint:
+    idle: Di «Oye Pando» o mantén el atajo para hablar.
+    listening: Te escucho…
+    thinking: Pensando en ello…
+    speaking: Hablando…
+    delegating: Delegando en un agente…
+  mic:
+    start: Hablar
+    stop: Parar
+  examples:
+    title: Prueba un ejemplo
+    p1: «Lanza un agente que revise los tests»
+    p2: «Cancela migración auth»
+    p3: «¿Cómo va el refactor?»
+  flow:
+    title: Voz → decisión → acción
+    body: Lo que dices se transcribe, Pando decide qué hacer y lo ejecuta.
+    empty: Aún no has dicho nada.
+  cell:
+    title: Célula
+    body: Selecciona una célula para ver su tarjeta y controlarla.

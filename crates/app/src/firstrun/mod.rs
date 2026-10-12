@@ -7,8 +7,10 @@
 //! to the `models` crate of PDA-T-0148 once it is on `main`), [`MicProbe`] (audio capture,
 //! PDA-US-0025) and [`HooksInstaller`] (claude-bridge).
 
+mod store;
 mod view;
 
+pub use store::StoreProvisioner;
 pub use view::{FirstRunView, open};
 
 use std::collections::BTreeSet;

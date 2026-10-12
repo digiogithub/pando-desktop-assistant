@@ -251,6 +251,7 @@ fn perform(cx: &mut App, effect: Effect) {
         }
         Effect::OpenSettings => crate::settings_view::open(cx),
         Effect::OpenFirstRun => crate::firstrun::open(cx),
+        Effect::OpenAbout => crate::about::open(cx),
         Effect::Quit => cx.quit(),
         Effect::Output(o) => {
             let rt = cx.global_mut::<Runtime>();
@@ -507,6 +508,35 @@ impl HotkeyAccess for App {
             self.global_mut::<Runtime>().hotkey.as_mut()
         } else {
             None
+        }
+    }
+}
+
+/// Sends a command through the shell inbox (buttons, menus).
+pub fn send_command(cx: &App, command: super::ipc::Command) {
+    if let Some(rt) = cx.try_global::<Runtime>() {
+        let _ = rt.p.inbox.try_send(Msg::Command(command));
+    }
+}
+
+/// Whether push-to-talk is held.
+#[must_use]
+pub fn is_listening(cx: &App) -> bool {
+    cx.try_global::<Runtime>()
+        .is_some_and(|r| r.state.ptt.listening())
+}
+
+/// Persists the layout and split ratio.
+pub fn save_layout(cx: &App, layout: crate::views::layout::Layout, split_permille: u16) {
+    if let Some((settings, path)) = settings_handle(cx) {
+        let mut s = settings.borrow_mut();
+        if s.ui.layout == layout && s.ui.split_permille == split_permille {
+            return;
+        }
+        s.ui.layout = layout;
+        s.ui.split_permille = split_permille;
+        if let Err(e) = s.save(&path) {
+            tracing::warn!("cannot save the layout: {e}");
         }
     }
 }

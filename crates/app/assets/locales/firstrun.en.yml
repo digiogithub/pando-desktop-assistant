@@ -37,6 +37,7 @@ firstrun:
     none: There are no models to download in this version.
     ready: Installed
     missing: Pending
+    download: "Download (%{size})"
     consent: "%{size} will be downloaded. Continue?"
   hooks:
     available: Hooks can be installed.

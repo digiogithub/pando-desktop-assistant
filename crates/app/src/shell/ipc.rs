@@ -58,6 +58,8 @@ pub enum Command {
     OpenSettings,
     /// Open the first-run assistant.
     OpenFirstRun,
+    /// Open the About window.
+    OpenAbout,
     /// Hands-free listening on / off (tray).
     ToggleHandsFree,
     /// Mute / unmute the assistant's voice (tray).

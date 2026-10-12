@@ -54,4 +54,5 @@ settings:
   advanced:
     webui: Open the Pando web interface
     logs: Open the logs folder
+    about: "About Pando Assistant"
     decisions: The decision history will be available with the decision layer.

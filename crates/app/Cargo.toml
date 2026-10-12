@@ -30,6 +30,7 @@ tiny-skia = { version = "0.11", optional = true }
 image = { version = "0.25", default-features = false, optional = true }
 gpui-kit.workspace = true
 pando-client = { path = "../pando-client" }
+models = { path = "../models" }
 anyhow.workspace = true
 async-channel.workspace = true
 clap.workspace = true

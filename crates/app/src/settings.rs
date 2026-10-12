@@ -26,10 +26,31 @@ pub struct AppSettings {
     pub reduce_motion: bool,
     /// Desktop shell behaviour (tray, shortcuts, mini window, notifications).
     pub shell: ShellSettings,
+    /// Main-window layout.
+    pub ui: UiSettings,
     /// Auto-update (Velopack).
     pub update: UpdateSettings,
     /// The first-run assistant was completed or skipped.
     pub first_run_done: bool,
+}
+
+/// Layout settings (PDA-T-0116).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct UiSettings {
+    /// Orb, chat or split.
+    pub layout: crate::views::layout::Layout,
+    /// Share of the width for the organism side in the split layout, in permille.
+    pub split_permille: u16,
+}
+
+impl Default for UiSettings {
+    fn default() -> Self {
+        Self {
+            layout: crate::views::layout::Layout::Orb,
+            split_permille: crate::views::layout::SPLIT_DEFAULT,
+        }
+    }
 }
 
 /// Auto-update settings (PDA-T-0150).
@@ -99,6 +120,7 @@ impl Default for AppSettings {
             pando_url: None,
             reduce_motion: false,
             shell: ShellSettings::default(),
+            ui: UiSettings::default(),
             update: UpdateSettings::default(),
             first_run_done: false,
         }

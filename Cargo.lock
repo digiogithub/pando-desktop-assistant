@@ -296,6 +296,7 @@ dependencies = [
  "image",
  "ksni",
  "lyon_tessellation",
+ "models",
  "organism",
  "pando-client",
  "pulldown-cmark",

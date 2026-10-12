@@ -1,0 +1,9 @@
+about:
+  title: "About"
+  licence: "Licence"
+  licence_body: "Pando Assistant %{version} is free software under the MIT licence. The voice worker pando-tts is distributed under GPL-3."
+  source_offer: "Source offer (GPL-3, pando-tts)"
+  notice: "Third-party notices"
+  models: "Models and voices"
+  inventory: "Rust dependency inventory"
+  inventory_missing: "The full inventory ships in the installer package (legal/ folder); generate one with cargo xtask notice."

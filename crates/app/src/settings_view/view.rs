@@ -374,6 +374,11 @@ impl SettingsView {
                                 cx.open_url(&format!("file://{}", p.display()))
                             })
                     }))
+                    .child(
+                        Button::new("open-about")
+                            .label(t!("settings.advanced.about").to_string())
+                            .on_click(move |_, _, cx| crate::about::open(cx)),
+                    )
                     .child(note(t!("settings.advanced.decisions").to_string()))
                     .into_any_element()
             }

@@ -54,4 +54,5 @@ settings:
   advanced:
     webui: Abrir la interfaz web de Pando
     logs: Abrir la carpeta de registros
+    about: "Acerca de Pando Assistant"
     decisions: El historial de decisiones estará disponible con la capa de decisión.

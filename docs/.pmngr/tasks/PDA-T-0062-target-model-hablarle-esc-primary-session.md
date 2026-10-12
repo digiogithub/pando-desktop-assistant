@@ -2,7 +2,7 @@
 id: PDA-T-0062
 type: task
 title: "Target model: Hablarle / Esc / primary session"
-status: in_review
+status: done
 parent: PDA-US-0016
 milestone: PDA-M-0003
 assignees: [claude-sonnet]
@@ -10,8 +10,9 @@ author: mcp
 labels: [shell, pando-client]
 estimate: 2
 created: 2026-10-11T21:50:04Z
-updated: 2026-10-12T07:53:44Z
+updated: 2026-10-12T08:26:16Z
 started: 2026-10-12T07:53:19Z
+closed: 2026-10-12T08:26:16Z
 ---
 
 ## Description

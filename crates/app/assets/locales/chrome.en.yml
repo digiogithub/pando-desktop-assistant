@@ -1,0 +1,22 @@
+chrome:
+  hint:
+    idle: Say "Hey Pando" or hold the shortcut to talk.
+    listening: I am listening…
+    thinking: Thinking about it…
+    speaking: Speaking…
+    delegating: Handing it to an agent…
+  mic:
+    start: Talk
+    stop: Stop
+  examples:
+    title: Try an example
+    p1: '"Start an agent that reviews the tests"'
+    p2: '"Cancel auth migration"'
+    p3: '"How is the refactor going?"'
+  flow:
+    title: Voice → decision → action
+    body: What you say is transcribed, Pando decides what to do and does it.
+    empty: You have not said anything yet.
+  cell:
+    title: Cell
+    body: Select a cell to see its card and control it.

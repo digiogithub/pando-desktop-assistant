@@ -83,6 +83,8 @@ pub struct OrganismPane {
     primary_session: Option<String>,
     form: Option<FormState>,
     full_output: bool,
+    /// Compact (split layout): no info panel, the canvas keeps the room.
+    compact: bool,
     notice: Option<String>,
     custom_engines: Vec<String>,
     clock: SystemClock,
@@ -161,6 +163,7 @@ impl OrganismPane {
             primary_session: None,
             form: None,
             full_output: false,
+            compact: false,
             notice: None,
             custom_engines: Vec::new(),
             clock: SystemClock::default(),
@@ -177,6 +180,14 @@ impl OrganismPane {
     pub fn set_primary_session(&mut self, id: Option<String>) {
         self.poller.set_primary_session(id.clone());
         self.primary_session = id;
+    }
+
+    /// Compact mode (split layout): hides the info panel.
+    pub fn set_compact(&mut self, compact: bool, cx: &mut Context<Self>) {
+        if self.compact != compact {
+            self.compact = compact;
+            cx.notify();
+        }
     }
 
     /// Window visibility: slows polling down while hidden.
@@ -913,6 +924,17 @@ impl Render for OrganismPane {
                     weak.update(cx, |t, cx| t.back_to_primary(cx)).ok();
                 })
         });
+        let shown = self
+            .organism
+            .read(cx)
+            .core()
+            .borrow()
+            .organism
+            .shown_state();
+        let listening = crate::shell::runtime::is_listening(cx);
+        let side = side.or_else(|| {
+            (!self.compact).then(|| super::chrome::info_panel(None).into_any_element())
+        });
         h_flex()
             .id("organism-pane")
             .key_context(KEY_CONTEXT)
@@ -925,12 +947,19 @@ impl Render for OrganismPane {
                     .h_full()
                     .child(div().flex_1().min_h_0().child(self.organism.clone()))
                     .child(
-                        h_flex()
-                            .gap_2()
+                        v_flex()
                             .items_center()
-                            .p(px(10.0))
-                            .child(new_button)
-                            .children(back)
+                            .gap(px(8.0))
+                            .pb(px(12.0))
+                            .child(super::chrome::status(shown))
+                            .child(
+                                h_flex()
+                                    .gap_2()
+                                    .items_center()
+                                    .child(super::chrome::mic_button(listening))
+                                    .child(new_button)
+                                    .children(back),
+                            )
                             .children(empty.then(|| {
                                 div()
                                     .text_size(px(12.0))
@@ -940,7 +969,8 @@ impl Render for OrganismPane {
                                         t!("cells.empty.title"),
                                         t!("cells.empty.hint")
                                     ))
-                            })),
+                            }))
+                            .child(super::chrome::legend()),
                     ),
             )
             .children(side)

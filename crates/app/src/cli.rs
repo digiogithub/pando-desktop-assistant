@@ -58,6 +58,8 @@ pub enum Cmd {
     ToggleMini,
     /// Open the settings window.
     Settings,
+    /// Open the About window (licences, source offer).
+    About,
     /// Quit the running instance.
     Quit,
 }
@@ -79,6 +81,7 @@ impl Cmd {
             Self::Hide => Command::Hide,
             Self::ToggleMini => Command::ToggleMini,
             Self::Settings => Command::OpenSettings,
+            Self::About => Command::OpenAbout,
             Self::Quit => Command::Quit,
         }
     }

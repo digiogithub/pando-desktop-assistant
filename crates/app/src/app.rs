@@ -156,6 +156,7 @@ fn start(
     ui::init(cx);
     crate::organism_view::bind_keys(cx);
     crate::cells::pane::bind_keys(cx);
+    crate::views::layout::bind_keys(cx);
     ui::kit_theme::install(cx);
     crate::chat::init(cx);
     crate::os_prefs::install(cx, settings.reduce_motion);
@@ -164,6 +165,8 @@ fn start(
 
     let tokio_handle = tokio_bridge::handle(cx);
     let mut start_hidden = false;
+    // The first-run assistant opens by itself once, on a real (non-smoke, non-demo) launch.
+    let first_run = shell.is_some() && !settings.first_run_done;
     if let Some(init) = shell {
         start_hidden = init.minimized;
         let shared = Rc::new(RefCell::new(settings.clone()));
@@ -211,6 +214,9 @@ fn start(
         return Ok(());
     }
     let handle = open_main(cx, settings, demo, tokio_handle)?;
+    if first_run {
+        crate::firstrun::open(cx);
+    }
 
     handle.update(cx, |_, window, cx| {
         if let Some(specs) = window.gpu_specs() {

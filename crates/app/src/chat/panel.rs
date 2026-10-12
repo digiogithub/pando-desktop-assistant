@@ -287,6 +287,12 @@ impl ChatPanel {
         cx.notify();
     }
 
+    /// Id of the session the chat shows (`None` before the first one exists).
+    #[must_use]
+    pub fn active_session(&self) -> Option<&str> {
+        self.model.session_id()
+    }
+
     /// Whether the panel can talk to Pando.
     #[must_use]
     pub fn is_connected(&self) -> bool {

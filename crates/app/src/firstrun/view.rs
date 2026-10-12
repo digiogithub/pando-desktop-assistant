@@ -3,8 +3,8 @@
 use rust_i18n::t;
 
 use super::{
-    HooksInstaller, MicProbe, ModelProvisioner, NeedState, NoHooks, NoMic, NoModels, Step, Wizard,
-    human_bytes, missing_bytes,
+    HooksInstaller, MicProbe, ModelProvisioner, NeedState, NoHooks, NoMic, NoModels, Step,
+    StoreProvisioner, Wizard, human_bytes, missing_bytes,
 };
 use crate::organism_view::tr;
 use crate::settings_view::{self, model::Change};
@@ -37,6 +37,7 @@ pub struct FirstRunView {
     models: Box<dyn ModelProvisioner>,
     mic: Box<dyn MicProbe>,
     hooks: Box<dyn HooksInstaller>,
+    _refresh: crate::ui::Task<()>,
 }
 
 impl FirstRunView {
@@ -52,13 +53,36 @@ impl FirstRunView {
             }
             st
         });
+        // Download progress is polled: repaint while the voice step is showing.
+        let refresh = cx.spawn(async move |this, cx| {
+            loop {
+                cx.background_executor()
+                    .timer(std::time::Duration::from_millis(700))
+                    .await;
+                let alive = this.update(cx, |t, cx| {
+                    if t.wizard.step() == Step::Voice {
+                        cx.notify();
+                    }
+                });
+                if alive.is_err() {
+                    break;
+                }
+            }
+        });
         Self {
             wizard: Wizard::new(),
             url,
             status: None,
-            models: Box::new(NoModels),
+            models: StoreProvisioner::open().map_or_else(
+                |e| {
+                    tracing::warn!("model store unavailable: {e}");
+                    Box::new(NoModels) as Box<dyn ModelProvisioner>
+                },
+                |p| Box::new(p) as Box<dyn ModelProvisioner>,
+            ),
             mic: Box::new(NoMic),
             hooks: Box::new(NoHooks),
+            _refresh: refresh,
         }
     }
 
@@ -155,29 +179,60 @@ impl FirstRunView {
                         .into_any_element()
                 } else {
                     v_flex()
-                        .gap(px(4.0))
-                        .children(needs.iter().map(|m| {
-                            let state = match self.models.state(&m.id) {
+                        .gap(px(6.0))
+                        .children(needs.iter().enumerate().map(|(i, m)| {
+                            let state = self.models.state(&m.id);
+                            let text = match &state {
                                 NeedState::Ready => t!("firstrun.voice.ready").to_string(),
                                 NeedState::Downloading(p) => format!("{p} %"),
                                 NeedState::Missing => t!("firstrun.voice.missing").to_string(),
-                                NeedState::Failed(e) => e,
+                                NeedState::Failed(e) => e.clone(),
                             };
-                            div().child(format!(
-                                "{} · {} · {} · {state}",
-                                m.label,
-                                human_bytes(m.bytes),
-                                m.licence
-                            ))
+                            let id = m.id.clone();
+                            let w = weak.clone();
+                            let button = matches!(state, NeedState::Missing | NeedState::Failed(_))
+                                .then(|| {
+                                    Button::new(("fr-dl", i))
+                                        .label(
+                                            t!(
+                                                "firstrun.voice.download",
+                                                size = human_bytes(m.bytes)
+                                            )
+                                            .to_string(),
+                                        )
+                                        .on_click(move |_, _, cx| {
+                                            w.update(cx, |t, cx| {
+                                                if let Err(e) = t.models.install(&id) {
+                                                    t.status = Some(e);
+                                                }
+                                                cx.notify();
+                                            })
+                                            .ok();
+                                        })
+                                });
+                            h_flex()
+                                .gap(px(8.0))
+                                .items_center()
+                                .child(div().flex_1().child(format!(
+                                    "{} · {} · {}",
+                                    m.label,
+                                    human_bytes(m.bytes),
+                                    m.licence
+                                )))
+                                .child(div().text_color(rgba(0xF4F1E8A0)).child(text))
+                                .children(button)
                         }))
                         .child(
-                            div().child(
-                                t!(
-                                    "firstrun.voice.consent",
-                                    size = human_bytes(missing_bytes(self.models.as_ref()))
-                                )
-                                .to_string(),
-                            ),
+                            div()
+                                .text_size(px(12.0))
+                                .text_color(rgba(0xF4F1E8A0))
+                                .child(
+                                    t!(
+                                        "firstrun.voice.consent",
+                                        size = human_bytes(missing_bytes(self.models.as_ref()))
+                                    )
+                                    .to_string(),
+                                ),
                         )
                         .into_any_element()
                 }
