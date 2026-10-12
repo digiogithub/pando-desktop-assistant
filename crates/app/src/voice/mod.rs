@@ -9,6 +9,7 @@ pub mod dock;
 pub mod latency;
 pub mod levels;
 pub mod ptt;
+pub mod resolve;
 pub mod service;
 mod settings_panel;
 pub mod supervisor;

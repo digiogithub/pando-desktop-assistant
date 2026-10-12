@@ -51,6 +51,7 @@ tracing-subscriber.workspace = true
 lyon_tessellation = "1.0.22"
 organism = { path = "../organism" }
 audio = { path = "../audio" }
+models = { path = "../models" }
 speech = { path = "../speech" }
 voice-proto = { path = "../voice-proto" }
 decide = { path = "../decide" }

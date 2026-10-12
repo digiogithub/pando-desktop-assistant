@@ -131,7 +131,7 @@ impl VoiceService {
     }
 
     fn start_stt(&mut self, data_dir: &std::path::Path) {
-        let Some(model) = self.cfg.resolve_stt_model(data_dir) else {
+        let Some(model) = super::resolve::stt_model(&self.cfg, data_dir) else {
             tracing::warn!("voice is enabled but no STT model was found");
             (self.sink)(VoiceEvent::Worker(WorkerEvent::State {
                 role: Role::Stt,
@@ -158,7 +158,7 @@ impl VoiceService {
         if !self.cfg.speak {
             return;
         }
-        let Some(dir) = self.cfg.tts_model_dir.clone().filter(|d| d.exists()) else {
+        let Some(dir) = super::resolve::tts_model_dir(&self.cfg) else {
             return;
         };
         let launcher = ProcessLauncher {

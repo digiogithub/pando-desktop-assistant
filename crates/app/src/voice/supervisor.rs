@@ -147,19 +147,27 @@ fn reap(child: &Arc<Mutex<Child>>) {
     }
 }
 
-/// Where the worker binaries live: next to the app executable, otherwise on `PATH`.
+/// Where the worker binaries live: next to the app executable (packaged installs), then the
+/// cargo target directory (development; test executables sit in `deps/`), then `PATH`.
 #[must_use]
 pub fn locate_worker(name: &str) -> std::path::PathBuf {
     let exe_name = format!("{name}{}", std::env::consts::EXE_SUFFIX);
+    let mut dirs = Vec::new();
     if let Ok(exe) = std::env::current_exe()
         && let Some(dir) = exe.parent()
     {
-        let candidate = dir.join(&exe_name);
-        if candidate.is_file() {
-            return candidate;
+        dirs.push(dir.to_path_buf());
+        if let Some(up) = dir.parent() {
+            dirs.push(up.to_path_buf());
         }
     }
-    std::path::PathBuf::from(exe_name)
+    if let Some(path) = std::env::var_os("PATH") {
+        dirs.extend(std::env::split_paths(&path));
+    }
+    dirs.into_iter()
+        .map(|d| d.join(&exe_name))
+        .find(|c| c.is_file())
+        .unwrap_or_else(|| std::path::PathBuf::from(exe_name))
 }
 
 /// Exponential restart backoff.
