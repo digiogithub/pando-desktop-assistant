@@ -197,9 +197,11 @@ impl ChatPanel {
         let id = item.id;
         match &item.kind {
             ItemKind::User { text, steered } => h_flex()
+                .min_w_0()
                 .justify_end()
                 .child(
                     v_flex()
+                        .min_w_0()
                         .max_w(px(580.0))
                         .gap(px(4.0))
                         .items_end()
@@ -213,6 +215,7 @@ impl ChatPanel {
                         })
                         .child(
                             div()
+                                .min_w_0()
                                 .px(px(14.0))
                                 .py(px(9.0))
                                 .rounded(px(14.0))
