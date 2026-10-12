@@ -111,3 +111,65 @@ pub(crate) fn find_device(
         })
         .ok_or_else(|| AudioError::NoDevice(format!("device `{w}` not found")))
 }
+
+/// Requested device buffer, milliseconds. The PulseAudio backend otherwise asks for a 2 s
+/// buffer, which delays the first sound and makes barge-in keep playing for seconds.
+pub const BUFFER_MS: u32 = 20;
+
+/// The stream config of `supported` with a small fixed buffer when the backend allows it.
+pub(crate) fn low_latency_config(
+    supported: &cpal::SupportedStreamConfig,
+    low_latency: bool,
+) -> cpal::StreamConfig {
+    let mut config = supported.config();
+    if !low_latency {
+        return config;
+    }
+    if let cpal::SupportedBufferSize::Range { min, max } = supported.buffer_size() {
+        let frames = (u64::from(config.sample_rate) * u64::from(BUFFER_MS) / 1000) as u32;
+        config.buffer_size = cpal::BufferSize::Fixed(frames.clamp(*min, *max));
+    }
+    config
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn supported(buffer: cpal::SupportedBufferSize) -> cpal::SupportedStreamConfig {
+        cpal::SupportedStreamConfig::new(2, 48_000, buffer, cpal::SampleFormat::F32)
+    }
+
+    #[test]
+    fn asks_for_a_small_fixed_buffer_when_the_backend_has_a_range() {
+        let s = supported(cpal::SupportedBufferSize::Range {
+            min: 1,
+            max: 100_000,
+        });
+        assert_eq!(
+            low_latency_config(&s, true).buffer_size,
+            cpal::BufferSize::Fixed(960)
+        );
+        assert_eq!(
+            low_latency_config(&s, false).buffer_size,
+            cpal::BufferSize::Default
+        );
+    }
+
+    #[test]
+    fn the_request_is_clamped_to_the_supported_range_and_skipped_without_one() {
+        let s = supported(cpal::SupportedBufferSize::Range {
+            min: 2048,
+            max: 4096,
+        });
+        assert_eq!(
+            low_latency_config(&s, true).buffer_size,
+            cpal::BufferSize::Fixed(2048)
+        );
+        let s = supported(cpal::SupportedBufferSize::Unknown);
+        assert_eq!(
+            low_latency_config(&s, true).buffer_size,
+            cpal::BufferSize::Default
+        );
+    }
+}

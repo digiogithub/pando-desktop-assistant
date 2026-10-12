@@ -118,14 +118,23 @@ where
         .map_err(|e| AudioError::Backend(e.to_string()))
 }
 
+/// Opens the stream with a small device buffer, falling back to the backend default when the
+/// backend refuses it.
 fn open_session(cfg: &CaptureConfig) -> Result<Session, AudioError> {
+    open_session_with(cfg, true).or_else(|e| {
+        tracing::debug!("small device buffer refused ({e}); using the default");
+        open_session_with(cfg, false)
+    })
+}
+
+fn open_session_with(cfg: &CaptureConfig, low_latency: bool) -> Result<Session, AudioError> {
     // A fresh host each time: some backends snapshot the device list at creation (S4).
     let host = open_host(cfg.host.as_deref())?;
     let device = find_device(&host, cfg.device.as_deref(), true)?;
     let supported = device
         .default_input_config()
         .map_err(|e| AudioError::Backend(e.to_string()))?;
-    let config = supported.config();
+    let config = crate::device::low_latency_config(&supported, low_latency);
     let native_rate = config.sample_rate;
     let channels = config.channels as usize;
     let (producer, consumer) = rtrb::RingBuffer::<f32>::new(native_rate as usize * 2);

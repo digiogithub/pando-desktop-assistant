@@ -506,6 +506,9 @@ impl Ctx {
                         return Ended::Died(format!("{code:?}: {message}"));
                     }
                     other => {
+                        if !matches!(other, FromWorker::Pcm { .. }) {
+                            tracing::debug!(role = ?self.role, msg = ?other, "voice worker message");
+                        }
                         (self.events)(WorkerEvent::Message {
                             role: self.role,
                             msg: other,

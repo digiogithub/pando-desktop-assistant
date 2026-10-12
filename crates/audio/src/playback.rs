@@ -232,13 +232,26 @@ where
         .map_err(|e| AudioError::Backend(e.to_string()))
 }
 
+/// Opens the stream with a small device buffer, falling back to the backend default when the
+/// backend refuses it.
 fn open_session(cfg: &PlaybackConfig, shared: &Arc<Shared>) -> Result<Session, AudioError> {
+    open_session_with(cfg, shared, true).or_else(|e| {
+        tracing::debug!("small device buffer refused ({e}); using the default");
+        open_session_with(cfg, shared, false)
+    })
+}
+
+fn open_session_with(
+    cfg: &PlaybackConfig,
+    shared: &Arc<Shared>,
+    low_latency: bool,
+) -> Result<Session, AudioError> {
     let host = open_host(cfg.host.as_deref())?;
     let device = find_device(&host, cfg.device.as_deref(), false)?;
     let supported = device
         .default_output_config()
         .map_err(|e| AudioError::Backend(e.to_string()))?;
-    let config = supported.config();
+    let config = crate::device::low_latency_config(&supported, low_latency);
     let native_rate = config.sample_rate;
     let (producer, consumer) =
         rtrb::RingBuffer::<f32>::new((native_rate as f32 * cfg.ring_secs) as usize);

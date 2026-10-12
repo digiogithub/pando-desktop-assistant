@@ -49,6 +49,8 @@ pub fn serve<R: Read, W: Write>(
 ) -> Result<(), ProtoError> {
     let mut engine: Option<Box<dyn Stt>> = None;
     let mut hands_free: Option<HandsFree> = None;
+    // The engine reports the text committed by each call only, so a live stream is accumulated here.
+    let mut stream = StreamText::default();
     while let Some(msg) = read_msg::<_, ToWorker>(r)? {
         // Hands-free control and audio can produce several replies per message.
         let msg = match msg {
@@ -150,22 +152,32 @@ pub fn serve<R: Read, W: Write>(
             } => Some(match engine.as_mut() {
                 None => not_loaded(Some(id)),
                 Some(e) => match e.stream_process(&pcm, &opts(lang, keywords, false)) {
-                    Ok(p) => FromWorker::Partial { id, text: p.text },
+                    Ok(p) => FromWorker::Partial {
+                        id,
+                        text: stream.chunk(id, p),
+                    },
                     Err(e) => err_msg(Some(id), &e),
                 },
             }),
             ToWorker::StreamStop { id } => Some(match engine.as_mut() {
                 None => not_loaded(Some(id)),
-                Some(e) => match e.stream_stop() {
-                    Ok(t) => FromWorker::Transcript {
-                        id,
-                        text: t.text,
-                        lang: t.lang,
-                        words: t.words,
-                        ttft_ms: t.ttft_ms,
-                    },
-                    Err(e) => err_msg(Some(id), &e),
-                },
+                Some(e) => {
+                    let result = e.stream_stop();
+                    let acc = stream.take(id);
+                    match result {
+                        Ok(t) => {
+                            let (text, words) = acc.finish(t.text, t.words);
+                            FromWorker::Transcript {
+                                id,
+                                text,
+                                lang: t.lang,
+                                words,
+                                ttft_ms: t.ttft_ms,
+                            }
+                        }
+                        Err(e) => err_msg(Some(id), &e),
+                    }
+                }
             }),
             // Calls are synchronous: by the time a Cancel is read the work is already done.
             ToWorker::Cancel { .. } => None,
@@ -187,6 +199,58 @@ pub fn serve<R: Read, W: Write>(
         }
     }
     Ok(())
+}
+
+/// Text and words committed so far by one live stream.
+#[derive(Default)]
+struct StreamText {
+    id: Option<u64>,
+    text: String,
+    words: Vec<voice_proto::Word>,
+}
+
+impl StreamText {
+    fn join(a: &str, b: &str) -> String {
+        match (a.is_empty(), b.is_empty()) {
+            (true, _) => b.to_owned(),
+            (_, true) => a.to_owned(),
+            _ => format!("{a} {b}"),
+        }
+    }
+
+    /// Adds one `stream_process` result and returns the caption so far (committed + pending).
+    fn chunk(&mut self, id: u64, p: crate::stt::Partial) -> String {
+        if self.id != Some(id) {
+            *self = Self {
+                id: Some(id),
+                ..Self::default()
+            };
+        }
+        self.text = Self::join(&self.text, &p.text);
+        self.words.extend(p.words);
+        Self::join(&self.text, &p.pending)
+    }
+
+    /// The accumulated state of stream `id` (empty for another or no stream), reset for the next.
+    fn take(&mut self, id: u64) -> Self {
+        let acc = std::mem::take(self);
+        if acc.id == Some(id) {
+            acc
+        } else {
+            Self::default()
+        }
+    }
+
+    /// Joins the committed text with the engine's tail.
+    fn finish(
+        self,
+        tail: String,
+        tail_words: Vec<voice_proto::Word>,
+    ) -> (String, Vec<voice_proto::Word>) {
+        let mut words = self.words;
+        words.extend(tail_words);
+        (Self::join(&self.text, &tail), words)
+    }
 }
 
 fn make_segmenter(vad_model: Option<&str>) -> Box<dyn SpeechSegmenter> {
@@ -240,6 +304,105 @@ mod tests {
                 ..Default::default()
             })
         }
+    }
+
+    /// Streams like Needle: each call commits some words, `stop` returns only the tail.
+    #[derive(Debug, Default)]
+    struct Streamer(usize);
+    impl Stt for Streamer {
+        fn name(&self) -> &'static str {
+            "streamer"
+        }
+        fn transcribe(&mut self, _: &[f32], _: &SttOpts) -> Result<Transcript, SttError> {
+            Ok(Transcript::default())
+        }
+        fn stream_process(
+            &mut self,
+            _: &[f32],
+            _: &SttOpts,
+        ) -> Result<crate::stt::Partial, SttError> {
+            self.0 += 1;
+            Ok(crate::stt::Partial {
+                text: ["Oye Pando,", "", "abre el proyecto"][(self.0 - 1).min(2)].into(),
+                pending: "bita".into(),
+                words: Vec::new(),
+            })
+        }
+        fn stream_stop(&mut self) -> Result<Transcript, SttError> {
+            self.0 = 0;
+            Ok(Transcript {
+                text: "Bitácora.".into(),
+                ..Default::default()
+            })
+        }
+    }
+
+    #[test]
+    fn a_stream_returns_all_committed_text_not_only_the_tail() {
+        let chunk = |id| ToWorker::StreamChunk {
+            id,
+            pcm: vec![0.0; 16_000],
+            lang: None,
+            keywords: Vec::new(),
+        };
+        let mut input = Vec::new();
+        for m in [
+            chunk(1),
+            chunk(1),
+            chunk(1),
+            ToWorker::StreamStop { id: 1 },
+            ToWorker::StreamStop { id: 2 },
+        ] {
+            write_msg(&mut input, &m).expect("write");
+        }
+        let mut out = Vec::new();
+        let mut load =
+            |_: &Path| -> Result<Box<dyn Stt>, SttError> { Ok(Box::new(Streamer::default())) };
+        let mut all = Vec::new();
+        write_msg(
+            &mut all,
+            &ToWorker::LoadStt {
+                model_path: "x".into(),
+            },
+        )
+        .expect("write");
+        all.extend(input);
+        serve(&mut Cursor::new(all), &mut out, &mut load).expect("serve");
+        let mut cur = Cursor::new(out);
+        let mut v = Vec::new();
+        while let Some(m) = read_msg::<_, FromWorker>(&mut cur).expect("read") {
+            v.push(m);
+        }
+        let partials: Vec<_> = v
+            .iter()
+            .filter_map(|m| match m {
+                FromWorker::Partial { text, .. } => Some(text.as_str()),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(
+            partials,
+            [
+                "Oye Pando, bita",
+                "Oye Pando, bita",
+                "Oye Pando, abre el proyecto bita"
+            ]
+        );
+        let finals: Vec<_> = v
+            .iter()
+            .filter_map(|m| match m {
+                FromWorker::Transcript { id, text, .. } => Some((*id, text.as_str())),
+                _ => None,
+            })
+            .collect();
+        // Stream 2 never received a chunk, so only the engine's tail is its text.
+        assert_eq!(
+            finals,
+            [
+                (1, "Oye Pando, abre el proyecto Bitácora."),
+                (2, "Bitácora.")
+            ]
+        );
     }
 
     fn run(msgs: &[ToWorker]) -> Vec<FromWorker> {

@@ -56,6 +56,12 @@ fn playback_events_rms_and_stop() {
         Duration::from_secs(3)
     ));
     assert!(max_rms > 0.02, "output RMS never rose: {max_rms}");
+    // The PulseAudio backend's default 2 s buffer would show up here and delay barge-in.
+    assert!(
+        pb.output_latency() < Duration::from_millis(250),
+        "output latency {:?}",
+        pb.output_latency()
+    );
     println!(
         "max rms {max_rms:.3}, reported output latency {:?}",
         pb.output_latency()
