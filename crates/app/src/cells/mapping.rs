@@ -135,7 +135,30 @@ pub fn waits_for_permission(t: &TaskResponse) -> bool {
             .is_some_and(|m| m.eq_ignore_ascii_case("permission"))
 }
 
-/// Label of a task: the first tag, else the first 24 characters of its name (or prompt).
+/// Fits `s` into [`LABEL_CHARS`] characters: longer text is cut at a word boundary when one exists
+/// past the middle, and ends in an ellipsis so a clipped label never looks like a complete one.
+#[must_use]
+pub fn fit_label(s: &str) -> String {
+    let s = s.trim();
+    if s.chars().count() <= LABEL_CHARS {
+        return s.to_owned();
+    }
+    let head: String = s.chars().take(LABEL_CHARS - 1).collect();
+    let word_complete = s
+        .chars()
+        .nth(LABEL_CHARS - 1)
+        .is_some_and(char::is_whitespace);
+    let cut = if word_complete {
+        head.as_str()
+    } else {
+        head.rfind(' ')
+            .filter(|&i| head[..i].chars().count() >= LABEL_CHARS / 2)
+            .map_or(head.as_str(), |i| &head[..i])
+    };
+    format!("{}…", cut.trim_end())
+}
+
+/// Label of a task: the first tag, else the name (or prompt) fitted to [`LABEL_CHARS`].
 #[must_use]
 pub fn label_for_task(t: &TaskResponse) -> String {
     let tag = t
@@ -143,7 +166,7 @@ pub fn label_for_task(t: &TaskResponse) -> String {
         .as_ref()
         .and_then(|tags| tags.iter().find(|s| !s.trim().is_empty()));
     if let Some(tag) = tag {
-        return tag.trim().to_owned();
+        return fit_label(tag);
     }
     let name = t.name.trim();
     let src = if name.is_empty() || name.starts_with(PREAMBLE) {
@@ -152,7 +175,7 @@ pub fn label_for_task(t: &TaskResponse) -> String {
     } else {
         name
     };
-    src.chars().take(LABEL_CHARS).collect()
+    fit_label(src)
 }
 
 const PREAMBLE: &str = "You are the task_id:";
@@ -190,7 +213,7 @@ pub fn cell_for_instance(i: &InstanceInfo) -> CellInput {
         .and_then(|n| n.to_str())
         .filter(|n| !n.is_empty() && *n != ".")
         .unwrap_or(&i.instance_id);
-    c.label = Arc::from(name.chars().take(LABEL_CHARS).collect::<String>());
+    c.label = Arc::from(fit_label(name));
     c
 }
 
@@ -245,14 +268,27 @@ mod tests {
     #[test]
     fn label_is_the_first_tag_or_24_chars() {
         let mut t = task("pando", "running");
-        assert_eq!(label_for_task(&t).chars().count(), LABEL_CHARS);
-        assert_eq!(label_for_task(&t), "Refactor the GPUI shell ");
+        assert!(label_for_task(&t).chars().count() <= LABEL_CHARS);
+        assert_eq!(label_for_task(&t), "Refactor the GPUI shell…");
         t.tags = Some(vec![String::new(), " migracion-auth ".into()]);
         assert_eq!(label_for_task(&t), "migracion-auth");
         t.tags = None;
         t.name.clear();
         t.prompt = "añade pruebas al módulo de pagos y despliega".into();
-        assert_eq!(label_for_task(&t), "añade pruebas al módulo ");
+        assert_eq!(label_for_task(&t), "añade pruebas al módulo…");
+    }
+
+    #[test]
+    fn fit_label_ellipsizes_long_ids_and_keeps_short_text() {
+        assert_eq!(fit_label("  short  "), "short");
+        let id = "46aca4c4-d3d4-4490-92fd-aaaabbbbcccc";
+        let f = fit_label(id);
+        assert_eq!(f.chars().count(), LABEL_CHARS);
+        assert!(f.ends_with('…'));
+        assert_eq!(
+            fit_label("Run the bash command: sl"),
+            "Run the bash command: sl"
+        );
     }
 
     #[test]
@@ -261,7 +297,7 @@ mod tests {
         t.tags = None;
         t.name = "You are the task_id: tas".into();
         t.prompt = "You are the task_id: task-06767be4\n\nReply with exactly the word: pong\n\n---\nIMPORTANT".into();
-        assert_eq!(label_for_task(&t), "Reply with exactly the w");
+        assert_eq!(label_for_task(&t), "Reply with exactly the…");
     }
 
     #[test]
