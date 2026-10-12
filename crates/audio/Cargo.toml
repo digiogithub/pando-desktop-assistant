@@ -19,10 +19,17 @@ pulseaudio = ["cpal/pulseaudio"]
 # PipeWire host: needs libpipewire-0.3-dev, libspa-0.2-dev and libclang at build time.
 pipewire = ["cpal/pipewire"]
 
+# Echo cancellation (PDA-T-0139, S4): sonora AEC3 + NS with the played PCM as render reference.
+echo-cancel = ["dep:sonora"]
+
 [dependencies]
+sonora = { version = "=0.2.0", optional = true }
 cpal = "=0.18.2"
 rubato = "=5.0.1"
 audioadapter-buffers = "5.1"
 rtrb = "0.4"
 thiserror.workspace = true
 tracing.workspace = true
+
+[dev-dependencies]
+hound = "3.5"

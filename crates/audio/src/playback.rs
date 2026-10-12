@@ -6,9 +6,9 @@
 //! [`Playback::output_latency`].
 
 use std::collections::VecDeque;
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering};
 use std::sync::mpsc::{Receiver, RecvTimeoutError, Sender, channel};
+use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
 use std::time::{Duration, Instant};
 
@@ -19,6 +19,48 @@ use crate::AudioError;
 use crate::capture::sleep_unless_stopped;
 use crate::device::{find_device, open_host};
 
+/// Shared handle to the exact PCM that leaves the output callback (mono, device rate, silence
+/// included so the timeline is continuous). The echo canceller of [`crate::Capture`] reads it.
+type RefSlot = Arc<Mutex<Option<(rtrb::Consumer<f32>, u32)>>>;
+
+#[derive(Clone, Default)]
+pub struct ReferenceTap(RefSlot);
+
+impl std::fmt::Debug for ReferenceTap {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("ReferenceTap")
+    }
+}
+
+impl ReferenceTap {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub(crate) fn install(&self, consumer: rtrb::Consumer<f32>, rate: u32) {
+        if let Ok(mut g) = self.0.lock() {
+            *g = Some((consumer, rate));
+        }
+    }
+
+    /// Move everything available into `out`; returns the device rate of those samples
+    /// (`None` while no playback stream is open).
+    pub fn drain_into(&self, out: &mut Vec<f32>) -> Option<u32> {
+        let mut g = self.0.lock().ok()?;
+        let (c, rate) = g.as_mut()?;
+        let n = c.slots();
+        if n > 0
+            && let Ok(chunk) = c.read_chunk(n)
+        {
+            let (a, b) = chunk.as_slices();
+            out.extend_from_slice(a);
+            out.extend_from_slice(b);
+            chunk.commit_all();
+        }
+        Some(*rate)
+    }
+}
+
 /// Playback options.
 #[derive(Debug, Clone)]
 pub struct PlaybackConfig {
@@ -27,6 +69,8 @@ pub struct PlaybackConfig {
     /// Ring size in seconds of device-rate audio.
     pub ring_secs: f32,
     pub watchdog: Duration,
+    /// Publish the played PCM for echo cancellation.
+    pub reference: Option<ReferenceTap>,
 }
 
 impl Default for PlaybackConfig {
@@ -36,6 +80,7 @@ impl Default for PlaybackConfig {
             host: None,
             ring_secs: 3.0,
             watchdog: Duration::from_millis(500),
+            reference: None,
         }
     }
 }
@@ -82,6 +127,8 @@ pub(crate) struct OutputCore {
     pub channels: usize,
     pub shared: Arc<Shared>,
     pub seen_drain: u64,
+    /// Mirror of every mono frame written (echo reference); lock- and allocation-free.
+    pub reference: Option<rtrb::Producer<f32>>,
 }
 
 impl OutputCore {
@@ -112,6 +159,9 @@ impl OutputCore {
                 Err(_) => 0.0,
             };
             sumsq += v * v;
+            if let Some(r) = self.reference.as_mut() {
+                let _ = r.push(v);
+            }
             let s = T::from_sample(v);
             for o in frame {
                 *o = s;
@@ -186,11 +236,17 @@ fn open_session(cfg: &PlaybackConfig, shared: &Arc<Shared>) -> Result<Session, A
     let (producer, consumer) =
         rtrb::RingBuffer::<f32>::new((native_rate as f32 * cfg.ring_secs) as usize);
     shared.invalid.store(false, Ordering::SeqCst);
+    let reference = cfg.reference.as_ref().map(|tap| {
+        let (p, c) = rtrb::RingBuffer::<f32>::new(native_rate as usize);
+        tap.install(c, native_rate);
+        p
+    });
     let core = OutputCore {
         consumer,
         channels: config.channels as usize,
         shared: shared.clone(),
         seen_drain: shared.drain_gen.load(Ordering::Acquire),
+        reference,
     };
     let stream = match supported.sample_format() {
         SampleFormat::F32 => build_stream::<f32>(&device, &config, core)?,
@@ -437,6 +493,7 @@ mod tests {
                 channels,
                 shared: sh.clone(),
                 seen_drain: 0,
+                reference: None,
             },
             p,
             sh,
@@ -488,6 +545,18 @@ mod tests {
         tx.push(0.7).expect("room");
         c.fill(&mut out);
         assert_eq!(out[0], 0.7);
+    }
+
+    #[test]
+    fn reference_mirrors_exactly_what_is_written_including_silence() {
+        let (mut c, mut tx, _sh) = core(2, 16);
+        let (rp, mut rc) = rtrb::RingBuffer::new(16);
+        c.reference = Some(rp);
+        tx.push(0.5).expect("room");
+        let mut out = [0.0f32; 6]; // 3 frames: one sample then two underruns
+        c.fill(&mut out);
+        let got: Vec<f32> = std::iter::from_fn(|| rc.pop().ok()).collect();
+        assert_eq!(got, vec![0.5, 0.0, 0.0]);
     }
 
     #[test]

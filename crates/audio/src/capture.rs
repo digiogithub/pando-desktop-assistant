@@ -29,6 +29,9 @@ pub struct CaptureConfig {
     pub preroll_secs: f32,
     /// Rebuild the stream when no callback arrived for this long.
     pub watchdog: Duration,
+    /// Echo canceller applied to the 16 kHz stream before level, pre-roll and `on_frame`.
+    #[cfg(feature = "echo-cancel")]
+    pub echo: Option<crate::aec::EchoHandle>,
 }
 
 impl Default for CaptureConfig {
@@ -38,6 +41,8 @@ impl Default for CaptureConfig {
             host: None,
             preroll_secs: 2.0,
             watchdog: Duration::from_millis(500),
+            #[cfg(feature = "echo-cancel")]
+            echo: None,
         }
     }
 }
@@ -293,7 +298,15 @@ fn supervise(
                     pending.extend_from_slice(&mono16);
                 }
                 while pending.len() >= FRAME_SAMPLES {
-                    let frame: Vec<f32> = pending.drain(..FRAME_SAMPLES).collect();
+                    #[allow(unused_mut)]
+                    let mut frame: Vec<f32> = pending.drain(..FRAME_SAMPLES).collect();
+                    #[cfg(feature = "echo-cancel")]
+                    if let Some(echo) = &cfg.echo
+                        && let Ok(mut e) = echo.lock()
+                    {
+                        e.set_active(!crate::aec::looks_like_headset(&session.device_name));
+                        e.process(&mut frame);
+                    }
                     let lvl = meter.update(rms(&frame));
                     level.store(lvl.to_bits(), Ordering::Relaxed);
                     if let Ok(mut p) = preroll.lock() {
