@@ -119,6 +119,8 @@ pub enum ChatMsg {
     Models(Result<ModelList, String>),
     /// `GET /commands`.
     Commands(Result<Vec<CommandInfo>, String>),
+    /// `GET /project` (the working directory, used to shorten paths).
+    Project(Result<pando_client::api::ProjectInfo, String>),
     /// The effective model of the open session.
     SessionModel {
         /// Generation.
@@ -455,6 +457,16 @@ impl ChatService {
         self.detach(async move {
             let _ = tx
                 .send(ChatMsg::Models(client.list_models().await.map_err(err)))
+                .await;
+        });
+    }
+
+    /// Loads the project info (working directory).
+    pub fn load_project(&self) {
+        let (client, tx) = (self.client.clone(), self.tx.clone());
+        self.detach(async move {
+            let _ = tx
+                .send(ChatMsg::Project(client.project_info().await.map_err(err)))
                 .await;
         });
     }

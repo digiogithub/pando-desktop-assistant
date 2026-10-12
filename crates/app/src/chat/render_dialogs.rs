@@ -10,6 +10,7 @@ use super::attention::{GrantScope, WaitingKind, permission_view, waiting_queue};
 use super::panel::ChatPanel;
 use super::render_transcript::code_box;
 use super::style::Colors;
+use super::tools;
 use crate::ui::button::{Button, ButtonVariants as _};
 use crate::ui::input::Input;
 use crate::ui::text_edit::FontWeight;
@@ -210,11 +211,26 @@ impl ChatPanel {
                 ))
             })
             .when(!v.path.is_empty(), |d| {
+                let shown = tools::display_path(
+                    &v.path,
+                    self.project_root.as_deref(),
+                    tools::home_dir().as_deref(),
+                );
+                // The full path stays visible under the short form: this is a safety dialog.
                 d.child(field(
                     t!("chat.permission.path").to_string(),
-                    v.path.clone(),
+                    shown.clone(),
                     true,
                 ))
+                .when(shown != v.path, |d| {
+                    d.child(
+                        div()
+                            .text_size(px(10.0))
+                            .text_color(c.text3)
+                            .font_family(crate::fonts::FONT_MONO)
+                            .child(v.path.clone()),
+                    )
+                })
             })
             .children(v.command.clone().map(|cmd| {
                 v_flex()

@@ -77,6 +77,8 @@ pub struct ChatPanel {
     pub(super) composer: Entity<TextareaState>,
     pub(super) history: PromptHistory,
     pub(super) commands: Vec<CommandInfo>,
+    /// Working directory of the connected Pando (paths are shown relative to it).
+    pub(super) project_root: Option<String>,
     pub(super) palette_ix: usize,
     pub(super) palette_dismissed: bool,
     pub(super) focus: FocusHandle,
@@ -214,6 +216,7 @@ impl ChatPanel {
             composer,
             history: PromptHistory::default(),
             commands: Vec::new(),
+            project_root: None,
             palette_ix: 0,
             palette_dismissed: false,
             focus: cx.focus_handle(),
@@ -272,6 +275,7 @@ impl ChatPanel {
                 }
                 self.poller = Some(service.start_poller());
                 service.list_commands();
+                service.load_project();
                 service.list_models();
                 if let Some(id) = self.model.session_id().map(str::to_owned) {
                     self.reopen(&id);
@@ -942,6 +946,9 @@ impl ChatPanel {
             }
             ChatMsg::Models(Ok(list)) => self.models = Some(list),
             ChatMsg::Commands(Ok(c)) => self.commands = c,
+            ChatMsg::Project(Ok(p)) => {
+                self.project_root = Some(p.cwd).filter(|c| !c.is_empty());
+            }
             ChatMsg::SessionModel {
                 epoch,
                 result: Ok(m),

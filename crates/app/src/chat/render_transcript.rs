@@ -645,7 +645,12 @@ impl ChatPanel {
                     .whitespace_nowrap()
                     .font_family(crate::fonts::FONT_MONO)
                     .text_size(px(12.0))
-                    .child(tools::arg_summary(tool)),
+                    .id(("tool-arg", id.0))
+                    .tooltip({
+                        let full = tools::arg_full(tool);
+                        move |window, cx| crate::ui::Tooltip::new(full.clone()).build(window, cx)
+                    })
+                    .child(tools::arg_summary(tool, self.project_root.as_deref())),
             )
             .children(tool.duration.map(|d| {
                 div()

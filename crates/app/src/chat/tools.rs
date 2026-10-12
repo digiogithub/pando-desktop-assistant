@@ -115,9 +115,47 @@ pub fn truncate_chars(s: &str, max: usize) -> String {
     out
 }
 
-/// A one-line summary of what the call is about (command, path, pattern, URL, ...).
+/// Shortens an absolute path for display: relative to the project `root` when inside it, `~/...`
+/// inside `home`, otherwise untouched. Anything that is not an absolute path is returned as is.
 #[must_use]
-pub fn arg_summary(tool: &ToolItem) -> String {
+pub fn display_path(path: &str, root: Option<&str>, home: Option<&str>) -> String {
+    let inside = |base: &str| -> Option<String> {
+        let base = base.trim_end_matches('/');
+        if base.is_empty() {
+            return None;
+        }
+        let rest = path.strip_prefix(base)?;
+        match rest {
+            "" => Some(".".to_owned()),
+            r if r.starts_with('/') => Some(r.trim_start_matches('/').to_owned()),
+            _ => None,
+        }
+    };
+    if !path.starts_with('/') {
+        return path.to_owned();
+    }
+    if let Some(rel) = root.and_then(inside) {
+        return rel;
+    }
+    if let Some(rel) = home.and_then(inside) {
+        return if rel == "." {
+            "~".to_owned()
+        } else {
+            format!("~/{rel}")
+        };
+    }
+    path.to_owned()
+}
+
+/// The user's home directory, for [`display_path`].
+#[must_use]
+pub fn home_dir() -> Option<String> {
+    directories::BaseDirs::new().map(|d| d.home_dir().to_string_lossy().into_owned())
+}
+
+/// The full (untruncated, first-line) text behind [`arg_summary`].
+#[must_use]
+pub fn arg_full(tool: &ToolItem) -> String {
     let input = input_json(tool);
     let picked = match classify(tool) {
         ToolClass::Execute => first_str(&input, &["command", "cmd", "script"]),
@@ -138,7 +176,21 @@ pub fn arg_summary(tool: &ToolItem) -> String {
             })
         })
         .unwrap_or_else(|| tool.title.clone());
-    truncate_chars(text.lines().next().unwrap_or(""), SUMMARY_CHARS)
+    text.lines().next().unwrap_or("").to_owned()
+}
+
+/// A one-line summary of what the call is about (command, path, pattern, URL, ...), with file
+/// paths shortened against the project `root` (see [`display_path`]).
+#[must_use]
+pub fn arg_summary(tool: &ToolItem, root: Option<&str>) -> String {
+    let full = arg_full(tool);
+    let shown = match classify(tool) {
+        ToolClass::Edit | ToolClass::Write | ToolClass::Read | ToolClass::Search => {
+            display_path(&full, root, home_dir().as_deref())
+        }
+        _ => full,
+    };
+    truncate_chars(&shown, SUMMARY_CHARS)
 }
 
 /// "320 ms", "4.2 s", "1 min 5 s".
@@ -525,13 +577,13 @@ mod tests {
             json!({"command": "cargo test\nsecond"}),
             "",
         );
-        assert_eq!(arg_summary(&c), "cargo test");
+        assert_eq!(arg_summary(&c, None), "cargo test");
         let r = call("view", "read", json!({"file_path": "src/a.rs"}), "");
-        assert_eq!(arg_summary(&r), "src/a.rs");
+        assert_eq!(arg_summary(&r, None), "src/a.rs");
         let o = call("odd", "other", json!({"x": 1}), "");
-        assert_eq!(arg_summary(&o), "odd title");
+        assert_eq!(arg_summary(&o, None), "odd title");
         let long = call("bash", "execute", json!({"command": "x".repeat(300)}), "");
-        assert_eq!(arg_summary(&long).chars().count(), SUMMARY_CHARS + 1);
+        assert_eq!(arg_summary(&long, None).chars().count(), SUMMARY_CHARS + 1);
     }
 
     #[test]
@@ -565,6 +617,23 @@ mod tests {
         let rows = layout(model.items());
         assert_eq!(rows.len(), 3, "{rows:?}");
         assert_eq!(rows[1], Row::Activity(vec![1, 2, 3]));
+    }
+
+    #[test]
+    fn paths_are_relative_to_the_project_or_home() {
+        let root = Some("/w/proj");
+        let home = Some("/home/u");
+        assert_eq!(display_path("/w/proj/src/a.rs", root, home), "src/a.rs");
+        assert_eq!(display_path("/w/proj", root, home), ".");
+        assert_eq!(display_path("/w/project2/a", root, None), "/w/project2/a");
+        assert_eq!(
+            display_path("/home/u/notes/x.md", root, home),
+            "~/notes/x.md"
+        );
+        assert_eq!(display_path("/home/u", None, home), "~");
+        assert_eq!(display_path("/etc/hosts", root, home), "/etc/hosts");
+        assert_eq!(display_path("src/a.rs", root, home), "src/a.rs");
+        assert_eq!(display_path("/w/proj/a", Some(""), None), "/w/proj/a");
     }
 
     #[test]
