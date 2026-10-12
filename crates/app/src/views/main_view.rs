@@ -126,6 +126,7 @@ impl MainView {
         let extras = cx.new(|cx| ExternalExtras::new(window, cx, bridge.downgrade()));
         pane.update(cx, |p, _| p.set_external_extras(extras));
         assistant.update(cx, |a, _| a.set_claude(bridge.downgrade()));
+        crate::voice::host::keep_alive(cx, &voice, &assistant, &bridge, &pane);
         let assistant_sub = cx.subscribe_in(
             &assistant,
             window,
@@ -561,6 +562,36 @@ mod tests {
         cx.run_until_parked();
         // Nothing listens on port 9: whatever the state, the app area is the empty screen.
         assert!(view.read_with(&cx, |v, _| needs_empty_state(&v.state)));
+        runtime.shutdown_timeout(std::time::Duration::from_secs(5));
+    }
+
+    #[gpui_test]
+    fn the_voice_stack_outlives_the_main_window(cx: &mut TestAppContext) {
+        cx.executor().allow_parking();
+        let runtime = tokio::runtime::Builder::new_multi_thread()
+            .worker_threads(1)
+            .enable_all()
+            .build()
+            .expect("runtime");
+        cx.update(|cx| {
+            crate::ui::init(cx);
+            crate::ui::kit_theme::install(cx);
+        });
+        let handle = runtime.handle().clone();
+        let window = cx.add_window(move |window, cx| {
+            MainView::new(window, cx, handle, Some("http://127.0.0.1:9".to_owned()))
+        });
+        let view = window.root(cx).expect("root view");
+        let mut vcx = crate::ui::testing::VisualTestContext::from_window(window.into(), cx);
+        vcx.run_until_parked();
+        vcx.update(|window, _| window.remove_window());
+        drop(view);
+        cx.run_until_parked();
+        // Tray/background mode: no window, yet push-to-talk and the settings sections work.
+        cx.update(|cx| {
+            assert!(crate::voice::host::is_alive(cx));
+            assert!(crate::voice::controller::is_reachable(cx));
+        });
         runtime.shutdown_timeout(std::time::Duration::from_secs(5));
     }
 }

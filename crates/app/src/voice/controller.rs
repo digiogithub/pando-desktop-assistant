@@ -37,6 +37,13 @@ pub fn register_handle(cx: &mut crate::ui::App, voice: &Entity<VoiceController>)
     cx.set_global(VoiceHandle(voice.downgrade()));
 }
 
+/// Whether the registered controller still exists (it must outlive the main window).
+#[must_use]
+pub fn is_reachable(cx: &crate::ui::App) -> bool {
+    cx.try_global::<VoiceHandle>()
+        .is_some_and(|h| h.0.upgrade().is_some())
+}
+
 /// Hands-free on/off from the shell (tray, hotkey).
 pub fn set_hands_free(cx: &mut crate::ui::App, on: bool) {
     let Some(handle) = cx.try_global::<VoiceHandle>().map(|h| h.0.clone()) else {

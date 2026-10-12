@@ -10,6 +10,7 @@ pub mod dock;
 #[cfg(test)]
 mod e2e;
 pub mod firstrun;
+pub mod host;
 pub mod latency;
 pub mod levels;
 pub mod ptt;

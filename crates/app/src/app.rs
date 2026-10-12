@@ -212,6 +212,12 @@ fn start(
         }
     }
     if start_hidden {
+        if !demo && crate::shell::runtime::background_mode(cx) {
+            // Build the voice stack (PTT, hands-free, settings sections) without showing
+            // anything: the window is closed at once and the stack outlives it.
+            let handle = open_main(cx, settings, demo, tokio_handle)?;
+            let _ = handle.update(cx, |_, window, _| window.remove_window());
+        }
         return Ok(());
     }
     let handle = open_main(cx, settings, demo, tokio_handle)?;
