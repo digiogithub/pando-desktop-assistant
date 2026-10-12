@@ -6,6 +6,7 @@ use rust_i18n::t;
 use crate::cells::mapping::CustomEngines;
 use crate::cells::pane::OrganismPane;
 use crate::chat::ChatPanel;
+use crate::claude::{ClaudeBridge, extras::ExternalExtras};
 use crate::connection::{ChipSpec, ConnectionHub, Tone, chip_spec, needs_empty_state, reason_text};
 use crate::events::EventPump;
 use crate::ui::assets::WORDMARK_ON_DARK;
@@ -41,6 +42,7 @@ pub struct MainView {
     pane: Entity<OrganismPane>,
     voice: Entity<VoiceController>,
     assistant: Entity<Assistant>,
+    _bridge: Entity<ClaudeBridge>,
     _assistant_sub: crate::ui::Subscription,
     _voice_sub: crate::ui::Subscription,
     _pane_sub: crate::ui::Subscription,
@@ -116,6 +118,12 @@ impl MainView {
         let (voice_for_assistant, pane_for_assistant) = (voice.clone(), pane.clone());
         let assistant =
             cx.new(|cx| Assistant::new(cx, voice_for_assistant, pane_for_assistant, data_dir));
+        let bridge_data = voice_data_dir.clone();
+        let (bridge_pane, bridge_assistant) = (pane.clone(), assistant.downgrade());
+        let bridge = cx.new(|cx| ClaudeBridge::new(cx, bridge_pane, bridge_assistant, bridge_data));
+        let extras = cx.new(|cx| ExternalExtras::new(window, cx, bridge.downgrade()));
+        pane.update(cx, |p, _| p.set_external_extras(extras));
+        assistant.update(cx, |a, _| a.set_claude(bridge.downgrade()));
         let assistant_sub = cx.subscribe_in(
             &assistant,
             window,
@@ -147,6 +155,7 @@ impl MainView {
             pane,
             voice,
             assistant,
+            _bridge: bridge,
             _assistant_sub: assistant_sub,
             _voice_sub: voice_sub,
             _pane_sub: pane_sub,

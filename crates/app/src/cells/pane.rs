@@ -93,6 +93,7 @@ pub struct OrganismPane {
     _activation: Subscription,
     _toasts: crate::shell::notify::ToastService,
     _toast_pump: Task<()>,
+    external_extras: Option<Entity<crate::claude::extras::ExternalExtras>>,
 }
 
 fn marfil(c: palette::Rgba) -> Hsla {
@@ -172,6 +173,7 @@ impl OrganismPane {
             _activation: activation,
             _toasts: toasts,
             _toast_pump: toast_pump,
+            external_extras: None,
         }
     }
 
@@ -442,7 +444,7 @@ impl OrganismPane {
                 .task(id.as_str())
                 .and_then(|t| t.acp_session_id.clone())
                 .filter(|s| !s.is_empty()),
-            CellKind::Instance => None,
+            CellKind::Instance | CellKind::External => None,
         }
     }
 
@@ -803,6 +805,11 @@ impl OrganismPane {
         col = col
             .child(div().h(px(8.0)))
             .child(h_flex().gap_2().flex_wrap().children(buttons));
+        if kind_of(&card.id) == CellKind::External
+            && let Some(extras) = &self.external_extras
+        {
+            col = col.child(extras.clone());
+        }
         if let Some(n) = &self.notice {
             col = col.child(
                 div()
@@ -903,6 +910,15 @@ impl OrganismPane {
 impl Render for OrganismPane {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let weak = cx.weak_entity();
+        if let (Some(extras), Some(sel)) = (&self.external_extras, &self.selected) {
+            let id = sel.as_str().to_owned();
+            extras.update(cx, |e, cx| {
+                if e.cell.as_deref() != Some(id.as_str()) {
+                    e.cell = Some(id);
+                    cx.notify();
+                }
+            });
+        }
         let side = if let Some(f) = &self.form {
             Some(self.form_view(f, cx).into_any_element())
         } else {
@@ -974,6 +990,30 @@ impl Render for OrganismPane {
                     ),
             )
             .children(side)
+    }
+}
+
+/// Claude Code sessions (PDA-T-0132): external cells and the extra card block.
+impl OrganismPane {
+    /// Replaces the external Claude Code cells and redraws the organism.
+    pub fn set_external_cells(&mut self, cells: Vec<organism::CellInput>, cx: &mut Context<Self>) {
+        if self.source.set_external(cells) {
+            let all = self.source.cells().to_vec();
+            self.target.on_cells(&all);
+            self.organism.update(cx, |o, cx| o.set_cells(all, cx));
+            if let Some(sel) = &self.selected
+                && !self.source.cells().iter().any(|c| &c.id == sel)
+            {
+                self.selected = None;
+                self.organism.update(cx, |o, cx| o.set_selected(None, cx));
+            }
+            cx.notify();
+        }
+    }
+
+    /// The block with the message field and the "avísame" toggle for external sessions.
+    pub fn set_external_extras(&mut self, extras: Entity<crate::claude::extras::ExternalExtras>) {
+        self.external_extras = Some(extras);
     }
 }
 

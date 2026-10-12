@@ -1,0 +1,12 @@
+claude:
+  sent: "Sent to %{session}."
+  sent_held: "%{session} holds it until you approve it in its terminal."
+  send_failed: "Could not send to %{session}: %{why}"
+  no_socket: "The session has not published its messaging socket."
+  not_found: "I cannot find that Claude session."
+  card:
+    message: Message to the session
+    message_placeholder: Type a message…
+    send: Send
+    notify_on: "Notify me when done: on"
+    notify_off: "Notify me when done: off"

@@ -63,6 +63,7 @@ pub struct CellSource {
     dismissed: HashSet<String>,
     primary_label: Arc<str>,
     last: Vec<CellInput>,
+    external: Vec<CellInput>,
     tasks: std::collections::HashMap<String, TaskResponse>,
 }
 
@@ -78,6 +79,7 @@ impl CellSource {
             dismissed: HashSet::new(),
             primary_label: Arc::from(primary_label),
             last: Vec::new(),
+            external: Vec::new(),
             tasks: std::collections::HashMap::new(),
         }
     }
@@ -107,7 +109,18 @@ impl CellSource {
         self.reaper = TerminalReaper::new();
         self.dismissed.clear();
         self.last.clear();
+        self.last.extend(self.external.iter().cloned());
         self.tasks.clear();
+    }
+
+    /// Replaces the external (Claude Code hook) cells. Returns whether the shown list changed.
+    pub fn set_external(&mut self, external: Vec<CellInput>) -> bool {
+        let old: HashSet<CellId> = self.external.iter().map(|c| c.id.clone()).collect();
+        self.last.retain(|c| !old.contains(&c.id));
+        self.last.extend(external.iter().cloned());
+        let changed = cells_differ(&self.external, &external);
+        self.external = external;
+        changed
     }
 
     /// Applies one poll.
@@ -179,6 +192,12 @@ impl CellSource {
             self.dismissed.insert(id.as_str().to_owned());
             gone.push(id);
         }
+        // External cells are not tasks: the reaper never touches them (their tracker owns the lifetime).
+        cells.extend(self.external.iter().cloned());
+        let before: HashSet<CellId> = before
+            .into_iter()
+            .chain(self.external.iter().map(|c| c.id.clone()))
+            .collect();
         // Cells that were there last time but are not any more (task deleted, instance gone).
         for old in &self.last {
             if !before.contains(&old.id) && !gone.contains(&old.id) {

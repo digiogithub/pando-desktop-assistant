@@ -36,6 +36,8 @@ pub enum CellKind {
     Instance,
     /// The primary (mesnada) session standing for the body.
     Primary,
+    /// An external Claude Code session seen through hooks (`claude:<session>`).
+    External,
 }
 
 /// Kind of a cell from its id.
@@ -45,6 +47,8 @@ pub fn kind_of(id: &CellId) -> CellKind {
         CellKind::Primary
     } else if id.as_str().starts_with("instance:") {
         CellKind::Instance
+    } else if id.as_str().starts_with(crate::claude::CELL_PREFIX) {
+        CellKind::External
     } else {
         CellKind::Task
     }
@@ -174,7 +178,7 @@ impl Card {
                     }
                 }
             }
-            CellKind::Instance | CellKind::Primary => {}
+            CellKind::Instance | CellKind::Primary | CellKind::External => {}
         }
         if !pending.is_empty() && !is_terminal(cell.status) {
             actions.push(CellAction::Approve);

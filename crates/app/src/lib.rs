@@ -8,6 +8,7 @@ pub mod about;
 pub mod app;
 pub mod cells;
 pub mod chat;
+pub mod claude;
 pub mod cli;
 pub mod connection;
 pub mod decision;

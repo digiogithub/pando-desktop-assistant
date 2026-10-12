@@ -154,6 +154,7 @@ pub struct Assistant {
     pending_text: Option<String>,
     turn: Option<Turn>,
     watching: Option<String>,
+    claude: Option<crate::ui::WeakEntity<crate::claude::ClaudeBridge>>,
     ticks: u64,
     _subs: Vec<Subscription>,
     _pump: Task<()>,
@@ -204,11 +205,17 @@ impl Assistant {
             pending_text: None,
             turn: None,
             watching: None,
+            claude: None,
             ticks: 0,
             _subs: vec![sub],
             _pump: pump,
             _ticker: ticker,
         }
+    }
+
+    /// Connects the Claude Code bridge ("dile a <sesión> ...").
+    pub fn set_claude(&mut self, bridge: crate::ui::WeakEntity<crate::claude::ClaudeBridge>) {
+        self.claude = Some(bridge);
     }
 
     /// The `decisión · <model>` chip text.
@@ -411,6 +418,28 @@ impl Assistant {
                 return;
             }
             self.awaiting = None;
+        }
+        // 2b. "dile a <sesión> que ...": a message for a Claude Code session.
+        if let Some(tell) = crate::claude::tell::parse(&text)
+            && let Some(bridge) = self
+                .claude
+                .as_ref()
+                .and_then(crate::ui::WeakEntity::upgrade)
+        {
+            let found = bridge.read(cx).find_session(&tell.target);
+            self.feed(Input::Decided(Decided::ExplicitOnly), cx);
+            match found {
+                Some(cell) => {
+                    bridge.update(cx, |b, cx| b.send(&cell.session_id, tell.body.clone(), cx));
+                }
+                None => self.notify(
+                    t!("claude.not_found").to_string(),
+                    Priority::Direct,
+                    None,
+                    cx,
+                ),
+            }
+            return;
         }
         // 3. The decision model (fail-open).
         let snapshot = self.snapshot(cx);
