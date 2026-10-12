@@ -36,3 +36,11 @@ voice:
   debug:
     title: Latency per stage
     empty: No samples yet.
+  approvals:
+    permission: "Pando asks permission: %{what}. Say approve or deny."
+    permission_screen: "Pando asks permission to: %{what}. This needs confirmation on screen; you can say deny."
+    question_empty: "The question has no text."
+  decision:
+    available: "decision · %{model}"
+    unavailable: "decision: unavailable"
+    unknown: "decision…"

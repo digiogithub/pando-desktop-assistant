@@ -36,3 +36,11 @@ voice:
   debug:
     title: Latencia por etapa
     empty: Sin muestras todavía.
+  approvals:
+    permission: "Pando pide permiso: %{what}. Di aprueba o deniega."
+    permission_screen: "Pando pide permiso para: %{what}. Esto requiere confirmación en pantalla; puedes decir deniega."
+    question_empty: "La pregunta no tiene texto."
+  decision:
+    available: "decisión · %{model}"
+    unavailable: "decisión: no disponible"
+    unknown: "decisión…"

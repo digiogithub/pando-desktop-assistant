@@ -76,3 +76,4 @@ image = { version = "0.25", default-features = false, features = ["png"] }
 gpui-kit = { workspace = true, features = ["test-support"] }
 tempfile.workspace = true
 hound = "3.5"
+tokio = { workspace = true, features = ["io-util", "rt-multi-thread", "macros", "net", "time"] }

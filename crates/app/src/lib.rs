@@ -10,6 +10,7 @@ pub mod cells;
 pub mod chat;
 pub mod cli;
 pub mod connection;
+pub mod decision;
 pub mod events;
 pub mod firstrun;
 pub mod fonts;
