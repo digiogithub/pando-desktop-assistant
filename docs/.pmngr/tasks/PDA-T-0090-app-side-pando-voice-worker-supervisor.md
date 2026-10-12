@@ -2,7 +2,7 @@
 id: PDA-T-0090
 type: task
 title: App-side pando-voice worker supervisor
-status: in_review
+status: done
 parent: PDA-US-0026
 milestone: PDA-M-0005
 assignees: [claude-sonnet]
@@ -10,8 +10,9 @@ author: mcp
 labels: [voice-in]
 estimate: 3
 created: 2026-10-11T21:52:55Z
-updated: 2026-10-12T08:18:02Z
+updated: 2026-10-12T11:03:42Z
 started: 2026-10-12T08:01:42Z
+closed: 2026-10-12T11:03:42Z
 ---
 
 ## Description

@@ -199,3 +199,77 @@ fn capture_soak_and_stall_watchdog() {
         assert_eq!(cap.restarts(), 0);
     }
 }
+
+/// Alignment of the output RMS (computed in the output callback) with what actually leaves the
+/// device, measured on a loopback: `PANDO_LOOP_IN`, `PANDO_LOOP_OUT` name the capture and playback
+/// devices of a null sink and its monitor (`pactl load-module module-null-sink sink_name=vmic`;
+/// `pulseaudio:vmic.monitor` / `pulseaudio:vmic`). The reported output latency must explain the gap.
+#[test]
+#[ignore = "needs a loopback sink, see the doc comment"]
+fn output_rms_is_aligned_with_the_audible_signal_on_a_loopback() {
+    let (Ok(input), Ok(output)) = (
+        std::env::var("PANDO_LOOP_IN"),
+        std::env::var("PANDO_LOOP_OUT"),
+    ) else {
+        panic!("set PANDO_LOOP_IN and PANDO_LOOP_OUT");
+    };
+    let t0 = Instant::now();
+    let heard = Arc::new(Mutex::new(None::<Duration>));
+    let h2 = heard.clone();
+    let cap = Capture::start(
+        CaptureConfig {
+            device: Some(input),
+            ..CaptureConfig::default()
+        },
+        move |f| {
+            let rms = (f.iter().map(|v| v * v).sum::<f32>() / f.len() as f32).sqrt();
+            if rms > 0.01
+                && let Ok(mut g) = h2.lock()
+            {
+                g.get_or_insert(t0.elapsed());
+            }
+        },
+        |_| {},
+    );
+    let pb = Playback::start(
+        PlaybackConfig {
+            device: Some(output),
+            ..PlaybackConfig::default()
+        },
+        |_| {},
+    );
+    std::thread::sleep(Duration::from_secs(2)); // both streams up
+    assert!(
+        heard.lock().expect("lock").is_none(),
+        "loopback is not silent"
+    );
+    let t_play = t0.elapsed();
+    pb.play(tone(22_050, 1.0), 22_050);
+    let mut rms_rise = None;
+    assert!(wait(
+        || {
+            if rms_rise.is_none() && pb.output_rms() > 0.01 {
+                rms_rise = Some(t0.elapsed());
+            }
+            heard.lock().expect("lock").is_some()
+        },
+        Duration::from_secs(3)
+    ));
+    let heard_at = heard.lock().expect("lock").expect("heard");
+    let rms_at = rms_rise.expect("rms rose");
+    let latency = pb.output_latency();
+    println!(
+        "play at {t_play:?}: RMS rose +{:?}, audible on the loopback +{:?}, reported latency {latency:?}, \
+         audible - rms = {:?}",
+        rms_at - t_play,
+        heard_at - t_play,
+        heard_at.saturating_sub(rms_at)
+    );
+    drop(cap);
+    // The audible signal trails the callback RMS by about the reported latency (plus capture buffering).
+    let gap = heard_at.saturating_sub(rms_at);
+    assert!(
+        gap < latency + Duration::from_millis(60),
+        "gap {gap:?} vs latency {latency:?}"
+    );
+}

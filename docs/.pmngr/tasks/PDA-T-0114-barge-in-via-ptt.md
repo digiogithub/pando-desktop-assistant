@@ -2,7 +2,7 @@
 id: PDA-T-0114
 type: task
 title: Barge-in via PTT
-status: in_review
+status: done
 parent: PDA-US-0033
 milestone: PDA-M-0007
 assignees: [claude-sonnet]
@@ -10,8 +10,9 @@ author: mcp
 labels: [voice-out, voice-in]
 estimate: 2
 created: 2026-10-11T21:54:29Z
-updated: 2026-10-12T08:47:05Z
+updated: 2026-10-12T11:03:42Z
 started: 2026-10-12T08:47:05Z
+closed: 2026-10-12T11:03:42Z
 ---
 
 ## Description
