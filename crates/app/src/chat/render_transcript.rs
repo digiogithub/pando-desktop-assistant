@@ -21,8 +21,8 @@ use crate::ui::text_edit::{
 };
 use crate::ui::{
     AnyElement, Context, FluentBuilder as _, IconName, InteractiveElement as _, IntoElement,
-    ParentElement as _, SharedString, StatefulInteractiveElement as _, Styled as _, Window, div,
-    h_flex, icon, px, v_flex,
+    ParentElement as _, Pixels, SharedString, StatefulInteractiveElement as _, Styled as _, Window,
+    div, h_flex, icon, px, v_flex,
 };
 
 /// Widest the conversation column grows.
@@ -43,6 +43,12 @@ fn blocks_for(
     let blocks = Rc::new(markdown::parse(text));
     md.insert(id, (text.len(), blocks.clone()));
     blocks
+}
+
+/// The "Ir al final" pill: only when the tail is off, the content overflows and the view is
+/// scrolled away from the bottom (a short transcript has nothing to jump to).
+fn show_to_end(tail: bool, offset_y: Pixels, max_y: Pixels) -> bool {
+    !tail && max_y > px(2.0) && -offset_y + px(48.0) < max_y
 }
 
 impl ChatPanel {
@@ -107,30 +113,37 @@ impl ChatPanel {
             .flex_1()
             .min_h_0()
             .child(scroll)
-            .when(!self.tail, |d| {
-                d.child(
-                    div()
-                        .absolute()
-                        .bottom(px(10.0))
-                        .w_full()
-                        .flex()
-                        .justify_center()
-                        .child(
-                            Button::new("chat-to-end")
-                                .primary()
-                                .compact()
-                                .icon(IconName::ArrowDown)
-                                .label(t!("chat.transcript.to_end").to_string())
-                                .on_click(move |_, _, cx| {
-                                    weak.update(cx, |this, cx| {
-                                        this.tail = true;
-                                        cx.notify();
-                                    })
-                                    .ok();
-                                }),
-                        ),
-                )
-            })
+            .when(
+                show_to_end(
+                    self.tail,
+                    self.scroll.offset().y,
+                    self.scroll.max_offset().y,
+                ),
+                |d| {
+                    d.child(
+                        div()
+                            .absolute()
+                            .bottom(px(10.0))
+                            .w_full()
+                            .flex()
+                            .justify_center()
+                            .child(
+                                Button::new("chat-to-end")
+                                    .primary()
+                                    .compact()
+                                    .icon(IconName::ArrowDown)
+                                    .label(t!("chat.transcript.to_end").to_string())
+                                    .on_click(move |_, _, cx| {
+                                        weak.update(cx, |this, cx| {
+                                            this.tail = true;
+                                            cx.notify();
+                                        })
+                                        .ok();
+                                    }),
+                            ),
+                    )
+                },
+            )
             .into_any_element()
     }
 
@@ -1022,4 +1035,20 @@ fn capitalize(s: &str) -> String {
     chars.next().map_or_else(String::new, |f| {
         f.to_uppercase().collect::<String>() + chars.as_str()
     })
+}
+
+#[cfg(test)]
+mod to_end_tests {
+    use super::*;
+
+    #[test]
+    fn pill_needs_overflow_and_distance_from_the_bottom() {
+        assert!(!show_to_end(true, px(-500.0), px(500.0)));
+        assert!(!show_to_end(false, px(0.0), px(0.0)), "short transcript");
+        assert!(
+            !show_to_end(false, px(-480.0), px(500.0)),
+            "near the bottom"
+        );
+        assert!(show_to_end(false, px(-100.0), px(500.0)));
+    }
 }
