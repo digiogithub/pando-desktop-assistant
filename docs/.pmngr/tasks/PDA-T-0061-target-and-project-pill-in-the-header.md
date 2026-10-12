@@ -2,14 +2,16 @@
 id: PDA-T-0061
 type: task
 title: Target and project pill in the header
-status: backlog
+status: in_review
 parent: PDA-US-0016
 milestone: PDA-M-0003
+assignees: [claude-sonnet]
 author: mcp
 labels: [shell]
 estimate: 2
 created: 2026-10-11T21:50:04Z
-updated: 2026-10-11T22:02:19Z
+updated: 2026-10-12T07:53:44Z
+started: 2026-10-12T07:53:19Z
 ---
 
 ## Description

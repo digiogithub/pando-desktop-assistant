@@ -2,14 +2,17 @@
 id: PDA-T-0058
 type: task
 title: Build cell side card
-status: backlog
+status: done
 parent: PDA-US-0015
 milestone: PDA-M-0003
+assignees: [claude-sonnet]
 author: mcp
 labels: [shell]
 estimate: 3
 created: 2026-10-11T21:50:04Z
-updated: 2026-10-11T22:02:19Z
+updated: 2026-10-12T07:53:44Z
+started: 2026-10-12T07:53:19Z
+closed: 2026-10-12T07:53:44Z
 ---
 
 ## Description

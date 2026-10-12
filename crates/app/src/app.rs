@@ -81,6 +81,7 @@ fn start(
 ) -> anyhow::Result<()> {
     ui::init(cx);
     crate::organism_view::bind_keys(cx);
+    crate::cells::pane::bind_keys(cx);
     ui::kit_theme::install(cx);
     cx.set_reduce_motion(settings.reduce_motion);
     fonts::register(cx);

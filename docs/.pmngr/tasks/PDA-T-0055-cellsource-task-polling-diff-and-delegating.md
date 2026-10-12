@@ -2,14 +2,17 @@
 id: PDA-T-0055
 type: task
 title: "CellSource: task polling, diff and Delegating"
-status: backlog
+status: done
 parent: PDA-US-0014
 milestone: PDA-M-0003
+assignees: [claude-sonnet]
 author: mcp
 labels: [organism, pando-client]
 estimate: 3
 created: 2026-10-11T21:50:04Z
-updated: 2026-10-11T22:03:06Z
+updated: 2026-10-12T07:53:44Z
+started: 2026-10-12T07:42:16Z
+closed: 2026-10-12T07:53:44Z
 ---
 
 ## Description

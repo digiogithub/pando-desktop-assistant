@@ -3,6 +3,8 @@
 
 use rust_i18n::t;
 
+use crate::cells::mapping::CustomEngines;
+use crate::cells::pane::OrganismPane;
 use crate::connection::{ChipSpec, ConnectionHub, Tone, chip_spec, needs_empty_state, reason_text};
 use crate::events::EventPump;
 use crate::ui::assets::WORDMARK_ON_DARK;
@@ -25,6 +27,8 @@ pub struct MainView {
     hub: ConnectionHub,
     url_input: Entity<InputState>,
     url_error: Option<String>,
+    pane: Entity<OrganismPane>,
+    _pane_sub: crate::ui::Subscription,
     _pump: Task<()>,
 }
 
@@ -37,7 +41,7 @@ impl MainView {
         manual_url: Option<String>,
     ) -> Self {
         let (tx, rx) = async_channel::unbounded();
-        let mut hub = ConnectionHub::new(handle, tx);
+        let mut hub = ConnectionHub::new(handle.clone(), tx);
         let mut url_error = None;
         if let Err(err) = hub.start(manual_url.as_deref()) {
             tracing::warn!("ignoring the stored Pando URL: {err}");
@@ -56,11 +60,21 @@ impl MainView {
         let pump = EventPump::attach(cx, rx, |this: &mut Self, state, _| {
             this.state = state;
         });
+        let custom = directories::BaseDirs::new()
+            .map(|d| CustomEngines::load_dir(&d.home_dir().join(".pando/mesnada/engines")))
+            .unwrap_or_default();
+        let snapshots = hub.subscribe();
+        let reduced_motion = cx.reduce_motion();
+        let pane =
+            cx.new(|cx| OrganismPane::new(window, cx, &handle, snapshots, custom, reduced_motion));
+        let pane_sub = cx.observe(&pane, |_, _, cx| cx.notify());
         Self {
             state: ConnectionState::Connecting,
             hub,
             url_input,
             url_error,
+            pane,
+            _pane_sub: pane_sub,
             _pump: pump,
         }
     }
@@ -123,6 +137,17 @@ fn connection_chip(spec: ChipSpec) -> impl IntoElement {
 
 impl Render for MainView {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let project = match &self.state {
+            ConnectionState::Connected {
+                project: Some(name),
+                ..
+            } if !name.is_empty() => name.clone(),
+            _ => t!("titlebar.project_none").to_string(),
+        };
+        let (target_label, waiting) = {
+            let pane = self.pane.read(cx);
+            (pane.target_label(), pane.has_pending())
+        };
         let title_bar = AppTitleBar::new()
             .left(
                 img(WORDMARK_ON_DARK)
@@ -130,7 +155,11 @@ impl Render for MainView {
                     .w(px(84.0))
                     .flex_shrink_0(),
             )
-            .left(chip(t!("titlebar.project_none").to_string()))
+            .left(chip(project))
+            .left(chip(target_label))
+            .left(
+                div().children(waiting.then(|| chip(format!("? {}", t!("cells.header.waiting"))))),
+            )
             .right(
                 h_flex()
                     .gap_2()
@@ -143,8 +172,8 @@ impl Render for MainView {
         } else {
             div()
                 .flex_1()
-                .p(px(32.0))
-                .child(t!("main.placeholder").to_string())
+                .min_h_0()
+                .child(self.pane.clone())
                 .into_any_element()
         };
         window_border().child(

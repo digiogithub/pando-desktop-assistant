@@ -2,14 +2,16 @@
 id: PDA-T-0057
 type: task
 title: Pando instances as cells and Waiting state from pending items
-status: backlog
+status: in_review
 parent: PDA-US-0014
 milestone: PDA-M-0003
+assignees: [claude-sonnet]
 author: mcp
 labels: [organism, pando-client]
 estimate: 2
 created: 2026-10-11T21:50:04Z
-updated: 2026-10-11T22:03:07Z
+updated: 2026-10-12T07:53:44Z
+started: 2026-10-12T07:42:16Z
 ---
 
 ## Description

@@ -2,14 +2,17 @@
 id: PDA-T-0056
 type: task
 title: Engine/status → CellInput mapping
-status: backlog
+status: done
 parent: PDA-US-0014
 milestone: PDA-M-0003
+assignees: [claude-sonnet]
 author: mcp
 labels: [organism]
 estimate: 2
 created: 2026-10-11T21:50:04Z
-updated: 2026-10-11T22:03:07Z
+updated: 2026-10-12T07:53:44Z
+started: 2026-10-12T07:42:16Z
+closed: 2026-10-12T07:53:44Z
 ---
 
 ## Description

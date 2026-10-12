@@ -35,3 +35,60 @@ organism:
     none_selected: No cell selected
     fps: "%{fps} fps · CPU %{cpu} ms (p95 %{p95} ms)"
     overlay: Show timings (F)
+cells:
+  primary: Mesnada
+  empty:
+    title: No agents yet
+    hint: Ask Pando for something or create an agent.
+  card:
+    project: Project
+    progress: Progress
+    tool: Tool
+    output: Output
+    no_output: No output yet
+    pending: Waiting for approval
+    flagged: Explicit approval only
+    conclusion: Conclusion
+    full_output: View full output
+    hide_output: Hide full output
+    close: Close
+  action:
+    cancel: Cancel
+    delete: Delete
+    relaunch: Relaunch
+    approve: Approve
+    deny: Deny
+    talk: Talk to it
+    talk_no_session: This agent's session is not known yet.
+    back: Back to mesnada
+  confirm:
+    cancel_title: Cancel the task?
+    cancel_body: "%{label} will stop running."
+    cancel_ok: Cancel task
+    delete_title: Delete the task?
+    delete_body: "%{label} will be removed from Pando."
+    delete_ok: Delete
+    keep: Keep
+  new:
+    button: New agent
+    title: New agent
+    prompt: What should it do?
+    engine: Engine
+    model: Model (optional)
+    work_dir: Working directory (optional)
+    tags: Tags, comma separated (optional)
+    create: Create
+    cancel: Cancel
+    empty_prompt: Write what the agent should do.
+    not_connected: Not connected to Pando.
+  error:
+    already_finished: The task had already finished.
+    gone: The task no longer exists.
+    action_failed: "The action failed: %{error}"
+    talk_cli: This agent only produces output; it cannot be talked to.
+    talk_finished: This agent has already finished.
+  target:
+    primary: Mesnada
+    cell: "→ %{label}"
+  header:
+    waiting: Pando is waiting for your answer

@@ -35,3 +35,60 @@ organism:
     none_selected: Ninguna célula seleccionada
     fps: "%{fps} fps · CPU %{cpu} ms (p95 %{p95} ms)"
     overlay: Mostrar tiempos (F)
+cells:
+  primary: Mesnada
+  empty:
+    title: Aún no hay agentes
+    hint: Pídele algo a Pando o crea un agente.
+  card:
+    project: Proyecto
+    progress: Progreso
+    tool: Herramienta
+    output: Salida
+    no_output: Sin salida todavía
+    pending: Pendiente de aprobación
+    flagged: Solo aprobación explícita
+    conclusion: Conclusión
+    full_output: Ver salida completa
+    hide_output: Ocultar salida completa
+    close: Cerrar
+  action:
+    cancel: Cancelar
+    delete: Eliminar
+    relaunch: Relanzar
+    approve: Aprobar
+    deny: Denegar
+    talk: Hablarle
+    talk_no_session: Aún no se conoce la sesión de este agente.
+    back: Volver a mesnada
+  confirm:
+    cancel_title: "¿Cancelar la tarea?"
+    cancel_body: "%{label} dejará de ejecutarse."
+    cancel_ok: Cancelar tarea
+    delete_title: "¿Eliminar la tarea?"
+    delete_body: "%{label} se eliminará de Pando."
+    delete_ok: Eliminar
+    keep: Conservar
+  new:
+    button: Nuevo agente
+    title: Nuevo agente
+    prompt: "¿Qué debe hacer?"
+    engine: Motor
+    model: Modelo (opcional)
+    work_dir: Carpeta de trabajo (opcional)
+    tags: Etiquetas, separadas por comas (opcional)
+    create: Crear
+    cancel: Cancelar
+    empty_prompt: Escribe qué debe hacer el agente.
+    not_connected: Sin conexión con Pando.
+  error:
+    already_finished: La tarea ya había terminado.
+    gone: La tarea ya no existe.
+    action_failed: "No se pudo completar la acción: %{error}"
+    talk_cli: Este agente solo produce salida; no admite conversación.
+    talk_finished: Este agente ya terminó.
+  target:
+    primary: Mesnada
+    cell: "→ %{label}"
+  header:
+    waiting: Pando espera tu respuesta

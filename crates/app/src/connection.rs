@@ -6,6 +6,7 @@
 //! the "sin Pando" screen show. All copy comes from the locale files.
 
 use pando_client::auth::{default_ca_path, load_local_ca};
+use pando_client::connection::Snapshot;
 use pando_client::discovery::validate_url;
 use pando_client::{ConnectionOptions, ConnectionService, ConnectionState};
 use rust_i18n::t;
@@ -90,6 +91,7 @@ pub struct InvalidUrl(pub String);
 pub struct ConnectionHub {
     handle: Handle,
     tx: async_channel::Sender<ConnectionState>,
+    snapshots: tokio::sync::watch::Sender<Snapshot>,
     service: Option<ConnectionService>,
     manual_url: Option<String>,
     options: ConnectionOptions,
@@ -102,9 +104,15 @@ impl ConnectionHub {
         let mut options = ConnectionOptions::default();
         options.discovery.root_certificate_pem =
             default_ca_path().and_then(|path| load_local_ca(&path).ok().flatten());
+        let (snapshots, _) = tokio::sync::watch::channel(Snapshot {
+            state: ConnectionState::Connecting,
+            generation: 0,
+            client: None,
+        });
         Self {
             handle,
             tx,
+            snapshots,
             service: None,
             manual_url: None,
             options,
@@ -137,9 +145,12 @@ impl ConnectionHub {
         let service = ConnectionService::start(options);
         let mut rx = service.subscribe();
         let tx = self.tx.clone();
+        let snapshots = self.snapshots.clone();
         self.handle.spawn(async move {
             loop {
-                let state = rx.borrow_and_update().state.clone();
+                let snapshot = rx.borrow_and_update().clone();
+                let state = snapshot.state.clone();
+                snapshots.send_replace(snapshot);
                 if tx.send(state).await.is_err() || rx.changed().await.is_err() {
                     break;
                 }
@@ -147,6 +158,13 @@ impl ConnectionHub {
         });
         self.service = Some(service);
         Ok(())
+    }
+
+    /// Watches the connection snapshot (state plus the client while connected). The receiver
+    /// outlives restarts of the service: it always shows the current one.
+    #[must_use]
+    pub fn subscribe(&self) -> tokio::sync::watch::Receiver<Snapshot> {
+        self.snapshots.subscribe()
     }
 
     /// Retries now: restarts discovery with the current manual URL.
