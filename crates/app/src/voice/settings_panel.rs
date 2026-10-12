@@ -5,6 +5,7 @@ use rust_i18n::t;
 use super::controller::VoiceController;
 use super::devices::{self, DeviceChoice, MicProblem};
 use crate::ui::button::{Button, ButtonVariants as _};
+use crate::ui::switch::Switch;
 use crate::ui::theme::palette;
 use crate::ui::{
     AnyElement, Context, Hsla, InteractiveElement as _, IntoElement, ParentElement as _,
@@ -142,21 +143,29 @@ impl VoiceController {
                     .collect()
             });
         let enabled = self.config().enabled;
-        let toggle = Button::new("voice-enabled")
-            .label(format!(
-                "{}: {}",
-                t!("voice.settings.enabled"),
-                if enabled { "✓" } else { "✗" }
-            ))
-            .on_click(cx.listener(move |this, _, _, cx| this.set_enabled(!enabled, cx)));
+        let switch_row = |label: String, switch: Switch| {
+            h_flex()
+                .gap(px(10.0))
+                .items_center()
+                .justify_between()
+                .child(div().min_w_0().child(label))
+                .child(switch)
+        };
+        let toggle = switch_row(
+            t!("voice.settings.enabled").to_string(),
+            Switch::new("voice-enabled")
+                .checked(enabled)
+                .accessibility_label(t!("voice.settings.enabled").to_string())
+                .on_click(cx.listener(move |this, _, _, cx| this.set_enabled(!enabled, cx))),
+        );
         let hands_free = self.hands_free();
-        let hf_toggle = Button::new("voice-hands-free-toggle")
-            .label(format!(
-                "{}: {}",
-                t!("voice.hands_free.toggle"),
-                if hands_free { "✓" } else { "✗" }
-            ))
-            .on_click(cx.listener(move |this, _, _, cx| this.set_hands_free(!hands_free, cx)));
+        let hf_toggle = switch_row(
+            t!("voice.hands_free.toggle").to_string(),
+            Switch::new("voice-hands-free-toggle")
+                .checked(hands_free)
+                .accessibility_label(t!("voice.hands_free.toggle").to_string())
+                .on_click(cx.listener(move |this, _, _, cx| this.set_hands_free(!hands_free, cx))),
+        );
         let sensitivity = self.config().wake_sensitivity;
         let levels: [(&str, f32, String); 3] = [
             (
