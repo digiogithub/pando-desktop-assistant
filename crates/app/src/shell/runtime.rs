@@ -519,6 +519,12 @@ pub fn send_command(cx: &App, command: super::ipc::Command) {
     }
 }
 
+/// Whether the shell runtime is installed (false in unit tests and the demo).
+#[must_use]
+pub fn is_running(cx: &App) -> bool {
+    cx.try_global::<Runtime>().is_some()
+}
+
 /// Whether push-to-talk is held.
 #[must_use]
 pub fn is_listening(cx: &App) -> bool {

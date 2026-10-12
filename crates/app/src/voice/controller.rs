@@ -19,14 +19,14 @@ use super::supervisor::{WorkerEvent, WorkerState};
 use crate::events::EventPump;
 use crate::organism_view::OrganismView;
 use crate::ui::button::{Button, ButtonVariants as _};
-use crate::ui::canvas::MouseUpEvent;
-use crate::ui::paint::{MouseButton, MouseDownEvent};
 use crate::ui::theme::palette;
 use crate::ui::{
     Context, Entity, EventEmitter, FocusHandle, Focusable, Hsla, InteractiveElement as _,
     IntoElement, KeyDownEvent, KeyUpEvent, ParentElement as _, Render, Styled as _, Task, Window,
     div, h_flex, px, rgb, rgba, v_flex,
 };
+
+use crate::shell::ipc::{Command, PttAction};
 
 struct VoiceHandle(crate::ui::WeakEntity<VoiceController>);
 
@@ -624,17 +624,31 @@ impl VoiceController {
         }
     }
 
+    // The dock key goes through the shell's push-to-talk machine when it runs, so the orb
+    // chrome pill, the tray and the voice controller always agree on who is listening.
     fn on_key_down(&mut self, e: &KeyDownEvent, cx: &mut Context<Self>) {
         if e.keystroke.key == PTT_KEY && !e.is_held {
-            self.press(cx);
+            if crate::shell::runtime::is_running(cx) {
+                crate::shell::runtime::send_command(cx, ptt_command(PttAction::Start));
+            } else {
+                self.press(cx);
+            }
         }
     }
 
     fn on_key_up(&mut self, e: &KeyUpEvent, cx: &mut Context<Self>) {
         if e.keystroke.key == PTT_KEY {
-            self.release(cx);
+            if crate::shell::runtime::is_running(cx) {
+                crate::shell::runtime::send_command(cx, ptt_command(PttAction::Stop));
+            } else {
+                self.release(cx);
+            }
         }
     }
+}
+
+fn ptt_command(action: PttAction) -> Command {
+    Command::Ptt { action }
 }
 
 fn marfil(c: palette::Rgba) -> Hsla {
@@ -654,62 +668,9 @@ fn notice_text(n: &Notice) -> String {
     }
 }
 
-/// A microphone glyph drawn with plain divs (no icon font needed).
-fn mic_glyph(color: Hsla) -> impl IntoElement {
-    v_flex()
-        .items_center()
-        .gap(px(2.0))
-        .child(
-            div()
-                .w(px(10.0))
-                .h(px(16.0))
-                .rounded_full()
-                .border_1()
-                .border_color(color),
-        )
-        .child(div().w(px(16.0)).h(px(1.0)).bg(color))
-}
-
 impl Render for VoiceController {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let listening = self.dock.phase == Phase::Listening;
-        let ink = if listening {
-            rgb(palette::BOSQUE_DEEP).into()
-        } else {
-            marfil(palette::MARFIL_ALPHA_62)
-        };
-        let mic = div()
-            .id("voice-mic")
-            .size(px(60.0))
-            .flex_shrink_0()
-            .flex()
-            .items_center()
-            .justify_center()
-            .rounded_full()
-            .border_1()
-            .border_color(if listening {
-                rgb(palette::ALAMO).into()
-            } else {
-                marfil(palette::MARFIL_ALPHA_22)
-            })
-            .bg(if listening {
-                rgb(palette::ALAMO).into()
-            } else {
-                Hsla::transparent_black()
-            })
-            .child(mic_glyph(ink))
-            .on_mouse_down(
-                MouseButton::Left,
-                cx.listener(|this, _: &MouseDownEvent, _, cx| this.press(cx)),
-            )
-            .on_mouse_up(
-                MouseButton::Left,
-                cx.listener(|this, _: &MouseUpEvent, _, cx| this.release(cx)),
-            )
-            .on_mouse_up_out(
-                MouseButton::Left,
-                cx.listener(|this, _: &MouseUpEvent, _, cx| this.release(cx)),
-            );
         let secondary = marfil(palette::MARFIL_ALPHA_62);
         let caption = if self.dock.caption.is_empty() && listening {
             t!("voice.mic.listening").to_string()
@@ -805,7 +766,6 @@ impl Render for VoiceController {
             .items_center()
             .border_t_1()
             .border_color(marfil(palette::MARFIL_ALPHA_12))
-            .child(mic)
             .child(text)
             .children(self.dock.card.as_ref().map(card_view))
             .child(gear);
@@ -914,6 +874,18 @@ mod tests {
             assert_eq!(c.dock.notice, Some(Notice::VoiceOff));
             assert_eq!(c.dock.phase, Phase::Idle);
         });
+    }
+
+    #[gpui_test]
+    fn shell_push_to_talk_edges_drive_the_controller(cx: &mut TestAppContext) {
+        use crate::shell::ptt::PttEdge;
+        let c = controller(cx, false);
+        cx.update(|cx| {
+            register_handle(cx, &c);
+            ptt_edge(cx, PttEdge::Started);
+        });
+        // Voice is off, so the press is refused with an explanation: proof it arrived.
+        c.read_with(cx, |c, _| assert_eq!(c.dock.notice, Some(Notice::VoiceOff)));
     }
 
     #[gpui_test]

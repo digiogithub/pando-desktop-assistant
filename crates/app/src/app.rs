@@ -177,7 +177,7 @@ fn start(
                 .ok()
         });
         let (out_tx, out_rx) = async_channel::unbounded::<crate::shell::controller::Output>();
-        // Push-to-talk edges drive the voice dock; the rest is only logged for now.
+        // Shell outputs (push-to-talk edges, hands-free, mute) drive the voice controller and assistant.
         cx.spawn(async move |cx| {
             while let Ok(o) = out_rx.recv().await {
                 tracing::info!(?o, "shell output");

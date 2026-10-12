@@ -155,7 +155,7 @@ A dying cell that reappears is revived from its current state.
   with the decision confidence in Álamo mono) · right-aligned mono status
   (`stt · whistle`, `tts · piper es_ES`, `decisión · <model>`, `● local` in Álamo).
 - Below the canvas: state label (Space Grotesk 500 19 px) + hint (13 px, Marfil 62 %),
-  push-to-talk mic button (60 px circle, hairline border; Álamo when active) and a legend.
+  the single push-to-talk mic pill (the voice dock below keeps only the caption, card and notices) and a legend.
 - Side panel (max 500 px): three cards — *try an example* / *voice → decision → action* /
   *cell* — plus the manual state switcher. Cards: Marfil 2.5 % fill, Marfil 9 % hairline,
   radius 22, padding 20×22.
