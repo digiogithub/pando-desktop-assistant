@@ -2,14 +2,16 @@
 id: PDA-T-0133
 type: task
 title: Cross-session messaging send over socket
-status: todo
+status: in_review
 parent: PDA-US-0040
 milestone: PDA-M-0009
+assignees: [claude-sonnet]
 author: mcp
 labels: [claude-bridge]
 estimate: 3
 created: 2026-10-11T21:56:03Z
-updated: 2026-10-12T07:54:49Z
+updated: 2026-10-12T07:59:28Z
+started: 2026-10-12T07:59:17Z
 ---
 
 ## Description

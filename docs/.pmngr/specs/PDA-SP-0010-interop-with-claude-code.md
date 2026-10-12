@@ -6,14 +6,30 @@ status: backlog
 author: mcp
 labels: [claude-bridge]
 created: 2026-10-11T21:41:32Z
-updated: 2026-10-11T22:04:42Z
+updated: 2026-10-12T07:59:07Z
 requirements:
   R1:
     status: backlog
+    trace:
+      code:
+        - crates/claude-bridge/src/receiver.rs#HookServer
+        - crates/claude-bridge/src/cells.rs#SessionTracker
+      tests:
+        - crates/claude-bridge/src/receiver.rs#auth_size_and_forwarding
+        - crates/claude-bridge/src/cells.rs#session_start_births_hollow_cell_under_project
   R2:
     status: backlog
+    trace:
+      code: [crates/claude-bridge/src/installer.rs#HookInstaller]
+      tests:
+        - crates/claude-bridge/src/installer.rs#install_is_idempotent_and_preserves_user_config
+        - crates/claude-bridge/src/installer.rs#script_is_executable_and_fails_silent
   R3:
     status: backlog
+    trace:
+      code: [crates/claude-bridge/src/messaging.rs#send_message]
+      tests:
+        - crates/claude-bridge/src/messaging.rs#delivers_text_with_auth_line
   R4:
     status: backlog
 ---

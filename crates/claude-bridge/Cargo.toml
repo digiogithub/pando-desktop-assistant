@@ -11,3 +11,18 @@ publish = false
 
 [lints]
 workspace = true
+
+[dependencies]
+axum.workspace = true
+tokio = { workspace = true, features = ["rt", "net", "sync", "time", "macros"] }
+serde.workspace = true
+serde_json.workspace = true
+async-channel.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+getrandom = "0.3"
+subtle = "2.6"
+
+[dev-dependencies]
+tempfile.workspace = true
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "net", "sync", "time", "io-util"] }

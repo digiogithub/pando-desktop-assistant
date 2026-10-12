@@ -2,14 +2,17 @@
 id: PDA-T-0130
 type: task
 title: HTTP hook receiver on 127.0.0.1
-status: todo
+status: done
 parent: PDA-US-0039
 milestone: PDA-M-0009
+assignees: [claude-sonnet]
 author: mcp
 labels: [claude-bridge, security]
 estimate: 3
 created: 2026-10-11T21:56:03Z
-updated: 2026-10-12T07:54:49Z
+updated: 2026-10-12T07:59:38Z
+started: 2026-10-12T07:59:17Z
+closed: 2026-10-12T07:59:38Z
 ---
 
 ## Description
