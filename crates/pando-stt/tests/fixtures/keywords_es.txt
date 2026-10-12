@@ -1,0 +1,21 @@
+Pando
+Oye Pando
+Bitácora
+gintrack
+mesnada
+pando assistant
+pando client
+Whistle
+Parakeet
+orquestador
+Claude
+Claude Code
+gpui kit
+sherpa onnx
+organism
+decide
+milestone
+crate
+commit
+pull request
+ADR
