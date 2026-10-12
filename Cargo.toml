@@ -32,6 +32,8 @@ serde = { version = "1", features = ["derive"] }
 thiserror = "2"
 clap = { version = "4", features = ["derive"] }
 tempfile = "3"
+pulldown-cmark = { version = "0.13", default-features = false }
+similar = "2"
 
 [workspace.lints.rust]
 unsafe_op_in_unsafe_fn = "deny"
