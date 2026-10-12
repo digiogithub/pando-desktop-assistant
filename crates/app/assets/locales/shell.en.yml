@@ -4,6 +4,7 @@ shell:
     hands_free: Hands-free
     mute: Mute voice
     open: Open window
+    settings: Settings
     mini: Mini window
     quit: Quit
     pending: "%{count} pending"
@@ -18,3 +19,6 @@ shell:
   mini:
     idle_hint: 'Say "Hey Pando" or press the shortcut.'
     hotkey_hint: "Hold %{key} to talk"
+  update:
+    ready: "A new version (%{version}) is ready."
+    restart: "Restart to update"

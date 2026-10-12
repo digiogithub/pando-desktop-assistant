@@ -65,6 +65,7 @@ pub fn menu(model: &TrayModel) -> Vec<Entry> {
         Entry::Separator,
         item("shell.tray.open", Command::Show, None),
         item("shell.tray.mini", Command::ToggleMini, None),
+        item("shell.tray.settings", Command::OpenSettings, None),
         Entry::Separator,
         item("shell.tray.quit", Command::Quit, None),
     ]
@@ -447,7 +448,7 @@ mod tests {
                 Entry::Separator => None,
             })
             .collect();
-        assert_eq!(labels.len(), 6);
+        assert_eq!(labels.len(), 7);
         assert!(
             labels.iter().all(|l| !l.starts_with("shell.tray")),
             "{labels:?}"
@@ -463,7 +464,7 @@ mod tests {
             }
         ));
         assert!(matches!(
-            &m[7],
+            &m[8],
             Entry::Item {
                 command: Command::Quit,
                 ..

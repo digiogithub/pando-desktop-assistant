@@ -4,6 +4,7 @@ shell:
     hands_free: Manos libres
     mute: Silenciar voz
     open: Abrir ventana
+    settings: Ajustes
     mini: Mini ventana
     quit: Salir
     pending: "%{count} pendientes"
@@ -18,3 +19,6 @@ shell:
   mini:
     idle_hint: "Di «Oye Pando» o pulsa el atajo."
     hotkey_hint: "Mantén %{key} para hablar"
+  update:
+    ready: "Hay una nueva versión (%{version}) lista."
+    restart: "Reiniciar para actualizar"

@@ -46,6 +46,8 @@ struct Runtime {
     notify_when_done: HashSet<String>,
     was_connected: bool,
     reopen_mini: bool,
+    hotkey: Option<super::hotkey::HotkeyBackend>,
+    backends: std::collections::HashMap<&'static str, String>,
 }
 
 impl Global for Runtime {}
@@ -57,6 +59,7 @@ fn main_windows(cx: &App) -> Vec<AnyWindowHandle> {
     cx.windows()
         .into_iter()
         .filter(|w| Some(w.window_id()) != mini.map(|m| m.window_id()))
+        .filter(|w| !crate::windows::is_tool_window(cx, w))
         .collect()
 }
 
@@ -71,6 +74,8 @@ pub fn install(cx: &mut App, rx: Receiver<Msg>, p: Params) {
         notify_when_done: HashSet::new(),
         was_connected: false,
         reopen_mini: false,
+        hotkey: None,
+        backends: std::collections::HashMap::new(),
         p,
     });
     {
@@ -91,6 +96,14 @@ pub fn install(cx: &mut App, rx: Receiver<Msg>, p: Params) {
     }
     start_backends(cx);
     install_menus(cx);
+    {
+        let rt = cx.global::<Runtime>();
+        let update = rt.p.settings.borrow().update.clone();
+        match crate::update::start(&update, rt.p.inbox.clone()) {
+            Ok(()) => tracing::info!("auto-update enabled"),
+            Err(why) => tracing::info!(?why, "auto-update off"),
+        }
+    }
     if cx
         .global::<Runtime>()
         .p
@@ -148,10 +161,16 @@ fn start_backends(cx: &mut App) {
         match super::hotkey::HotkeyBackend::start(&shortcut, inbox.clone()) {
             Ok(backend) => {
                 tracing::info!("global shortcut {shortcut:?} registered");
-                // Lives for the whole process.
-                std::mem::forget(backend);
+                let rt = cx.global_mut::<Runtime>();
+                rt.hotkey = Some(backend);
+                rt.backends.insert("global-hotkey", "registered".into());
             }
-            Err(e) => tracing::warn!("global shortcut unavailable: {e}"),
+            Err(e) => {
+                tracing::warn!("global shortcut unavailable: {e}");
+                cx.global_mut::<Runtime>()
+                    .backends
+                    .insert("global-hotkey", format!("unavailable: {e}"));
+            }
         }
     }
     let handle = tray::spawn(TrayModel::default(), inbox);
@@ -162,6 +181,12 @@ fn start_backends(cx: &mut App) {
 fn dispatch(cx: &mut App, msg: &Msg) {
     if let Msg::Backend { name, status } = msg {
         tracing::info!("shell backend {name}: {status}");
+        cx.global_mut::<Runtime>()
+            .backends
+            .insert(name, status.clone());
+    }
+    if let Msg::UpdateReady { version } = msg {
+        offer_update(cx, version);
     }
     let effects = cx.global_mut::<Runtime>().state.apply(msg);
     if matches!(msg, Msg::Tray(_)) {
@@ -176,6 +201,28 @@ fn dispatch(cx: &mut App, msg: &Msg) {
     }
     for e in effects {
         perform(cx, e);
+    }
+}
+
+/// Toast with "Reiniciar para actualizar" on the main window.
+fn offer_update(cx: &mut App, version: &str) {
+    let message = rust_i18n::t!("shell.update.ready", version = version).to_string();
+    let label = rust_i18n::t!("shell.update.restart").to_string();
+    if let Some(w) = main_windows(cx).into_iter().next() {
+        let _ = w.update(cx, move |_, window, cx| {
+            crate::ui::notify_action(
+                window,
+                cx,
+                crate::ui::Level::Info,
+                message,
+                label,
+                |window, cx| {
+                    if let Err(e) = crate::update::apply_and_restart() {
+                        crate::ui::notify(window, cx, crate::ui::Level::Error, e);
+                    }
+                },
+            );
+        });
     }
 }
 
@@ -202,6 +249,8 @@ fn perform(cx: &mut App, effect: Effect) {
             show_main(cx);
             crate::cells::pane::select_cell(cx, &id);
         }
+        Effect::OpenSettings => crate::settings_view::open(cx),
+        Effect::OpenFirstRun => crate::firstrun::open(cx),
         Effect::Quit => cx.quit(),
         Effect::Output(o) => {
             let rt = cx.global_mut::<Runtime>();
@@ -387,4 +436,77 @@ pub fn close_window(window: &mut Window, cx: &mut App) {
 pub fn background_mode(cx: &App) -> bool {
     cx.try_global::<Runtime>()
         .is_some_and(|r| r.state.background_mode())
+}
+
+// ------------------------------------------------------------- settings screen helpers
+
+/// Shared settings and their file (the settings screen edits them).
+#[must_use]
+pub fn settings_handle(cx: &App) -> Option<(Rc<RefCell<AppSettings>>, PathBuf)> {
+    cx.try_global::<Runtime>()
+        .map(|r| (r.p.settings.clone(), r.p.settings_path.clone()))
+}
+
+/// Last status a shortcut backend reported (`global-hotkey`, `portal`).
+#[must_use]
+pub fn backend_status(cx: &App, name: &str) -> Option<String> {
+    cx.try_global::<Runtime>()
+        .and_then(|r| r.backends.get(name).cloned())
+}
+
+/// Whether a tray icon is registered.
+#[must_use]
+pub fn tray_ready(cx: &App) -> bool {
+    cx.try_global::<Runtime>().is_some_and(|r| r.state.tray)
+}
+
+/// "Keep running in the tray" changed.
+pub fn set_keep_running(cx: &mut App, on: bool) {
+    if !cx.has_global::<Runtime>() {
+        return;
+    }
+    cx.global_mut::<Runtime>().state.keep_running = on;
+    cx.set_quit_mode(if on {
+        crate::ui::paint::QuitMode::Explicit
+    } else {
+        crate::ui::paint::QuitMode::LastWindowClosed
+    });
+}
+
+/// Moves the global shortcut (X11 / Windows / macOS); on Wayland the portal owns the binding.
+pub fn rebind_shortcut(cx: &mut App, shortcut: &str) -> Result<(), String> {
+    match cx.try_global_mut_hotkey() {
+        Some(h) => h.rebind(shortcut),
+        None => Ok(()),
+    }
+}
+
+/// Opens or closes the mini window now (the settings toggle).
+pub fn set_mini_window(cx: &mut App, open: bool) {
+    if cx.has_global::<Runtime>() && mini::is_open(cx) != open {
+        toggle_mini(cx, open);
+    }
+}
+
+/// The UI language changed: re-render everything and rebuild the menus.
+pub fn language_changed(cx: &mut App) {
+    cx.refresh_windows();
+    if cx.has_global::<Runtime>() {
+        install_menus(cx);
+        push_tray(cx);
+    }
+}
+
+trait HotkeyAccess {
+    fn try_global_mut_hotkey(&mut self) -> Option<&mut super::hotkey::HotkeyBackend>;
+}
+
+impl HotkeyAccess for App {
+    fn try_global_mut_hotkey(&mut self) -> Option<&mut super::hotkey::HotkeyBackend> {
+        if self.has_global::<Runtime>() {
+            self.global_mut::<Runtime>().hotkey.as_mut()
+        } else {
+            None
+        }
+    }
 }

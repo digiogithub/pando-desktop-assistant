@@ -26,6 +26,32 @@ pub struct AppSettings {
     pub reduce_motion: bool,
     /// Desktop shell behaviour (tray, shortcuts, mini window, notifications).
     pub shell: ShellSettings,
+    /// Auto-update (Velopack).
+    pub update: UpdateSettings,
+    /// The first-run assistant was completed or skipped.
+    pub first_run_done: bool,
+}
+
+/// Auto-update settings (PDA-T-0150).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct UpdateSettings {
+    /// Check for updates in the background.
+    pub enabled: bool,
+    /// Velopack feed URL (HTTP source); `None` = no feed published yet, updates stay off.
+    pub url: Option<String>,
+    /// Hours between checks.
+    pub interval_hours: u32,
+}
+
+impl Default for UpdateSettings {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            url: None,
+            interval_hours: 6,
+        }
+    }
 }
 
 /// Desktop shell toggles (PDA-US-0035..0038). The settings screen (PDA-T-0126) edits them.
@@ -73,6 +99,8 @@ impl Default for AppSettings {
             pando_url: None,
             reduce_motion: false,
             shell: ShellSettings::default(),
+            update: UpdateSettings::default(),
+            first_run_done: false,
         }
     }
 }

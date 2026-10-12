@@ -1,0 +1,57 @@
+settings:
+  title: Pando settings
+  apply: Apply
+  restart_needed: This change takes effect after restarting the application.
+  invalid:
+    language: Language not available.
+    url: "Invalid address: %{why}"
+    shortcut: "Invalid shortcut: %{why}"
+    unavailable: Settings are not available yet.
+  section:
+    connection: Connection
+    voice: Voice
+    audio: Audio
+    shortcuts: Shortcuts
+    appearance: Appearance
+    system: System
+    advanced: Advanced
+  connection:
+    url: Pando address (empty = detect)
+    restart: Applies after a restart.
+    keychain: Credentials of a remote Pando are stored in the system keychain, never in this file.
+  voice:
+    placeholder: Recognition engine, voice, speed and sensitivity will appear here once the voice module is installed.
+  audio:
+    placeholder: Audio devices and the microphone test will appear here once the voice module is installed.
+  shortcuts:
+    ptt: Hold-to-talk shortcut (keep pressed)
+    status: Status
+    no_status: No information yet.
+    cli: Shortcut from the compositor
+    cli_help: "If your desktop has no global shortcuts (Wayland without the portal), bind these commands in its configuration:"
+    keymap: "App shortcuts: keymap.json in the config folder (pando::ToggleMini, pando::ShowMain)."
+  appearance:
+    language: Language
+    auto: Automatic
+    reduce_motion: Reduce motion
+    reduce_motion_os: The operating system preference is respected too.
+    layout_pending: The layout (orb, chat, split) is coming soon.
+  system:
+    autostart: Start with the session
+    keep_running: Keep running in the tray when the window closes
+    tray_ready: The system tray is active.
+    tray_missing: There is no system tray; closing the window quits the app.
+    start_minimized: Start minimized in the tray
+    mini: Show the mini window
+    mini_auto_hide: Hide the mini window while I use the main one
+    notifications: System notifications
+    updates: Updates
+    update_enabled: Check for updates
+    update_url: Update server
+    update_on: Automatic updates are on.
+    update_off: "Automatic updates are off (%{why})."
+    first_run: Open the first-run assistant
+  advanced:
+    webui: Open the Pando web interface
+    logs: Open the logs folder
+    decisions: The decision history will be available with the decision layer.

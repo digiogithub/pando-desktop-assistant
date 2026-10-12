@@ -10,6 +10,11 @@ use super::ptt::{PttEdge, PttInput, PttMachine};
 pub enum Msg {
     /// A command from IPC, a hotkey or the tray.
     Command(Command),
+    /// A downloaded update waits for a restart.
+    UpdateReady {
+        /// Version string.
+        version: String,
+    },
     /// The tray icon registered (`true`) or failed / went away (`false`).
     Tray(bool),
     /// A global-shortcut backend reported its status (for settings / logs).
@@ -38,6 +43,10 @@ pub enum Effect {
     ToggleMini,
     /// Show the main window and select a cell.
     FocusCell(String),
+    /// Open the settings window.
+    OpenSettings,
+    /// Open the first-run assistant.
+    OpenFirstRun,
     /// Quit the process.
     Quit,
     /// Something for the voice orchestrator.
@@ -93,7 +102,7 @@ impl ShellState {
                 self.tray = *on;
                 Vec::new()
             }
-            Msg::Backend { .. } => Vec::new(),
+            Msg::Backend { .. } | Msg::UpdateReady { .. } => Vec::new(),
             Msg::Command(c) => self.command(c),
         }
     }
@@ -115,6 +124,8 @@ impl ShellState {
             Command::FocusCell { id } => vec![Effect::FocusCell(id.clone())],
             Command::Hide => vec![Effect::HideMain],
             Command::ToggleMini => vec![Effect::ToggleMini],
+            Command::OpenSettings => vec![Effect::OpenSettings],
+            Command::OpenFirstRun => vec![Effect::OpenFirstRun],
             Command::Quit => vec![Effect::Quit],
             Command::ToggleHandsFree => {
                 self.hands_free = !self.hands_free;

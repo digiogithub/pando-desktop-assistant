@@ -56,6 +56,8 @@ pub enum Cmd {
     Hide,
     /// Show / hide the floating mini window.
     ToggleMini,
+    /// Open the settings window.
+    Settings,
     /// Quit the running instance.
     Quit,
 }
@@ -76,6 +78,7 @@ impl Cmd {
             Self::Show => Command::Show,
             Self::Hide => Command::Hide,
             Self::ToggleMini => Command::ToggleMini,
+            Self::Settings => Command::OpenSettings,
             Self::Quit => Command::Quit,
         }
     }

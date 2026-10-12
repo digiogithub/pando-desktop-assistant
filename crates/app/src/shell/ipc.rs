@@ -54,6 +54,10 @@ pub enum Command {
         /// Cell id.
         id: String,
     },
+    /// Open the settings window.
+    OpenSettings,
+    /// Open the first-run assistant.
+    OpenFirstRun,
     /// Hands-free listening on / off (tray).
     ToggleHandsFree,
     /// Mute / unmute the assistant's voice (tray).

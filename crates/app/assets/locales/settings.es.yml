@@ -1,0 +1,57 @@
+settings:
+  title: Ajustes de Pando
+  apply: Aplicar
+  restart_needed: Este cambio se aplicará al reiniciar la aplicación.
+  invalid:
+    language: Idioma no disponible.
+    url: "Dirección no válida: %{why}"
+    shortcut: "Atajo no válido: %{why}"
+    unavailable: Los ajustes no están disponibles todavía.
+  section:
+    connection: Conexión
+    voice: Voz
+    audio: Audio
+    shortcuts: Atajos
+    appearance: Apariencia
+    system: Sistema
+    advanced: Avanzado
+  connection:
+    url: Dirección de Pando (vacío = detectar)
+    restart: Se aplica al reiniciar.
+    keychain: Las credenciales de un Pando remoto se guardan en el llavero del sistema, nunca en este fichero.
+  voice:
+    placeholder: Motor de reconocimiento, voz, velocidad y sensibilidad aparecerán aquí cuando el módulo de voz esté instalado.
+  audio:
+    placeholder: Los dispositivos de audio y la prueba de micrófono aparecerán aquí cuando el módulo de voz esté instalado.
+  shortcuts:
+    ptt: Atajo para hablar (mantener pulsado)
+    status: Estado
+    no_status: Sin información todavía.
+    cli: Atajo desde el compositor
+    cli_help: "Si tu escritorio no permite atajos globales (Wayland sin portal), enlaza estas órdenes en su configuración:"
+    keymap: "Atajos de la aplicación: keymap.json en la carpeta de configuración (pando::ToggleMini, pando::ShowMain)."
+  appearance:
+    language: Idioma
+    auto: Automático
+    reduce_motion: Reducir el movimiento
+    reduce_motion_os: También se respeta la preferencia del sistema operativo.
+    layout_pending: La disposición (orbe, chat, dividida) llegará pronto.
+  system:
+    autostart: Iniciar con la sesión
+    keep_running: Seguir en la bandeja al cerrar la ventana
+    tray_ready: La bandeja del sistema está activa.
+    tray_missing: No hay bandeja del sistema; al cerrar la ventana la aplicación termina.
+    start_minimized: Empezar minimizado en la bandeja
+    mini: Mostrar la mini ventana
+    mini_auto_hide: Ocultar la mini ventana mientras uso la principal
+    notifications: Notificaciones del sistema
+    updates: Actualizaciones
+    update_enabled: Buscar actualizaciones
+    update_url: Servidor de actualizaciones
+    update_on: Las actualizaciones automáticas están activas.
+    update_off: "Actualizaciones automáticas desactivadas (%{why})."
+    first_run: Abrir el asistente de primer arranque
+  advanced:
+    webui: Abrir la interfaz web de Pando
+    logs: Abrir la carpeta de registros
+    decisions: El historial de decisiones estará disponible con la capa de decisión.

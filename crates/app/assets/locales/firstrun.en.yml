@@ -1,0 +1,45 @@
+firstrun:
+  title: Pando first run
+  progress: "Step %{n} of %{total}"
+  back: Back
+  next: Next
+  skip: Skip this step
+  skip_all: Skip all
+  finish: Finish
+  step:
+    connection:
+      title: Connect to Pando
+      body: I look for Pando on this machine; if I cannot find it, type its address.
+    microphone:
+      title: Microphone
+      body: I need permission to listen and to check that the microphone works.
+    voice:
+      title: Voice
+      body: Choose the voice and the recognition. Downloads ask for your consent and are verified.
+    hotkey:
+      title: Hold-to-talk shortcut
+      body: Hold the shortcut to talk to Pando from any application.
+    hooks:
+      title: Claude Code (optional)
+      body: I can install the hooks that tell me about your Claude Code sessions.
+    hello:
+      title: Say hello
+      body: All set. Press the shortcut and say "hello".
+  connection:
+    detect: Detect
+    probing: Looking for Pando…
+    found: "Pando %{version} found."
+    not_found: I cannot find Pando. Check the address or start it with "pando serve".
+  microphone:
+    available: Microphone available.
+    pending: Audio capture is not available in this version yet.
+  voice:
+    none: There are no models to download in this version.
+    ready: Installed
+    missing: Pending
+    consent: "%{size} will be downloaded. Continue?"
+  hooks:
+    available: Hooks can be installed.
+    pending: Hook installation is not available in this version yet.
+  hello:
+    body: Say "hello" after pressing the shortcut.

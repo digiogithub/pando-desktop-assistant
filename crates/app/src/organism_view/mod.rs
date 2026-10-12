@@ -353,6 +353,8 @@ impl Render for OrganismView {
         let text = self.text.clone();
         let interval = self.inactive_interval;
         let view = cx.weak_entity();
+        // Live: the OS / settings preference is re-read every frame (PDA-T-0129).
+        self.core.borrow_mut().reduced_motion = cx.reduce_motion();
         let focused = self.focus.is_focused(window);
         let (hovering, cells, offset) = {
             let c = self.core.borrow();

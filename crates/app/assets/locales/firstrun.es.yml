@@ -1,0 +1,45 @@
+firstrun:
+  title: Primer arranque de Pando
+  progress: "Paso %{n} de %{total}"
+  back: Atrás
+  next: Siguiente
+  skip: Saltar este paso
+  skip_all: Saltar todo
+  finish: Terminar
+  step:
+    connection:
+      title: Conectar con Pando
+      body: Busco Pando en este equipo; si no lo encuentro, escribe su dirección.
+    microphone:
+      title: Micrófono
+      body: Necesito permiso para escucharte y comprobar que el micrófono funciona.
+    voice:
+      title: Voz
+      body: Elige la voz y el reconocimiento. Las descargas piden tu consentimiento y se verifican.
+    hotkey:
+      title: Atajo para hablar
+      body: Mantén el atajo pulsado para hablar con Pando desde cualquier aplicación.
+    hooks:
+      title: Claude Code (opcional)
+      body: Puedo instalar los hooks que me avisan de tus sesiones de Claude Code.
+    hello:
+      title: Di hola
+      body: Todo listo. Pulsa el atajo y di «hola».
+  connection:
+    detect: Detectar
+    probing: Buscando Pando…
+    found: "Pando %{version} encontrado."
+    not_found: No encuentro Pando. Revisa la dirección o arráncalo con «pando serve».
+  microphone:
+    available: Micrófono disponible.
+    pending: La captura de audio aún no está disponible en esta versión.
+  voice:
+    none: No hay modelos que descargar en esta versión.
+    ready: Instalado
+    missing: Pendiente
+    consent: "Se descargarán %{size}. ¿Continuar?"
+  hooks:
+    available: Los hooks se pueden instalar.
+    pending: La instalación de hooks aún no está disponible en esta versión.
+  hello:
+    body: Di «hola» después de pulsar el atajo.
