@@ -2,7 +2,7 @@
 id: PDA-T-0073
 type: task
 title: Steering with "En cola" chips and Stop button
-status: in_progress
+status: in_review
 parent: PDA-US-0020
 milestone: PDA-M-0004
 assignees: [claude-sonnet]
@@ -10,7 +10,7 @@ author: mcp
 labels: [chat]
 estimate: 2
 created: 2026-10-11T21:51:27Z
-updated: 2026-10-11T22:46:56Z
+updated: 2026-10-12T08:10:58Z
 started: 2026-10-11T22:46:56Z
 ---
 

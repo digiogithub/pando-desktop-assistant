@@ -2,14 +2,16 @@
 id: PDA-T-0083
 type: task
 title: Global pending-items indicator
-status: backlog
+status: in_review
 parent: PDA-US-0024
 milestone: PDA-M-0004
+assignees: [claude-sonnet]
 author: mcp
 labels: [safety, shell]
 estimate: 2
 created: 2026-10-11T21:51:27Z
-updated: 2026-10-11T22:02:51Z
+updated: 2026-10-12T08:10:58Z
+started: 2026-10-12T08:10:58Z
 ---
 
 ## Description

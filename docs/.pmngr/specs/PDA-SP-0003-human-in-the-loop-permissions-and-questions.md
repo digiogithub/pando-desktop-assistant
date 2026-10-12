@@ -6,20 +6,68 @@ status: backlog
 author: mcp
 labels: [chat, safety]
 created: 2026-10-11T21:41:32Z
-updated: 2026-10-11T22:02:50Z
+updated: 2026-10-12T08:09:56Z
 requirements:
   R1:
     status: backlog
+    trace:
+      code:
+        - crates/app/src/chat/attention.rs#permission_view
+        - crates/app/src/chat/attention.rs#waiting_queue
+        - crates/app/src/chat/render_dialogs.rs#ChatPanel::permission_dialog
+      tests:
+        - crates/app/src/chat/attention.rs#queue_keeps_arrival_order_and_drops_resolved
+        - crates/app/src/chat/attention.rs#escalation_view_exposes_command_justification_and_scope
+        - crates/app/src/chat/tests.rs#escape_denies_and_enter_does_not_approve
   R2:
     status: backlog
+    trace:
+      code:
+        - crates/app/src/chat/attention.rs#QuestionFlow
+        - crates/app/src/chat/render_dialogs.rs#ChatPanel::questions_dialog
+        - crates/app/src/chat/panel.rs#ChatPanel::send_answers
+      tests:
+        - crates/app/src/chat/attention.rs#stepper_requires_an_answer_then_reviews
+        - crates/app/src/chat/attention.rs#other_needs_text_and_excludes_options_in_single_select
+        - crates/app/src/chat/tests.rs#the_questions_stepper_answers_through_the_ledger
+        - crates/app/src/chat/tests.rs#cancelling_questions_cancels_the_request
   R3:
     status: backlog
+    trace:
+      code:
+        - crates/app/src/chat/panel.rs#ChatPanel::decide_permission
+        - crates/app/src/chat/panel.rs#ChatPanel::flush_outbox
+        - crates/app/src/chat/render.rs#ChatPanel::on_key
+      tests:
+        - crates/app/src/chat/tests.rs#only_an_explicit_decision_approves_a_flagged_request
+        - crates/app/src/chat/tests.rs#a_run_ending_denies_what_is_still_pending
+        - crates/app/src/chat/tests.rs#escape_denies_and_enter_does_not_approve
+        - crates/app/src/chat/attention.rs#the_ledger_still_refuses_auto_and_voice_for_flagged_requests
   R4:
     status: backlog
+    trace:
+      code:
+        - crates/app/src/chat/attention.rs#auto_approvable
+        - crates/app/src/chat/panel.rs#ChatPanel::toggle_auto_approve
+        - crates/app/src/chat/panel.rs#ChatPanel::apply_auto_approve
+        - crates/app/src/chat/keys.rs#ToggleAutoApprove
+      tests:
+        - crates/app/src/chat/tests.rs#flagged_requests_are_never_auto_approved_and_plain_ones_are
+        - crates/app/src/chat/tests.rs#without_auto_approve_nothing_is_approved_on_arrival
+        - crates/app/src/chat/attention.rs#flagged_requests_are_never_auto_approvable
   R5:
     status: backlog
   R6:
     status: backlog
+    trace:
+      code:
+        - crates/app/src/chat/attention.rs#PendingTally
+        - crates/app/src/chat/panel.rs#ChatPanel::pending_total
+        - crates/app/src/chat/render_dialogs.rs#ChatPanel::pending_indicator
+        - crates/app/src/views/main_view.rs#MainView::view_toggle
+      tests:
+        - crates/app/src/chat/tests.rs#pending_items_of_other_sessions_count
+        - crates/app/src/chat/attention.rs#tally_counts_unselected_sessions_and_jumps_to_them
 ---
 
 ## Purpose

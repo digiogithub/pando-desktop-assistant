@@ -6,24 +6,93 @@ status: backlog
 author: mcp
 labels: [chat]
 created: 2026-10-11T21:41:32Z
-updated: 2026-10-11T22:02:50Z
+updated: 2026-10-12T08:09:46Z
 requirements:
   R1:
     status: backlog
+    trace:
+      code:
+        - crates/app/src/chat/sessions.rs#SessionsState
+        - crates/app/src/chat/render.rs#ChatPanel::sidebar
+        - crates/app/src/chat/panel.rs#ChatPanel::load_more_sessions
+      tests:
+        - crates/app/src/chat/sessions.rs#thousand_sessions_layout_is_cheap
+        - crates/app/src/chat/tests.rs#a_thousand_sessions_render
+        - crates/app/src/chat/tests.rs#the_first_session_event_puts_the_session_on_top
   R2:
     status: backlog
+    trace:
+      code:
+        - crates/app/src/chat/panel.rs#ChatPanel::on_msg
+        - crates/app/src/chat/service.rs#ChatService::open_session
+      tests:
+        - crates/app/src/chat/tests.rs#history_fixture_and_live_events_render
   R3:
     status: backlog
+    trace:
+      code:
+        - crates/app/src/chat/markdown.rs#parse
+        - crates/app/src/chat/md_view.rs#blocks_el
+        - crates/app/src/chat/service.rs#ChatService::send_prompt
+        - crates/app/src/chat/render_transcript.rs#ChatPanel::transcript
+      tests:
+        - crates/app/src/chat/markdown.rs#an_unclosed_fence_streams_as_code
+        - crates/app/src/chat/tests.rs#a_burst_of_events_through_the_channel_is_applied_in_order
+        - crates/app/src/chat/tests.rs#follow_reset_drops_only_the_live_run_and_a_long_transcript_streams_smoothly
   R4:
     status: backlog
+    trace:
+      code:
+        - crates/app/src/chat/service.rs#ChatService::follow
+        - crates/app/src/chat/panel.rs#ChatPanel::on_msg
+      tests:
+        - crates/app/src/chat/tests.rs#the_late_end_of_a_finished_run_does_not_kill_the_resent_steering
+        - crates/app/src/chat/tests.rs#a_history_reload_never_wipes_the_run_being_streamed
+        - crates/app/src/chat/tests.rs#late_messages_of_a_previous_session_are_dropped
   R5:
     status: backlog
+    trace:
+      code:
+        - crates/app/src/chat/tools.rs#layout
+        - crates/app/src/chat/diff.rs#changed_files
+        - crates/app/src/chat/render_transcript.rs#ChatPanel::tool_card
+        - crates/app/src/chat/render_banners.rs#ChatPanel::diff_viewer
+      tests:
+        - crates/app/src/chat/tools.rs#consecutive_tools_fold_into_one_activity_row
+        - crates/app/src/chat/diff.rs#changed_files_aggregate_per_path_in_first_seen_order
+        - crates/app/src/chat/diff.rs#edit_diff_counts_changed_lines_only
   R6:
     status: backlog
+    trace:
+      code:
+        - crates/app/src/chat/panel.rs#ChatPanel::submit_text
+        - crates/app/src/chat/panel.rs#ChatPanel::stop_with
+        - crates/app/src/chat/render_composer.rs#ChatPanel::steering_chips
+      tests:
+        - crates/app/src/chat/tests.rs#steering_while_running_shows_a_chip_that_survives_the_race
+        - crates/app/src/chat/tests.rs#the_late_end_of_a_finished_run_does_not_kill_the_resent_steering
   R7:
     status: backlog
+    trace:
+      code:
+        - crates/app/src/chat/composer.rs#insert_dictation
+        - crates/app/src/chat/panel.rs#ChatPanel::insert_dictation
+        - crates/app/src/chat/render_composer.rs#ChatPanel::composer_area
+        - crates/app/src/chat/keys.rs#init
+      tests:
+        - crates/app/src/chat/tests.rs#dictation_is_inserted_marked_and_never_sent
+        - crates/app/src/chat/tests.rs#the_slash_palette_picks_a_command
+        - crates/app/src/chat/tests.rs#picking_a_mention_inserts_the_relative_path
+        - crates/app/src/chat/tests.rs#the_model_choice_is_per_session_and_defers_for_new_ones
   R8:
     status: backlog
+    trace:
+      code:
+        - crates/app/src/chat/render_banners.rs#ChatPanel::banners
+        - crates/app/src/chat/render_banners.rs#ChatPanel::usage_panel
+        - crates/app/src/chat/render_transcript.rs#notice_el
+      tests:
+        - crates/app/src/chat/tests.rs#banners_dialogs_and_usage_render_together
 ---
 
 ## Purpose

@@ -2,7 +2,7 @@
 id: PDA-T-0064
 type: task
 title: "Session sidebar: pagination, search, rename and delete"
-status: in_progress
+status: in_review
 parent: PDA-US-0017
 milestone: PDA-M-0004
 assignees: [claude-sonnet]
@@ -10,7 +10,7 @@ author: mcp
 labels: [chat]
 estimate: 3
 created: 2026-10-11T21:51:26Z
-updated: 2026-10-12T08:06:30Z
+updated: 2026-10-12T08:10:58Z
 started: 2026-10-12T08:06:30Z
 ---
 
