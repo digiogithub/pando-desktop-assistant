@@ -1,0 +1,38 @@
+voice:
+  mic:
+    label: Talk
+    hold: Hold to talk (F9)
+    listening: Listening…
+    off: Voice is off
+  status:
+    ready: "Voice available · stt"
+    starting: Voice starting…
+    restarting: Voice restarting…
+    unavailable: Voice unavailable
+    off: Voice is off
+  notice:
+    too_long: The 120 s limit was reached; transcribing what was recorded.
+    stt_unavailable: Speech recognition is not available right now.
+    stt_error: "Speech recognition error: %{message}"
+    mic_denied: The system does not allow microphone access.
+    no_mic: No microphone found.
+    voice_off: Voice is off. Turn it on in the voice settings.
+    nothing_heard: I did not hear anything.
+  permission:
+    title: Microphone access denied
+    body: Grant Pando Assistant microphone access in the system settings. It retries on its own every second.
+    open_settings: Open privacy settings
+    no_link: Check the audio permissions of your system (portal, PipeWire or PulseAudio).
+  settings:
+    title: Voice
+    input: Microphone
+    output: Speaker
+    default_device: System default
+    meter: Test level
+    enabled: Voice on
+  card:
+    understood: Understood
+    result: Result
+  debug:
+    title: Latency per stage
+    empty: No samples yet.

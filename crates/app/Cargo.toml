@@ -24,6 +24,8 @@ path = "src/main.rs"
 # CPU raster fallback of the organism for software GPUs (PDA-T-0042).
 default = ["raster"]
 raster = ["dep:tiny-skia", "dep:image"]
+# PipeWire audio host (Linux release builds; needs libpipewire-0.3-dev, libspa-0.2-dev, libclang).
+pipewire = ["audio/pipewire"]
 
 [dependencies]
 tiny-skia = { version = "0.11", optional = true }
@@ -48,6 +50,12 @@ tracing-appender.workspace = true
 tracing-subscriber.workspace = true
 lyon_tessellation = "1.0.22"
 organism = { path = "../organism" }
+audio = { path = "../audio" }
+speech = { path = "../speech" }
+voice-proto = { path = "../voice-proto" }
+decide = { path = "../decide" }
+claude-bridge = { path = "../claude-bridge" }
+reqwest.workspace = true
 
 global-hotkey = "0.7"
 velopack = "=1.2.161"
@@ -66,3 +74,4 @@ tray-icon = "0.21"
 image = { version = "0.25", default-features = false, features = ["png"] }
 gpui-kit = { workspace = true, features = ["test-support"] }
 tempfile.workspace = true
+hound = "3.5"

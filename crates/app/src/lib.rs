@@ -27,4 +27,5 @@ pub mod tokio_bridge;
 pub mod ui;
 pub mod update;
 pub mod views;
+pub mod voice;
 pub mod windows;

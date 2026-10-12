@@ -1,0 +1,38 @@
+voice:
+  mic:
+    label: Hablar
+    hold: Mantén pulsado para hablar (F9)
+    listening: Escuchando…
+    off: Voz desactivada
+  status:
+    ready: "Voz disponible · stt"
+    starting: Voz iniciando…
+    restarting: Voz reiniciando…
+    unavailable: Voz no disponible
+    off: Voz desactivada
+  notice:
+    too_long: Se alcanzó el límite de 120 s; transcribo lo grabado.
+    stt_unavailable: El reconocimiento de voz no está disponible ahora mismo.
+    stt_error: "Error del reconocimiento de voz: %{message}"
+    mic_denied: El sistema no permite usar el micrófono.
+    no_mic: No encuentro ningún micrófono.
+    voice_off: La voz está desactivada. Actívala en la configuración de voz.
+    nothing_heard: No he oído nada.
+  permission:
+    title: Micrófono sin permiso
+    body: Concede acceso al micrófono a Pando Assistant en los ajustes del sistema. Se reintenta solo cada segundo.
+    open_settings: Abrir ajustes de privacidad
+    no_link: Revisa los permisos de audio de tu sistema (portal, PipeWire o PulseAudio).
+  settings:
+    title: Voz
+    input: Micrófono
+    output: Altavoz
+    default_device: Predeterminado del sistema
+    meter: Nivel de prueba
+    enabled: Voz activada
+  card:
+    understood: Entendido
+    result: Resultado
+  debug:
+    title: Latencia por etapa
+    empty: Sin muestras todavía.

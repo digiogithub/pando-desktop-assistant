@@ -20,6 +20,7 @@ use crate::ui::{
 };
 use crate::views::layout::{self, Layout};
 use crate::views::title_bar::AppTitleBar;
+use crate::voice::controller::VoiceController;
 use pando_client::ConnectionState;
 
 /// Width of the split divider in px.
@@ -37,6 +38,8 @@ pub struct MainView {
     url_input: Entity<InputState>,
     url_error: Option<String>,
     pane: Entity<OrganismPane>,
+    voice: Entity<VoiceController>,
+    _voice_sub: crate::ui::Subscription,
     _pane_sub: crate::ui::Subscription,
     chat: Entity<ChatPanel>,
     layout: Layout,
@@ -100,12 +103,20 @@ impl MainView {
         let saved = crate::settings_view::current(cx)
             .map(|s| s.ui)
             .unwrap_or_default();
+        let (voice_config, voice_dirs) = crate::voice::startup_config();
+        let organism = pane.read(cx).organism().clone();
+        let voice = cx.new(|cx| VoiceController::new(cx, voice_config, voice_dirs, Some(organism)));
+        let voice_sub = cx.observe(&voice, |_, _, cx| cx.notify());
+        let voice_focus = voice.read(cx).focus_handle_clone();
+        window.focus(&voice_focus, cx);
         Self {
             state: ConnectionState::Connecting,
             hub,
             url_input,
             url_error,
             pane,
+            voice,
+            _voice_sub: voice_sub,
             _pane_sub: pane_sub,
             chat,
             layout: saved.layout,
@@ -305,7 +316,7 @@ impl Render for MainView {
                     .gap_2()
                     .pr_3()
                     .child(connection_chip(chip_spec(&self.state)))
-                    .child(chip(t!("titlebar.status_voice").to_string())),
+                    .child(chip(self.voice.read(cx).status_label())),
             );
         let body = if needs_empty_state(&self.state) {
             self.empty_state(cx).into_any_element()
@@ -331,7 +342,8 @@ impl Render for MainView {
                 .bg(rgb(palette::BOSQUE))
                 .text_color(rgb(palette::MARFIL))
                 .child(title_bar)
-                .child(body),
+                .child(body)
+                .child(self.voice.clone()),
         )
     }
 }
