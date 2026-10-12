@@ -81,7 +81,10 @@ fn main() {
         return;
     }
     println!("cargo:rustc-link-search=native={}", vendor.display());
-    println!("cargo:rerun-if-changed={}", vendor.join("libneedle_private.a").display());
+    println!(
+        "cargo:rerun-if-changed={}",
+        vendor.join("libneedle_private.a").display()
+    );
     // Linux: a symbol-private build (scripts/privatize-needle.sh) bundles libc++ inside the
     // archive without exporting it, so the binary can also hold libstdc++ code (sherpa-onnx).
     if target.contains("linux") && vendor.join("libneedle_private.a").is_file() {
