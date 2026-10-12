@@ -5866,6 +5866,12 @@ dependencies = [
 [[package]]
 name = "pando-tts"
 version = "0.1.0"
+dependencies = [
+ "sherpa-onnx",
+ "speech",
+ "thiserror 2.0.21",
+ "voice-proto",
+]
 
 [[package]]
 name = "parking"
