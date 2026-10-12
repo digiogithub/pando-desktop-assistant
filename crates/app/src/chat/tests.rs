@@ -35,6 +35,9 @@ struct Harness {
 }
 
 fn harness(cx: &mut TestAppContext) -> Harness {
+    // A real tokio runtime wakes GPUI tasks from its worker threads (also while shutting
+    // down), which the deterministic test scheduler otherwise rejects.
+    cx.executor().allow_parking();
     let runtime = tokio::runtime::Builder::new_multi_thread()
         .worker_threads(1)
         .enable_all()
@@ -79,7 +82,7 @@ impl Harness {
     }
 
     fn finish(self) {
-        self.runtime.shutdown_background();
+        self.runtime.shutdown_timeout(std::time::Duration::from_secs(5));
     }
 }
 

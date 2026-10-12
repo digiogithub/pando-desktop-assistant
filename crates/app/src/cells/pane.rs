@@ -1163,6 +1163,9 @@ mod tests {
         tokio::runtime::Runtime,
         VisualTestContext,
     ) {
+        // A real tokio runtime wakes GPUI tasks from its worker threads (also while shutting
+        // down), which the deterministic test scheduler otherwise rejects.
+        cx.executor().allow_parking();
         let runtime = tokio::runtime::Builder::new_multi_thread()
             .worker_threads(1)
             .enable_all()
@@ -1211,7 +1214,7 @@ mod tests {
         assert_eq!(core.borrow().cells[1].engine, Engine::ClaudeAcp);
         assert!(core.borrow().cells[1].is_new);
         assert_eq!(core.borrow().organism.shown_state(), BodyState::Delegating);
-        runtime.shutdown_background();
+        runtime.shutdown_timeout(std::time::Duration::from_secs(5));
     }
 
     #[gpui_test]
@@ -1257,7 +1260,7 @@ mod tests {
             p.apply_poll(&poll(vec![t.clone()], vec![perm.clone()]), cx);
             assert!(!p.has_pending(), "a resolved request stays resolved");
         });
-        runtime.shutdown_background();
+        runtime.shutdown_timeout(std::time::Duration::from_secs(5));
     }
 
     #[gpui_test]
@@ -1274,7 +1277,7 @@ mod tests {
             p.apply_poll(&poll(vec![], vec![]), cx);
             assert!(!p.has_pending());
         });
-        runtime.shutdown_background();
+        runtime.shutdown_timeout(std::time::Duration::from_secs(5));
     }
 
     #[gpui_test]
@@ -1286,6 +1289,6 @@ mod tests {
             assert!(p.target().cell().is_none());
             assert!(p.notice.is_some());
         });
-        runtime.shutdown_background();
+        runtime.shutdown_timeout(std::time::Duration::from_secs(5));
     }
 }

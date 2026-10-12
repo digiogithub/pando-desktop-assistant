@@ -538,6 +538,9 @@ mod tests {
 
     #[gpui_test]
     fn main_view_renders_the_empty_state_without_pando(cx: &mut TestAppContext) {
+        // A real tokio runtime wakes GPUI tasks from its worker threads (also while shutting
+        // down), which the deterministic test scheduler otherwise rejects.
+        cx.executor().allow_parking();
         let runtime = tokio::runtime::Builder::new_multi_thread()
             .worker_threads(1)
             .enable_all()
@@ -558,6 +561,6 @@ mod tests {
         cx.run_until_parked();
         // Nothing listens on port 9: whatever the state, the app area is the empty screen.
         assert!(view.read_with(&cx, |v, _| needs_empty_state(&v.state)));
-        runtime.shutdown_background();
+        runtime.shutdown_timeout(std::time::Duration::from_secs(5));
     }
 }
