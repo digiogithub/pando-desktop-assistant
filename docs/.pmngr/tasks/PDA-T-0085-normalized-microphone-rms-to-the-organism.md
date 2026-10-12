@@ -2,7 +2,7 @@
 id: PDA-T-0085
 type: task
 title: Normalized microphone RMS to the organism
-status: in_progress
+status: in_review
 parent: PDA-US-0025
 milestone: PDA-M-0005
 assignees: [claude-sonnet]
@@ -10,7 +10,7 @@ author: mcp
 labels: [voice-in, organism]
 estimate: 2
 created: 2026-10-11T21:52:55Z
-updated: 2026-10-12T08:05:39Z
+updated: 2026-10-12T08:18:02Z
 started: 2026-10-12T08:05:39Z
 ---
 
