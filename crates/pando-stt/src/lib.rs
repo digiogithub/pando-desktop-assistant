@@ -5,11 +5,14 @@
 
 pub mod chunking;
 pub mod engine;
+pub mod handsfree;
 pub mod keywords;
 #[cfg(feature = "parakeet")]
 pub mod parakeet;
 pub mod server;
 pub mod stt;
+pub mod vad;
+pub mod wake;
 pub mod whistle;
 
 pub use stt::{Partial, Stt, SttError, SttOpts, Transcript};

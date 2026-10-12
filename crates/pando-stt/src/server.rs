@@ -9,7 +9,10 @@ use voice_proto::{
     write_msg,
 };
 
+use crate::handsfree::{HandsFree, HfEvent};
 use crate::stt::{Stt, SttError, SttOpts};
+use crate::vad::{EnergySegmenter, SpeechSegmenter};
+use crate::wake::{SttWakeVerifier, WakeConfig};
 
 /// Builds an engine from a model path.
 pub type Loader<'a> = dyn FnMut(&Path) -> Result<Box<dyn Stt>, SttError> + 'a;
@@ -45,7 +48,53 @@ pub fn serve<R: Read, W: Write>(
     load: &mut Loader<'_>,
 ) -> Result<(), ProtoError> {
     let mut engine: Option<Box<dyn Stt>> = None;
+    let mut hands_free: Option<HandsFree> = None;
     while let Some(msg) = read_msg::<_, ToWorker>(r)? {
+        // Hands-free control and audio can produce several replies per message.
+        let msg = match msg {
+            ToWorker::HandsFree {
+                enabled,
+                lang,
+                keywords,
+                sensitivity,
+                vad_model,
+            } => {
+                hands_free = None;
+                if enabled {
+                    let wake = WakeConfig::from_sensitivity(sensitivity);
+                    let segmenter = make_segmenter(vad_model.as_deref());
+                    let mut opts = SttOpts {
+                        lang: lang.clone(),
+                        keywords: keywords.clone(),
+                        word_ts: false,
+                    };
+                    opts.keywords
+                        .extend(crate::wake::WAKE_BIAS.iter().map(|k| k.to_string()));
+                    hands_free = Some(HandsFree::new(
+                        segmenter,
+                        Box::new(SttWakeVerifier::new(wake.clone(), lang, &keywords)),
+                        wake,
+                        opts,
+                    ));
+                }
+                continue;
+            }
+            ToWorker::Audio { pcm } => {
+                let (Some(hf), Some(stt)) = (hands_free.as_mut(), engine.as_mut()) else {
+                    continue; // hands-free off or no model: drop the audio silently
+                };
+                match hf.push(&pcm, stt.as_mut()) {
+                    Ok(events) => {
+                        for e in events {
+                            write_msg(w, &hf_message(e))?;
+                        }
+                    }
+                    Err(e) => write_msg(w, &err_msg(None, &e))?,
+                }
+                continue;
+            }
+            other => other,
+        };
         let reply = match msg {
             ToWorker::Hello { version } => match check_version(version) {
                 Ok(()) => Some(FromWorker::Hello {
@@ -126,6 +175,7 @@ pub fn serve<R: Read, W: Write>(
                 rss_bytes: None,
             }),
             ToWorker::Shutdown => return Ok(()),
+            ToWorker::HandsFree { .. } | ToWorker::Audio { .. } => None, // handled above
             ToWorker::LoadTts { .. } | ToWorker::Synth { .. } => Some(FromWorker::Error {
                 id: None,
                 code: ErrorCode::BadRequest,
@@ -137,6 +187,30 @@ pub fn serve<R: Read, W: Write>(
         }
     }
     Ok(())
+}
+
+fn make_segmenter(vad_model: Option<&str>) -> Box<dyn SpeechSegmenter> {
+    #[cfg(feature = "silero-vad")]
+    if let Some(m) = vad_model {
+        match crate::vad::SileroSegmenter::new(std::path::Path::new(m)) {
+            Ok(s) => return Box::new(s),
+            Err(e) => eprintln!("pando-stt: {e}; using the energy VAD"),
+        }
+    }
+    #[cfg(not(feature = "silero-vad"))]
+    if vad_model.is_some() {
+        eprintln!("pando-stt: built without the silero-vad feature; using the energy VAD");
+    }
+    Box::new(EnergySegmenter::default())
+}
+
+fn hf_message(e: HfEvent) -> FromWorker {
+    match e {
+        HfEvent::SpeechStart => FromWorker::SpeechStart,
+        HfEvent::SpeechEnd => FromWorker::SpeechEnd,
+        HfEvent::Wake { score } => FromWorker::WakeWord { score },
+        HfEvent::Utterance { text, lang } => FromWorker::Utterance { text, lang },
+    }
 }
 
 fn not_loaded(id: Option<u64>) -> FromWorker {
@@ -216,6 +290,58 @@ mod tests {
             if text == "10 samples, kw=1" && lang == "es")
         );
         assert!(matches!(out[3], FromWorker::Health { loaded: true, .. }));
+    }
+
+    #[test]
+    fn hands_free_over_the_protocol() {
+        let mut seed = 77u32;
+        let mut noise = |n: usize, amp: f32| -> Vec<f32> {
+            (0..n)
+                .map(|_| {
+                    seed = seed.wrapping_mul(1_664_525).wrapping_add(1_013_904_223);
+                    ((seed >> 8) as f32 / (1u32 << 24) as f32 - 0.5) * 2.0 * amp
+                })
+                .collect()
+        };
+        let mut msgs = vec![
+            ToWorker::Hello {
+                version: PROTOCOL_VERSION,
+            },
+            ToWorker::LoadStt {
+                model_path: "m".into(),
+            },
+            ToWorker::HandsFree {
+                enabled: true,
+                lang: Some("es".into()),
+                keywords: vec![],
+                sensitivity: 0.4,
+                vad_model: None,
+            },
+        ];
+        for block in [
+            noise(32_000, 0.002),
+            noise(24_000, 0.3),
+            noise(40_000, 0.002),
+        ] {
+            for c in block.chunks(4000) {
+                msgs.push(ToWorker::Audio { pcm: c.to_vec() });
+            }
+        }
+        msgs.push(ToWorker::HandsFree {
+            enabled: false,
+            lang: None,
+            keywords: vec![],
+            sensitivity: 0.4,
+            vad_model: None,
+        });
+        let out = run(&msgs);
+        assert!(out.contains(&FromWorker::SpeechStart));
+        assert!(out.contains(&FromWorker::SpeechEnd));
+        // Fake engine says "N samples, kw=K": no wake phrase, so no WakeWord / Utterance.
+        assert!(!out.iter().any(|m| matches!(
+            m,
+            FromWorker::WakeWord { .. } | FromWorker::Utterance { .. }
+        )));
     }
 
     #[test]

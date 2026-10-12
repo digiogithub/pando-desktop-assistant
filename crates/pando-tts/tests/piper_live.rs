@@ -23,8 +23,12 @@ fn dir(var: &str, default: &str) -> PathBuf {
 }
 
 fn piper() -> SherpaTts {
-    SherpaTts::load(&dir("PANDO_PIPER_DIR", "vits-piper-es_ES-davefx-medium"), "", 2)
-        .expect("load piper")
+    SherpaTts::load(
+        &dir("PANDO_PIPER_DIR", "vits-piper-es_ES-davefx-medium"),
+        "",
+        2,
+    )
+    .expect("load piper")
 }
 
 const TEN_WORDS: &str = "La tarea de migración auth ha terminado sin errores hoy.";
@@ -77,8 +81,12 @@ fn long_text_streams_sentence_by_sentence() {
 #[test]
 #[ignore = "needs the Kokoro model directory"]
 fn kokoro_loads_and_speaks() {
-    let mut tts = SherpaTts::load(&dir("PANDO_KOKORO_DIR", "kokoro-multi-lang-v1_0"), "ef_dora", 4)
-        .expect("load kokoro");
+    let mut tts = SherpaTts::load(
+        &dir("PANDO_KOKORO_DIR", "kokoro-multi-lang-v1_0"),
+        "ef_dora",
+        4,
+    )
+    .expect("load kokoro");
     let cancel = Arc::new(AtomicBool::new(false));
     let mut n = 0;
     synthesize_stream(&mut tts, "Hola, ¿qué tal?", 1.0, &cancel, &mut |_, p| {

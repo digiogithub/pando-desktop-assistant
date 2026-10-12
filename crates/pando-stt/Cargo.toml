@@ -36,3 +36,6 @@ hound = "3.5"
 # from source with TTS OFF (`scripts/build-sherpa-stt.sh`, then SHERPA_ONNX_LIB_DIR=...), because
 # the prebuilt libraries embed espeak-ng (GPL-3). See ADR 0007 and docs.
 parakeet = ["dep:sherpa-onnx"]
+# Silero VAD v5 through the same TTS-off sherpa-onnx build. OFF by default: without it the
+# built-in energy VAD is used (PDA-T-0136).
+silero-vad = ["dep:sherpa-onnx"]

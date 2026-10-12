@@ -180,7 +180,9 @@ pub fn serve<R: Read>(
                 ToWorker::LoadStt { .. }
                 | ToWorker::Transcribe { .. }
                 | ToWorker::StreamChunk { .. }
-                | ToWorker::StreamStop { .. } => send(
+                | ToWorker::StreamStop { .. }
+                | ToWorker::HandsFree { .. }
+                | ToWorker::Audio { .. } => send(
                     &out,
                     &err(None, ErrorCode::BadRequest, "this is the TTS worker".into()),
                 ),

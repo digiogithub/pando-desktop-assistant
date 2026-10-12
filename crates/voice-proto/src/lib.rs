@@ -17,7 +17,7 @@ use std::io::{self, Read, Write};
 use serde::{Deserialize, Serialize};
 
 /// Wire version; bump on any incompatible change to the message enums.
-pub const PROTOCOL_VERSION: u16 = 1;
+pub const PROTOCOL_VERSION: u16 = 2;
 
 /// Largest accepted frame payload (a 30 s 16 kHz f32 clip is 1.9 MB).
 pub const MAX_FRAME_BYTES: usize = 16 * 1024 * 1024;
@@ -86,6 +86,24 @@ pub enum ToWorker {
     Health,
     /// Ask the worker to exit cleanly.
     Shutdown,
+    /// STT: switch hands-free mode on/off. While on, the app streams continuous 16 kHz mono
+    /// audio with `Audio`; the worker runs VAD and wake verification and answers with
+    /// `SpeechStart` / `SpeechEnd` / `WakeWord` / `Utterance`. Nothing is stored.
+    HandsFree {
+        enabled: bool,
+        /// Forced language for the verification and command passes.
+        lang: Option<String>,
+        /// Extra biasing phrases (project names ...); the wake phrases are always added.
+        keywords: Vec<String>,
+        /// Wake sensitivity 0.0 (strict) ..= 1.0 (permissive).
+        sensitivity: f32,
+        /// Path of `silero_vad.onnx`; `None` selects the built-in energy VAD.
+        vad_model: Option<String>,
+    },
+    /// STT: a block of the continuous hands-free stream (any length, 16 kHz mono f32).
+    Audio {
+        pcm: Vec<f32>,
+    },
 }
 
 /// A recognised word with timing.
@@ -154,6 +172,11 @@ pub enum FromWorker {
         role: Role,
         loaded: bool,
         rss_bytes: Option<u64>,
+    },
+    /// Hands-free: the command that followed an accepted wake phrase (wake phrase removed).
+    Utterance {
+        text: String,
+        lang: String,
     },
 }
 
@@ -310,6 +333,16 @@ mod tests {
             ToWorker::Cancel { id: 9 },
             ToWorker::Health,
             ToWorker::Shutdown,
+            ToWorker::HandsFree {
+                enabled: true,
+                lang: Some("es".into()),
+                keywords: vec!["Bitácora".into()],
+                sensitivity: 0.4,
+                vad_model: None,
+            },
+            ToWorker::Audio {
+                pcm: vec![0.0; 512],
+            },
         ]
     }
 
@@ -338,6 +371,10 @@ mod tests {
             },
             FromWorker::SpeechStart,
             FromWorker::SpeechEnd,
+            FromWorker::Utterance {
+                text: "cancela".into(),
+                lang: "es".into(),
+            },
             FromWorker::WakeWord { score: 0.8 },
             FromWorker::Pcm {
                 id: 9,
