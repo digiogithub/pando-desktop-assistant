@@ -82,7 +82,8 @@ impl Harness {
     }
 
     fn finish(self) {
-        self.runtime.shutdown_timeout(std::time::Duration::from_secs(5));
+        self.runtime
+            .shutdown_timeout(std::time::Duration::from_secs(5));
     }
 }
 

@@ -68,7 +68,12 @@ impl TestCa {
             .signed_by(&leaf_key, &issuer)
             .unwrap_or_else(|e| panic!("{e}"));
         let key = PrivateKeyDer::from(PrivatePkcs8KeyDer::from(leaf_key.serialize_der()));
-        let cfg = rustls::ServerConfig::builder()
+        // rcgen enables the `ring` feature next to `aws-lc-rs`, so the process has two
+        // candidate providers; name one instead of relying on the crate-feature default.
+        let provider = Arc::new(rustls::crypto::aws_lc_rs::default_provider());
+        let cfg = rustls::ServerConfig::builder_with_provider(provider)
+            .with_safe_default_protocol_versions()
+            .unwrap_or_else(|e| panic!("{e}"))
             .with_no_client_auth()
             .with_single_cert(vec![leaf.der().clone()], key)
             .unwrap_or_else(|e| panic!("{e}"));
