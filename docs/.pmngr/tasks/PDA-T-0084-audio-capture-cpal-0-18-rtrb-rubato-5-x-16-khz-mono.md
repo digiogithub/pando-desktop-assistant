@@ -2,14 +2,16 @@
 id: PDA-T-0084
 type: task
 title: "Audio capture: cpal 0.18 → rtrb → rubato 5.x → 16 kHz mono"
-status: backlog
+status: in_review
 parent: PDA-US-0025
 milestone: PDA-M-0005
+assignees: [claude-sonnet]
 author: mcp
 labels: [voice-in]
 estimate: 5
 created: 2026-10-11T21:52:55Z
-updated: 2026-10-11T22:03:38Z
+updated: 2026-10-12T07:55:33Z
+started: 2026-10-12T07:54:44Z
 ---
 
 ## Description

@@ -2,14 +2,16 @@
 id: PDA-T-0092
 type: task
 title: Dynamic keyword list and language forcing
-status: backlog
+status: in_review
 parent: PDA-US-0026
 milestone: PDA-M-0005
+assignees: [claude-sonnet]
 author: mcp
 labels: [voice-in]
 estimate: 2
 created: 2026-10-11T21:52:55Z
-updated: 2026-10-11T22:02:51Z
+updated: 2026-10-12T07:55:33Z
+started: 2026-10-12T07:54:44Z
 ---
 
 ## Description

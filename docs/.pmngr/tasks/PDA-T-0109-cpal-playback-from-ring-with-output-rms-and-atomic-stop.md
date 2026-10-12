@@ -2,14 +2,16 @@
 id: PDA-T-0109
 type: task
 title: cpal playback from ring with output RMS and atomic stop
-status: backlog
+status: in_review
 parent: PDA-US-0031
 milestone: PDA-M-0007
+assignees: [claude-sonnet]
 author: mcp
 labels: [voice-out, organism]
 estimate: 3
 created: 2026-10-11T21:54:29Z
-updated: 2026-10-11T22:03:24Z
+updated: 2026-10-12T07:55:33Z
+started: 2026-10-12T07:54:44Z
 ---
 
 ## Description

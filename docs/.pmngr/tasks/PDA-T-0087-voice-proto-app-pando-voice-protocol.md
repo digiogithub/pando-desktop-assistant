@@ -2,7 +2,7 @@
 id: PDA-T-0087
 type: task
 title: "voice-proto: app ↔ pando-voice protocol"
-status: in_progress
+status: done
 parent: PDA-US-0026
 milestone: PDA-M-0005
 assignees: [claude-sonnet]
@@ -10,8 +10,9 @@ author: mcp
 labels: [voice-in]
 estimate: 2
 created: 2026-10-11T21:52:55Z
-updated: 2026-10-12T07:26:26Z
+updated: 2026-10-12T07:55:39Z
 started: 2026-10-12T07:26:26Z
+closed: 2026-10-12T07:55:39Z
 ---
 
 ## Description

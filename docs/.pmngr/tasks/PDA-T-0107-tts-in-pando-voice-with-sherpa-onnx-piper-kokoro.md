@@ -2,14 +2,17 @@
 id: PDA-T-0107
 type: task
 title: TTS in pando-voice with sherpa-onnx (Piper + Kokoro)
-status: backlog
+status: done
 parent: PDA-US-0031
 milestone: PDA-M-0007
+assignees: [claude-sonnet]
 author: mcp
 labels: [voice-out]
 estimate: 5
 created: 2026-10-11T21:54:29Z
-updated: 2026-10-11T22:03:24Z
+updated: 2026-10-12T07:55:39Z
+started: 2026-10-12T07:54:44Z
+closed: 2026-10-12T07:55:39Z
 ---
 
 ## Description
