@@ -1,0 +1,7 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc a4b18086df27cb57e02cccb66119805c288dc0d9d3c457b75c1a744717606741 # shrinks to d = Decision { intent: Answered { value: Control, p: Some(0.7856900303687212), confidence: None, ranked: [] }, agent: Some(Answered { value: All, p: Some(0.6111331562968682), confidence: None, ranked: [] }), action: Some(Answered { value: Status, p: Some(1.5), confidence: None, ranked: [] }), engine: Some(Answered { value: Pando, p: Some(0.0), confidence: None, ranked: [] }), project: Some(Answered { value: Current, p: Some(0.0), confidence: None, ranked: [] }), intent_class: None, dictation: None }, pending = [], k = 0.551501119173842

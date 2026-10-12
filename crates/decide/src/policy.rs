@@ -914,17 +914,38 @@ mod tests {
             }
         }
 
-        /// Lowering the action probability never turns a non-execute into an execute.
+        /// Lowering any probability never turns a non-execute into an execute.
+        ///
+        /// "Lowering" is applied to the *effective* confidence the policy uses
+        /// (`p_of`), not to the raw field: a missing or invalid probability (NaN, ±∞,
+        /// outside `[0, 1]`) is fail-closed to 0, so it is already the lowest
+        /// confidence there is. Scaling the raw value instead (e.g. `1.5 × 0.55 =
+        /// 0.83`) turns an untrusted input into a valid, higher one and is not a
+        /// lowering at all — that mis-statement was the original counterexample in
+        /// `proptest-regressions/policy.txt`, kept as a seed.
         #[test]
-        fn monotonic_in_confidence(d in arb_decision(), pending in arb_pending(), k in 0.0f64..1.0) {
-            let hi = run(&d, "cancela migracion auth", &pending);
-            let mut lower = d.clone();
-            if let Some(a) = lower.action.as_mut() {
-                a.p = a.p.map(|p| p * k);
+        fn monotonic_in_confidence(
+            d in arb_decision(),
+            pending in arb_pending(),
+            ks in prop::array::uniform5(prop_oneof![Just(1.0f64), 0.0f64..1.0]),
+        ) {
+            fn lower<T>(a: Option<&mut Answered<T>>, k: f64) {
+                if let Some(a) = a {
+                    let p = p_of(Some(&*a)) * k;
+                    a.p = Some(p);
+                }
             }
-            let lo = run(&lower, "cancela migracion auth", &pending);
+            let transcript = "cancela migracion auth";
+            let hi = run(&d, transcript, &pending);
+            let mut lo_d = d.clone();
+            lower(Some(&mut lo_d.intent), ks[0]);
+            lower(lo_d.action.as_mut(), ks[1]);
+            lower(lo_d.agent.as_mut(), ks[2]);
+            lower(lo_d.engine.as_mut(), ks[3]);
+            lower(lo_d.project.as_mut(), ks[4]);
+            let lo = run(&lo_d, transcript, &pending);
             if lo.label() == "execute" {
-                prop_assert_eq!(hi.label(), "execute");
+                prop_assert_eq!(hi.label(), "execute", "lowered {:?} executes but original gives {:?}", lo_d, hi);
             }
         }
 
