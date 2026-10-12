@@ -6,20 +6,75 @@ status: backlog
 author: mcp
 labels: [voice-out]
 created: 2026-10-11T21:41:32Z
-updated: 2026-10-11T22:03:58Z
+updated: 2026-10-12T08:58:28Z
 requirements:
   R1:
     status: backlog
+    trace:
+      code:
+        - crates/pando-tts/src/engine.rs#Tts
+        - crates/pando-tts/src/engine.rs#SherpaTts
+        - crates/pando-tts/src/server.rs#serve
+      tests:
+        - crates/pando-tts/src/server.rs#load_synth_done
+        - crates/pando-tts/src/engine.rs#kokoro_voice_names
+        - crates/pando-tts/src/engine.rs#missing_model_dir_is_a_load_error
   R2:
     status: backlog
+    trace:
+      code:
+        - crates/speech/src/segment.rs#segments
+        - crates/speech/src/segment.rs#first_chunk_split
+        - crates/pando-tts/src/engine.rs#synthesize_stream
+      tests:
+        - crates/speech/src/segment.rs#first_chunk_is_cut_at_a_comma_when_long
+        - crates/pando-tts/src/engine.rs#streams_every_sentence_in_order
+        - crates/app/src/voice/e2e.rs#spoken_status_command_is_answered_aloud_within_the_stage_budget
   R3:
     status: backlog
+    trace:
+      code:
+        - crates/speech/src/normalize.rs#normalize
+        - crates/speech/src/normalize.rs#humanize_id
+      tests:
+        - crates/speech/src/normalize.rs#spec_scenario_markdown_answer
+        - crates/speech/src/normalize.rs#es_cases
+        - crates/speech/src/normalize.rs#is_idempotent_on_plain_text
   R4:
     status: backlog
+    trace:
+      code:
+        - crates/speech/src/queue.rs#SpeechQueue
+        - crates/app/src/voice/session.rs#Session::queue_mut
+      tests:
+        - crates/speech/src/queue.rs#priority_order_then_fifo
+        - crates/speech/src/queue.rs#waits_while_listening
+        - crates/speech/src/queue.rs#mute_shows_text_and_plays_nothing
+        - crates/speech/src/queue.rs#skip_all_forgets_the_queue
   R5:
     status: backlog
+    trace:
+      code:
+        - crates/audio/src/playback.rs#Playback
+        - crates/app/src/voice/levels.rs#OrganismLevels
+        - crates/app/src/voice/session.rs#Session::body
+      tests:
+        - crates/audio/src/playback.rs#rms_matches_what_was_written
+        - crates/app/src/voice/dock.rs#playback_drives_the_speaking_phase_but_never_interrupts_listening
+        - crates/app/src/voice/session.rs#a_conversation_thinks_then_answers_then_speaks_then_idles
   R6:
     status: backlog
+    trace:
+      code:
+        - crates/audio/src/playback.rs#Playback
+        - crates/audio/src/bargein.rs#BargeIn
+        - crates/app/src/voice/session.rs#Session::step
+        - crates/app/src/voice/service.rs#VoiceService::stop_speaking
+      tests:
+        - crates/audio/src/playback.rs#drain_request_empties_the_ring_in_one_callback
+        - crates/app/src/voice/session.rs#barge_in_stops_the_audio_and_listens_even_if_the_run_continues
+        - crates/app/src/voice/e2e.rs#barge_in_during_the_answer_stops_audio_and_the_new_prompt_steers_the_run
+        - crates/audio/src/bargein.rs#duck_at_200_ms_and_stop_at_400_ms
 ---
 
 ## Purpose

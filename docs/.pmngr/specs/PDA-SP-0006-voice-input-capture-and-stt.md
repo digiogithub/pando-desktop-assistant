@@ -6,24 +6,101 @@ status: backlog
 author: mcp
 labels: [voice-in]
 created: 2026-10-11T21:41:32Z
-updated: 2026-10-11T22:03:57Z
+updated: 2026-10-12T08:58:12Z
 requirements:
   R1:
     status: backlog
+    trace:
+      code:
+        - crates/audio/src/capture.rs#Capture
+        - crates/audio/src/resample.rs#StreamResampler
+        - crates/audio/src/device.rs#list_input_devices
+      tests:
+        - crates/audio/src/capture.rs#full_ring_drops_instead_of_blocking
+        - crates/audio/src/resample.rs#downsample_48k_to_16k_keeps_level_and_length
+        - crates/audio/src/capture.rs#stereo_is_downmixed_to_mono
   R2:
     status: backlog
+    trace:
+      code:
+        - crates/audio/src/level.rs#LevelMeter
+        - crates/app/src/voice/levels.rs#LevelSmoother
+        - crates/app/src/voice/levels.rs#OrganismLevels
+      tests:
+        - crates/app/src/voice/levels.rs#soft_and_loud_speech_are_distinguishable
+        - crates/app/src/voice/levels.rs#not_listening_yields_none_so_the_organism_keeps_its_envelope
+        - crates/audio/src/level.rs#meter_normalises_to_the_peak
   R3:
     status: backlog
+    trace:
+      code:
+        - crates/app/src/voice/ptt.rs#Ptt
+        - crates/app/src/voice/service.rs#VoiceService::press
+        - crates/app/src/voice/controller.rs#VoiceController::press
+        - crates/app/src/voice/controller.rs#ptt_edge
+        - crates/app/src/cells/chrome.rs#mic_button
+      tests:
+        - crates/app/src/voice/ptt.rs#hold_returns_preroll_then_frames
+        - crates/app/src/voice/ptt.rs#short_tap_transcribes_nothing
+        - crates/app/src/voice/ptt.rs#the_limit_closes_the_recording
+        - crates/app/src/voice/controller.rs#shell_push_to_talk_edges_drive_the_controller
   R4:
     status: backlog
+    trace:
+      code:
+        - crates/pando-stt/src/whistle.rs#Whistle
+        - crates/pando-stt/src/server.rs#serve
+        - crates/app/src/voice/supervisor.rs#Supervisor
+        - crates/needle-sys/src/lib.rs
+      tests:
+        - crates/pando-stt/src/server.rs#handshake_load_transcribe
+        - crates/app/src/voice/supervisor.rs#a_killed_worker_is_restarted_and_the_outage_is_reported
+        - crates/app/src/voice/supervisor.rs#handshake_load_then_requests_are_served
   R5:
     status: backlog
+    trace:
+      code:
+        - crates/pando-stt/src/keywords.rs#KeywordList
+        - crates/pando-stt/src/keywords.rs#resolve_language
+        - crates/app/src/voice/service.rs#VoiceService::set_keywords
+      tests:
+        - crates/pando-stt/src/keywords.rs#builds_priority_ordered_dedup_list
+        - crates/pando-stt/src/keywords.rs#respects_the_budget
+        - crates/pando-stt/src/keywords.rs#language_forcing
   R6:
     status: backlog
+    trace:
+      code:
+        - crates/app/src/voice/latency.rs#Turn
+        - crates/app/src/voice/latency.rs#Stats
+        - crates/app/src/voice/wer.rs#gate
+        - crates/pando-stt/src/chunking.rs#split_at_pauses
+      tests:
+        - crates/app/src/voice/latency.rs#percentiles_use_nearest_rank
+        - crates/app/src/voice/wer.rs#gate_tolerates_two_points
+        - crates/pando-stt/src/chunking.rs#pieces_cover_input_and_respect_the_limit
+        - crates/app/tests/wer_gate.rs
   R7:
     status: backlog
+    trace:
+      code:
+        - crates/pando-stt/src/parakeet.rs#Parakeet
+        - crates/pando-stt/src/engine.rs#select
+      tests:
+        - crates/pando-stt/src/engine.rs#falls_back_when_whistle_is_missing
+        - crates/pando-stt/src/engine.rs#whistle_is_the_default
   R8:
     status: backlog
+    trace:
+      code:
+        - crates/app/src/voice/devices.rs#classify
+        - crates/app/src/voice/devices.rs#choices
+        - crates/app/src/voice/firstrun.rs#AudioMicProbe
+        - crates/app/src/voice/dock.rs#Notice
+      tests:
+        - crates/app/src/voice/devices.rs#classifies_messages
+        - crates/app/src/voice/devices.rs#default_comes_first_and_stored_devices_are_checked
+        - crates/app/src/voice/dock.rs#mic_denial_blocks_listening_and_recovers
 ---
 
 ## Purpose

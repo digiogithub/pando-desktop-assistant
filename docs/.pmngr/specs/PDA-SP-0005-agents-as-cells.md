@@ -6,7 +6,7 @@ status: backlog
 author: mcp
 labels: [organism, pando-client]
 created: 2026-10-11T21:41:32Z
-updated: 2026-10-11T22:03:14Z
+updated: 2026-10-12T08:58:12Z
 requirements:
   R1:
     status: backlog
@@ -20,6 +20,16 @@ requirements:
     status: backlog
   R6:
     status: backlog
+    trace:
+      code:
+        - crates/app/src/voice/speak.rs#speakable
+        - crates/app/src/voice/speak.rs#conclusion_speech
+        - crates/app/src/voice/speak.rs#claude_stop_speech
+        - crates/app/src/voice/speak.rs#delegated_speech
+      tests:
+        - crates/app/src/voice/speak.rs#a_conclusion_is_spoken_with_summary_and_follow_up
+        - crates/app/src/voice/speak.rs#the_claude_stop_hook_speaks_the_label_and_the_last_message
+        - crates/app/src/voice/e2e.rs#a_conversation_speaks_only_the_final_answer_never_tool_output
 ---
 
 ## Purpose

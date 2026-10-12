@@ -6,7 +6,7 @@ status: backlog
 author: mcp
 labels: [chat, safety]
 created: 2026-10-11T21:41:32Z
-updated: 2026-10-12T08:09:56Z
+updated: 2026-10-12T08:58:11Z
 requirements:
   R1:
     status: backlog
@@ -57,6 +57,15 @@ requirements:
         - crates/app/src/chat/attention.rs#flagged_requests_are_never_auto_approvable
   R5:
     status: backlog
+    trace:
+      code:
+        - crates/app/src/decision/spoken_approvals.rs
+        - crates/app/src/decision/confirm.rs
+        - crates/app/src/voice/assistant.rs#Assistant
+      tests:
+        - crates/app/src/decision/spoken_approvals.rs#a_plain_permission_can_be_approved_by_voice
+        - crates/app/src/decision/spoken_approvals.rs#a_flagged_permission_is_never_approved_by_voice
+        - crates/app/src/decision/spoken_approvals.rs#questions_are_answered_by_option_or_free_text
   R6:
     status: backlog
     trace:

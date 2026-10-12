@@ -6,16 +6,55 @@ status: backlog
 author: mcp
 labels: [voice-in, wake-word]
 created: 2026-10-11T21:41:32Z
-updated: 2026-10-11T22:04:42Z
+updated: 2026-10-12T08:58:29Z
 requirements:
   R1:
     status: backlog
+    trace:
+      code:
+        - crates/pando-stt/src/vad.rs#EnergySegmenter
+        - crates/pando-stt/src/handsfree.rs#HandsFree
+        - crates/app/src/voice/vad.rs#EnergyVad
+        - crates/app/src/voice/service.rs#VoiceService::set_hands_free
+      tests:
+        - crates/pando-stt/src/handsfree.rs#silence_never_invokes_the_stt
+        - crates/pando-stt/src/vad.rs#ten_minutes_of_silence_is_cheap
+        - crates/pando-stt/src/vad.rs#speech_burst_becomes_one_segment_with_preroll_and_hangover
   R2:
     status: backlog
+    trace:
+      code:
+        - crates/pando-stt/src/wake.rs#match_wake
+        - crates/pando-stt/src/wake.rs#SttWakeVerifier
+        - crates/pando-stt/src/handsfree.rs#HandsFree
+      tests:
+        - crates/pando-stt/src/wake.rs#spec_scenario_single_utterance
+        - crates/pando-stt/src/handsfree.rs#short_wake_with_command_in_one_utterance
+        - crates/pando-stt/src/handsfree.rs#bare_wake_then_command_in_the_next_segment
+        - crates/app/src/voice/session.rs#a_hands_free_utterance_starts_a_turn_without_push_to_talk
   R3:
     status: backlog
+    trace:
+      code:
+        - crates/pando-stt/src/wake.rs#WakeConfig
+        - crates/pando-stt/src/bin/wake_eval.rs
+      tests:
+        - crates/pando-stt/src/wake.rs#confusers_are_rejected_at_default_sensitivity
+        - crates/pando-stt/src/wake.rs#sensitivity_moves_the_threshold
+        - crates/pando-stt/src/handsfree.rs#unrelated_speech_is_ignored
   R4:
     status: backlog
+    trace:
+      code:
+        - crates/audio/src/aec.rs#SonoraAec
+        - crates/audio/src/aec.rs#EchoCancel
+        - crates/audio/src/bargein.rs#BargeIn
+        - crates/audio/src/playback.rs#ReferenceTap
+      tests:
+        - crates/audio/src/aec.rs#plumbing_cancels_the_played_reference_end_to_end
+        - crates/audio/src/aec.rs#erle_meets_the_spike_s4_target
+        - crates/audio/src/bargein.rs#disabled_without_aec_or_headset
+        - crates/app/src/voice/session.rs#a_hands_free_barge_in_stops_the_answer_and_goes_idle
 ---
 
 ## Purpose
