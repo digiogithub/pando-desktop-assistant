@@ -500,3 +500,17 @@ fn a_resurrected_run_keeps_the_rows_of_the_finished_run() {
     );
     assert!(after.contains("Resuming"), "{after}");
 }
+
+#[test]
+fn user_cancel_is_a_neutral_notice_and_real_errors_stay_errors() {
+    let mut m = model();
+    for e in events(include_bytes!("fixtures/chat_cancel.sse")) {
+        m.apply(&e);
+    }
+    let dump = m.render_debug();
+    assert!(dump.contains("notice Cancelled"), "{dump}");
+    assert!(!dump.contains("notice Error"), "{dump}");
+    let mut m = model();
+    m.apply(&ChatEvent::Error("provider exploded".into()));
+    assert!(m.render_debug().contains("notice Error"));
+}

@@ -50,7 +50,7 @@ chat:
     resurrected: Run resumed
     conclusion_queued: Conclusion queued
     conclusion_injected: Conclusion received
-    cancelled: Cancelled
+    cancelled: Stopped by you
     max_tokens: Answer cut by the token limit
     permission_denied: Permission denied
     error: Error

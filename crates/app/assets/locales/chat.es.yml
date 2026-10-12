@@ -50,7 +50,7 @@ chat:
     resurrected: Ejecución retomada
     conclusion_queued: Conclusión en cola
     conclusion_injected: Conclusión recibida
-    cancelled: Cancelado
+    cancelled: Detenido por ti
     max_tokens: Respuesta cortada por el límite
     permission_denied: Permiso denegado
     error: Error

@@ -691,7 +691,12 @@ impl ChatModel {
             }
             ChatEvent::GoalStatus(g) => self.goal = g.clone(),
             ChatEvent::Error(msg) => {
-                self.notice(NoticeKind::Error, msg);
+                if is_user_cancel(msg) {
+                    // The user pressed Stop: a neutral notice, not a failure.
+                    self.notice(NoticeKind::Cancelled, "");
+                } else {
+                    self.notice(NoticeKind::Error, msg);
+                }
                 self.end_run();
             }
             ChatEvent::Done => self.end_run(),
@@ -1075,4 +1080,9 @@ fn short(s: &str) -> String {
     } else {
         one
     }
+}
+
+/// Pando reports a user-initiated `POST /cancel` as the error "request cancelled by user".
+fn is_user_cancel(msg: &str) -> bool {
+    msg.trim().eq_ignore_ascii_case("request cancelled by user")
 }
