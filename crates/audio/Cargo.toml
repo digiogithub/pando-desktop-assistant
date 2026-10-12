@@ -1,0 +1,28 @@
+[package]
+name = "audio"
+description = "Microphone capture and speaker playback (cpal, rtrb, rubato): lock-free callbacks, 16 kHz mono capture, atomic stop, RMS taps."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[features]
+default = ["pulseaudio"]
+# cpal's PulseAudio host is a pure-Rust client (no system library).
+pulseaudio = ["cpal/pulseaudio"]
+# PipeWire host: needs libpipewire-0.3-dev, libspa-0.2-dev and libclang at build time.
+pipewire = ["cpal/pipewire"]
+
+[dependencies]
+cpal = "=0.18.2"
+rubato = "=5.0.1"
+audioadapter-buffers = "5.1"
+rtrb = "0.4"
+thiserror.workspace = true
+tracing.workspace = true
