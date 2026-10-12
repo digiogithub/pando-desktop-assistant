@@ -2,14 +2,16 @@
 id: PDA-T-0067
 type: task
 title: Collapsible thinking and notice rows
-status: backlog
+status: in_progress
 parent: PDA-US-0018
 milestone: PDA-M-0004
+assignees: [claude-sonnet]
 author: mcp
 labels: [chat]
 estimate: 2
 created: 2026-10-11T21:51:26Z
-updated: 2026-10-11T22:02:19Z
+updated: 2026-10-12T08:06:42Z
+started: 2026-10-12T08:06:42Z
 ---
 
 ## Description

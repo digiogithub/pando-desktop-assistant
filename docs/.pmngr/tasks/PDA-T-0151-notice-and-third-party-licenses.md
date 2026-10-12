@@ -2,14 +2,16 @@
 id: PDA-T-0151
 type: task
 title: NOTICE and third-party licenses
-status: backlog
+status: in_progress
 parent: PDA-US-0045
 milestone: PDA-M-0011
+assignees: [claude-sonnet]
 author: mcp
 labels: [packaging, legal]
 estimate: 2
 created: 2026-10-11T21:56:03Z
-updated: 2026-10-11T22:03:01Z
+updated: 2026-10-12T08:00:57Z
+started: 2026-10-12T08:00:57Z
 ---
 
 ## Description

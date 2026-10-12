@@ -2,14 +2,16 @@
 id: PDA-T-0096
 type: task
 title: Latency instrumentation and WER gate in CI
-status: backlog
+status: in_progress
 parent: PDA-US-0027
 milestone: PDA-M-0005
+assignees: [claude-sonnet]
 author: mcp
 labels: [voice-in, testing]
 estimate: 3
 created: 2026-10-11T21:52:55Z
-updated: 2026-10-11T22:03:24Z
+updated: 2026-10-12T08:05:39Z
+started: 2026-10-12T08:05:39Z
 ---
 
 ## Description

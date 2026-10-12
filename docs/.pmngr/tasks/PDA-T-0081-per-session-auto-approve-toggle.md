@@ -2,14 +2,16 @@
 id: PDA-T-0081
 type: task
 title: Per-session auto-approve toggle
-status: backlog
+status: in_progress
 parent: PDA-US-0023
 milestone: PDA-M-0004
+assignees: [claude-sonnet]
 author: mcp
 labels: [chat]
 estimate: 1
 created: 2026-10-11T21:51:27Z
-updated: 2026-10-11T22:02:51Z
+updated: 2026-10-12T08:06:42Z
+started: 2026-10-12T08:06:42Z
 ---
 
 ## Description

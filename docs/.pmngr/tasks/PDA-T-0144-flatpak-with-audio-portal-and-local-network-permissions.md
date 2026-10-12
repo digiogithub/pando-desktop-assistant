@@ -2,14 +2,16 @@
 id: PDA-T-0144
 type: task
 title: Flatpak with audio, portal and local network permissions
-status: backlog
+status: in_progress
 parent: PDA-US-0043
 milestone: PDA-M-0011
+assignees: [claude-sonnet]
 author: mcp
 labels: [packaging]
 estimate: 3
 created: 2026-10-11T21:56:03Z
-updated: 2026-10-11T22:02:45Z
+updated: 2026-10-12T08:01:03Z
+started: 2026-10-12T08:01:03Z
 ---
 
 ## Description

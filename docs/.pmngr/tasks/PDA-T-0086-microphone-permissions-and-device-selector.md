@@ -2,14 +2,16 @@
 id: PDA-T-0086
 type: task
 title: Microphone permissions and device selector
-status: backlog
+status: in_progress
 parent: PDA-US-0025
 milestone: PDA-M-0005
+assignees: [claude-sonnet]
 author: mcp
 labels: [voice-in, shell]
 estimate: 2
 created: 2026-10-11T21:52:55Z
-updated: 2026-10-11T22:02:51Z
+updated: 2026-10-12T08:05:39Z
+started: 2026-10-12T08:05:39Z
 ---
 
 ## Description

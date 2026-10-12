@@ -2,14 +2,16 @@
 id: PDA-T-0094
 type: task
 title: "Push-to-talk in window: mic button and shortcut"
-status: backlog
+status: in_progress
 parent: PDA-US-0027
 milestone: PDA-M-0005
+assignees: [claude-sonnet]
 author: mcp
 labels: [voice-in, shell]
 estimate: 3
 created: 2026-10-11T21:52:55Z
-updated: 2026-10-11T22:02:51Z
+updated: 2026-10-12T08:05:39Z
+started: 2026-10-12T08:05:39Z
 ---
 
 ## Description
