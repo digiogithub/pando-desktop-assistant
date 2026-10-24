@@ -25,13 +25,19 @@ licences, NOTICE/legal tree).
 - **Linux**: system packages for GPUI (fontconfig, freetype, wayland, xkbcommon, xcb), cpal
   (ALSA, PipeWire with bindgen/libclang), AppImage (`libfuse2t64`, `file`) and static
   **libc++ 21** from apt.llvm.org, which `needle-sys` links (`/usr/lib/llvm-21/lib`).
-- **macOS**: cargo-packager builds `Pando Assistant.app` and signs every Mach-O inside-out with
-  `APPLE_SIGNING_IDENTITY`, the hardened runtime and `packaging/macos/entitlements.plist`
-  (`com.apple.security.device.audio-input`, `com.apple.security.network.client`).
-  `Info.plist` carries `NSMicrophoneUsageDescription`. The workflow then adds the `es`/`en`
-  `InfoPlist.strings`, re-seals the outer bundle, verifies runtime flag and entitlements, builds
-  and signs the `.dmg` with `hdiutil`/`codesign`, notarizes it (`macos-notarize`, stapled) and
-  checks `xcrun stapler validate`. The keychain is always removed (`if: always()`).
+- **macOS**: cargo-packager builds `Pando Assistant.app` but signs only the main executable;
+  the worker binaries it copies into `Contents/MacOS` stay ad-hoc (linker-signed), which failed
+  the v0.1.0 run. The workflow therefore adds the `es`/`en` `InfoPlist.strings` and signs the
+  bundle inside-out itself with the Developer ID identity, the hardened runtime and a secure
+  timestamp: every Mach-O outside `Contents/MacOS` (dylibs, `Contents/Frameworks`) and any
+  `.framework` first, then the helper executables (`pando-stt`, `pando-tts`) with
+  `packaging/macos/entitlements.plist` (`com.apple.security.device.audio-input`,
+  `com.apple.security.network.client`), then the outer bundle without `--deep`.
+  `Info.plist` carries `NSMicrophoneUsageDescription`. The verify step checks `--deep --strict`,
+  then the runtime flag, the Developer ID authority and the timestamp on the bundle and on every
+  nested Mach-O/framework, and the audio-input entitlement on the app and `pando-stt`. It then
+  builds and signs the `.dmg` with `hdiutil`/`codesign`, notarizes it (`macos-notarize`,
+  stapled) and checks `xcrun stapler validate`. The keychain is always removed (`if: always()`).
 - **Windows**: `pando-assistant.exe` and `pando-tts.exe` are MSVC; `pando-stt.exe` is built for
   `x86_64-pc-windows-gnullvm` with llvm-mingw (pinned by `LLVM_MINGW_VERSION`) because
   `libneedle.a` is GNU ABI, then copied into `target\release`. The three `.exe` are signed

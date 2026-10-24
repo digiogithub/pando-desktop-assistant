@@ -182,39 +182,79 @@ jobs:
       - name: Build
         run: cargo build --release --locked -p app -p pando-stt -p pando-tts
 
-      # cargo-packager signs every Mach-O in the .app inside-out (workers, then the app) with
-      # APPLE_SIGNING_IDENTITY, the hardened runtime, a secure timestamp and
-      # packaging/macos/entitlements.plist (com.apple.security.device.audio-input). APPLE_ID is
-      # not set, so it skips its own notarization.
-      - name: Bundle and sign the app (.app)
+      # cargo-packager signs only the main executable with APPLE_SIGNING_IDENTITY, the hardened
+      # runtime and packaging/macos/entitlements.plist; the worker binaries it copies into
+      # Contents/MacOS stay ad-hoc (linker-signed). The next step re-signs them. APPLE_ID is not
+      # set, so cargo-packager skips its own notarization.
+      - name: Bundle the app (.app)
         run: APPLE_SIGNING_IDENTITY="$SIGNING_IDENTITY" cargo xtask bundle --no-build --formats app
 
-      # Localised microphone prompt (es / en). Adding resources breaks the bundle seal, so the
-      # outer bundle is re-signed (the nested binaries keep their signatures).
-      - name: Add the localised Info.plist strings and re-seal the app
+      # Localised microphone prompt (es / en), then sign every nested Mach-O inside-out with the
+      # Developer ID identity, the hardened runtime and a secure timestamp: dylibs and frameworks
+      # first (no entitlements), then the helper executables in Contents/MacOS (pando-stt captures
+      # the microphone, so they carry packaging/macos/entitlements.plist), and finally the outer
+      # bundle without --deep so its seal covers the re-signed helpers and the new resources.
+      - name: Add the localised Info.plist strings and sign the app inside-out
         run: |
           set -euo pipefail
           APP="dist/packages/Pando Assistant.app"
+          ENT="packaging/macos/entitlements.plist"
           for l in es en; do
             mkdir -p "$APP/Contents/Resources/$l.lproj"
             cp "packaging/macos/$l.lproj/InfoPlist.strings" "$APP/Contents/Resources/$l.lproj/"
           done
-          codesign --force --timestamp --options runtime \
-            --entitlements packaging/macos/entitlements.plist \
-            --sign "$SIGNING_IDENTITY" "$APP"
+          MAIN_EXE="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$APP/Contents/Info.plist")"
+          sign() {
+            codesign --force --options runtime --timestamp \
+              --sign "$SIGNING_IDENTITY" --keychain "$MACOS_SIGN_KEYCHAIN_PATH" "$@"
+          }
+          is_macho() { file -b "$1" | grep -q 'Mach-O'; }
+
+          # 1. Libraries outside Contents/MacOS (Contents/Frameworks, lib dirs, ...), deepest first.
+          find "$APP/Contents" -type f ! -path "$APP/Contents/MacOS/*" -print0 \
+            | while IFS= read -r -d '' f; do
+                if is_macho "$f"; then echo "$f"; fi
+              done | awk '{ print gsub("/", "/"), $0 }' | sort -rn | cut -d' ' -f2- \
+            | while IFS= read -r f; do sign "$f"; done
+          # 2. Framework bundles, deepest first (their versioned binaries are signed above).
+          find "$APP/Contents" -type d -name '*.framework' \
+            | awk '{ print gsub("/", "/"), $0 }' | sort -rn | cut -d' ' -f2- \
+            | while IFS= read -r fw; do sign "$fw"; done
+          # 3. Helper executables (pando-stt, pando-tts, ...): everything but the main executable.
+          for f in "$APP/Contents/MacOS/"*; do
+            [ -f "$f" ] && [ "$(basename "$f")" != "$MAIN_EXE" ] && is_macho "$f" || continue
+            sign --entitlements "$ENT" "$f"
+          done
+          # 4. The outer bundle (signs the main executable and seals everything above).
+          sign --entitlements "$ENT" "$APP"
 
       - name: Verify the app signature and entitlements
         run: |
           set -euo pipefail
           APP="dist/packages/Pando Assistant.app"
           codesign --verify --deep --strict --verbose=2 "$APP"
-          for bin in "$APP" "$APP/Contents/MacOS/pando-stt" "$APP/Contents/MacOS/pando-tts"; do
+          # The bundle itself plus every nested Mach-O (executables, dylibs, frameworks).
+          targets=("$APP")
+          while IFS= read -r -d '' f; do
+            if file -b "$f" | grep -q 'Mach-O'; then targets+=("$f"); fi
+          done < <(find "$APP/Contents" -type f -print0)
+          while IFS= read -r -d '' fw; do targets+=("$fw"); done \
+            < <(find "$APP/Contents" -type d -name '*.framework' -print0)
+          for bin in "$APP/Contents/MacOS/pando-stt" "$APP/Contents/MacOS/pando-tts"; do
+            [ -f "$bin" ] || { echo "::error::worker binary missing: $bin"; exit 1; }
+          done
+          for bin in "${targets[@]}"; do
             codesign -dv --verbose=2 "$bin" 2>&1 | tee sig.txt
             grep -q 'flags=.*runtime' sig.txt || { echo "::error::hardened runtime missing: $bin"; exit 1; }
+            grep -q '^Authority=Developer ID Application' sig.txt \
+              || { echo "::error::not signed with the Developer ID identity: $bin"; exit 1; }
+            grep -q '^Timestamp=' sig.txt || { echo "::error::secure timestamp missing: $bin"; exit 1; }
           done
-          codesign -d --entitlements - --xml "$APP" > ent.plist
-          grep -q 'com.apple.security.device.audio-input' ent.plist \
-            || { echo "::error::audio-input entitlement missing"; exit 1; }
+          for bin in "$APP" "$APP/Contents/MacOS/pando-stt"; do
+            codesign -d --entitlements - --xml "$bin" > ent.plist
+            grep -q 'com.apple.security.device.audio-input' ent.plist \
+              || { echo "::error::audio-input entitlement missing: $bin"; exit 1; }
+          done
           /usr/libexec/PlistBuddy -c 'Print :NSMicrophoneUsageDescription' "$APP/Contents/Info.plist"
 
       - name: Create and sign the .dmg
