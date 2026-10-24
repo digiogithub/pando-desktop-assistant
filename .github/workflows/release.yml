@@ -1,0 +1,422 @@
+name: release
+
+# Signed, tag-driven release. Pushing `vX.Y.Z` (or `vX.Y.Z-rc.N` / `-beta.N`) runs:
+#
+#   meta     : the tag must equal the workspace version and packaging/Packager.toml's version.
+#   linux    : .deb and .AppImage (x86_64) plus the GPL-3 Corresponding Source of pando-tts.
+#              Unsigned: Linux has no OS gatekeeper; integrity comes from SHA256SUMS.
+#   macos    : "Pando Assistant.app" in a .dmg (aarch64 only: there is no macOS x86_64 Whistle
+#              engine), every Mach-O signed with the Developer ID identity, the hardened runtime and
+#              packaging/macos/entitlements.plist (microphone), then notarized and stapled.
+#   windows  : pando-assistant.exe, pando-tts.exe (MSVC), pando-stt.exe (x86_64-pc-windows-gnullvm,
+#              libneedle.a is GNU ABI) and the NSIS/MSI installers, Authenticode-signed with Azure
+#              Artifact (Trusted) Signing over OIDC and verified before upload.
+#   release  : downloads only the `dist-*` artifacts (an unsigned build can never be published),
+#              writes SHA256SUMS and creates a DRAFT release (pre-release for `-*` tags).
+#
+# Signing material (Digio scheme, same as digiogithub/bitacora and digiogithub/pando):
+#   * macOS: repository secret MACOS_SIGNING_BUNDLE (base64 .tar.gz of DIGIO_Software_Signing_Keys
+#     with the `kvagerc` env file), unpacked by digiogithub/ci-actions/macos-signing-keychain.
+#   * Windows: no secret. The `release` environment federates into the Entra app named by
+#     vars.AZURE_CLIENT_ID (subject repo:digiogithub/pando-desktop-assistant:environment:release).
+# See docs/release-pipeline.md.
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to (re)build into a draft release."
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  CARGO_INCREMENTAL: "0"
+  CARGO_TERM_COLOR: always
+  # Keep in sync with rust-toolchain.toml.
+  RUST_TOOLCHAIN: 1.98.1
+  CARGO_PACKAGER_VERSION: 0.11.8
+  LLVM_MINGW_VERSION: "20261020"
+  TAG: ${{ inputs.tag || github.ref_name }}
+
+jobs:
+  meta:
+    name: validate tag
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.check.outputs.version }}
+      prerelease: ${{ steps.check.outputs.prerelease }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.TAG }}
+      - id: check
+        name: Tag must equal the workspace and packager versions
+        run: |
+          set -euo pipefail
+          v="${TAG#v}"
+          ws=$(sed -n '/^\[workspace.package\]/,/^\[/s/^version = "\(.*\)"/\1/p' Cargo.toml)
+          pk=$(sed -n 's/^version = "\(.*\)"/\1/p' packaging/Packager.toml | head -n1)
+          grep -q "^channel = \"$RUST_TOOLCHAIN\"" rust-toolchain.toml \
+            || { echo "::error::RUST_TOOLCHAIN ($RUST_TOOLCHAIN) differs from rust-toolchain.toml"; exit 1; }
+          [ "$v" = "$ws" ] || { echo "::error::tag $TAG != workspace version $ws"; exit 1; }
+          [ "$v" = "$pk" ] || { echo "::error::tag $TAG != packaging/Packager.toml version $pk"; exit 1; }
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          case "$v" in *-*) echo "prerelease=true" ;; *) echo "prerelease=false" ;; esac >> "$GITHUB_OUTPUT"
+
+  linux:
+    name: linux (x86_64)
+    needs: meta
+    runs-on: ubuntu-24.04
+    env:
+      VERSION: ${{ needs.meta.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.TAG }}
+
+      # GPUI (fontconfig, freetype, wayland, xkbcommon, xcb), cpal (ALSA, PipeWire + bindgen),
+      # cargo-packager (AppImage needs FUSE 2 and `file`), sherpa-onnx (cmake).
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            gcc g++ clang libclang-dev cmake pkg-config \
+            libfontconfig-dev libfreetype-dev libwayland-dev libxkbcommon-dev libxkbcommon-x11-dev \
+            libx11-xcb-dev libxcb1-dev libvulkan-dev libasound2-dev libpipewire-0.3-dev libspa-0.2-dev \
+            libdbus-1-dev libssl-dev libzstd-dev libfuse2t64 file binutils
+
+      # libneedle.a is built with clang + libc++ 21; needle-sys links libc++.a/libc++abi.a
+      # statically from /usr/lib/llvm-21/lib (docs/research/voice-stack.md, risk R4).
+      - name: Install static libc++ 21 (apt.llvm.org)
+        run: |
+          set -euo pipefail
+          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc >/dev/null
+          echo "deb http://apt.llvm.org/noble/ llvm-toolchain-noble-21 main" | sudo tee /etc/apt/sources.list.d/llvm-21.list
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libc++-21-dev libc++abi-21-dev
+          ls /usr/lib/llvm-21/lib/libc++.a /usr/lib/llvm-21/lib/libc++abi.a
+
+      - name: Fetch the Needle engine and the Whistle model
+        run: scripts/fetch-needle.sh linux-x86_64 --model
+
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: release-linux
+
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-packager@${{ env.CARGO_PACKAGER_VERSION }},cargo-deny
+
+      - name: Build
+        run: cargo build --release --locked -p app -p pando-stt -p pando-tts
+
+      # `cargo xtask bundle` runs the ADR 0007 gates (check-nm, cargo deny licences), writes the
+      # NOTICE/legal tree and the Corresponding Source tarball, stages models and packages.
+      - name: Bundle (.deb, .AppImage)
+        run: cargo xtask bundle --no-build --formats deb,appimage
+
+      - name: Package
+        run: |
+          set -euo pipefail
+          mkdir -p dist-out
+          cp dist/packages/*.deb dist/packages/*.AppImage dist-out/
+          cp dist/pando-assistant-*-corresponding-source.tar.gz dist-out/
+          ls -la dist-out
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: dist-linux
+          path: dist-out/*
+          if-no-files-found: error
+
+  macos:
+    name: macos (signed + notarized)
+    needs: meta
+    runs-on: macos-latest
+    # Notarization submits the .dmg with --wait.
+    timeout-minutes: 120
+    env:
+      VERSION: ${{ needs.meta.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.TAG }}
+
+      - name: Fetch the Needle engine and the Whistle model
+        run: scripts/fetch-needle.sh macos-arm64 --model
+
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+          targets: aarch64-apple-darwin
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: release-macos
+
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-packager@${{ env.CARGO_PACKAGER_VERSION }},cargo-deny
+
+      # Exports SIGNING_IDENTITY, NOTARY_PROFILE and MACOS_SIGN_KEYCHAIN_PATH/PASSWORD. The
+      # keychain is added to the user search list, so codesign and cargo-packager find the identity.
+      - name: Set up the signing keychain
+        uses: digiogithub/ci-actions/macos-signing-keychain@v1
+        with:
+          signing-bundle: ${{ secrets.MACOS_SIGNING_BUNDLE }}
+          env-file: kvagerc
+          keychain-name: pando-assistant-build
+          notary-profile: pando-assistant-notary
+
+      # macos-latest is arm64, so the host build is aarch64-apple-darwin and lands in
+      # target/release where packaging/Packager.toml expects the binaries.
+      - name: Build
+        run: cargo build --release --locked -p app -p pando-stt -p pando-tts
+
+      # cargo-packager signs every Mach-O in the .app inside-out (workers, then the app) with
+      # APPLE_SIGNING_IDENTITY, the hardened runtime, a secure timestamp and
+      # packaging/macos/entitlements.plist (com.apple.security.device.audio-input). APPLE_ID is
+      # not set, so it skips its own notarization.
+      - name: Bundle and sign the app (.app)
+        run: APPLE_SIGNING_IDENTITY="$SIGNING_IDENTITY" cargo xtask bundle --no-build --formats app
+
+      # Localised microphone prompt (es / en). Adding resources breaks the bundle seal, so the
+      # outer bundle is re-signed (the nested binaries keep their signatures).
+      - name: Add the localised Info.plist strings and re-seal the app
+        run: |
+          set -euo pipefail
+          APP="dist/packages/Pando Assistant.app"
+          for l in es en; do
+            mkdir -p "$APP/Contents/Resources/$l.lproj"
+            cp "packaging/macos/$l.lproj/InfoPlist.strings" "$APP/Contents/Resources/$l.lproj/"
+          done
+          codesign --force --timestamp --options runtime \
+            --entitlements packaging/macos/entitlements.plist \
+            --sign "$SIGNING_IDENTITY" "$APP"
+
+      - name: Verify the app signature and entitlements
+        run: |
+          set -euo pipefail
+          APP="dist/packages/Pando Assistant.app"
+          codesign --verify --deep --strict --verbose=2 "$APP"
+          for bin in "$APP" "$APP/Contents/MacOS/pando-stt" "$APP/Contents/MacOS/pando-tts"; do
+            codesign -dv --verbose=2 "$bin" 2>&1 | tee sig.txt
+            grep -q 'flags=.*runtime' sig.txt || { echo "::error::hardened runtime missing: $bin"; exit 1; }
+          done
+          codesign -d --entitlements - --xml "$APP" > ent.plist
+          grep -q 'com.apple.security.device.audio-input' ent.plist \
+            || { echo "::error::audio-input entitlement missing"; exit 1; }
+          /usr/libexec/PlistBuddy -c 'Print :NSMicrophoneUsageDescription' "$APP/Contents/Info.plist"
+
+      - name: Create and sign the .dmg
+        run: |
+          set -euo pipefail
+          DMG="dist/packages/Pando-Assistant-${VERSION}-aarch64.dmg"
+          rm -f "$DMG"
+          hdiutil create -volname "Pando Assistant" -srcfolder "dist/packages/Pando Assistant.app" \
+            -ov -format UDZO "$DMG"
+          codesign --force --timestamp --sign "$SIGNING_IDENTITY" "$DMG"
+          codesign --verify --verbose=2 "$DMG"
+
+      - name: Notarize
+        uses: digiogithub/ci-actions/macos-notarize@v1
+        with:
+          paths: dist/packages/*.dmg
+          staple: auto
+
+      - name: Verify the staple
+        run: xcrun stapler validate dist/packages/*.dmg
+
+      - name: Clean up the signing keychain
+        if: always()
+        uses: digiogithub/ci-actions/macos-keychain-cleanup@v1
+
+      - name: Package
+        run: |
+          set -euo pipefail
+          mkdir -p dist-out
+          cp dist/packages/*.dmg dist-out/
+          ls -la dist-out
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: dist-macos
+          path: dist-out/*
+          if-no-files-found: error
+
+  windows:
+    name: windows (Authenticode)
+    needs: meta
+    runs-on: windows-latest
+    # The federated credential on the Entra app is scoped to
+    # repo:digiogithub/pando-desktop-assistant:environment:release, so the OIDC token minted for
+    # this job only validates from within that environment.
+    environment: release
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      VERSION: ${{ needs.meta.outputs.version }}
+      PRERELEASE: ${{ needs.meta.outputs.prerelease }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.TAG }}
+
+      - name: Fetch the Needle engine and the Whistle model
+        shell: bash
+        run: scripts/fetch-needle.sh windows-x86_64 --model
+
+      # libneedle.a is an llvm-mingw archive (GNU ABI, UCRT, libc++): pando-stt is linked with
+      # llvm-mingw's clang and static libc++/libc++abi/libunwind (packaging/windows/README.md).
+      - name: Install llvm-mingw
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $name = "llvm-mingw-$env:LLVM_MINGW_VERSION-ucrt-x86_64"
+          $url = "https://github.com/mstorsjo/llvm-mingw/releases/download/$env:LLVM_MINGW_VERSION/$name.zip"
+          Invoke-WebRequest -Uri $url -OutFile "$env:RUNNER_TEMP\llvm-mingw.zip"
+          Expand-Archive -Path "$env:RUNNER_TEMP\llvm-mingw.zip" -DestinationPath "$env:RUNNER_TEMP"
+          $root = Join-Path $env:RUNNER_TEMP $name
+          "LLVM_MINGW=$root" >> $env:GITHUB_ENV
+          "LIBCXX_DIR=$root\x86_64-w64-mingw32\lib" >> $env:GITHUB_ENV
+          "CARGO_TARGET_X86_64_PC_WINDOWS_GNULLVM_LINKER=$root\bin\x86_64-w64-mingw32-clang.exe" >> $env:GITHUB_ENV
+
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+          targets: x86_64-pc-windows-gnullvm
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: release-windows
+
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-packager@${{ env.CARGO_PACKAGER_VERSION }},cargo-deny
+
+      # The app and pando-tts are MSVC (GPUI, prebuilt sherpa-onnx); pando-stt is GNU ABI. All
+      # three end up in target\release, where the packager and the signing step expect them.
+      - name: Build
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo build --release --locked -p app -p pando-tts
+          PATH="$(cygpath -u "$LLVM_MINGW")/bin:$PATH" \
+            cargo build --release --locked -p pando-stt --target x86_64-pc-windows-gnullvm
+          cp target/x86_64-pc-windows-gnullvm/release/pando-stt.exe target/release/
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v3
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      # No credential inputs: the action falls back to the Azure CLI session established above,
+      # which is the federated GitHub identity. The binaries are signed before they are packaged.
+      - name: Sign pando-assistant.exe, pando-stt.exe and pando-tts.exe
+        uses: azure/trusted-signing-action@v2.0.0
+        with:
+          endpoint: ${{ vars.AZURE_SIGNING_ENDPOINT }}
+          trusted-signing-account-name: ${{ vars.AZURE_SIGNING_ACCOUNT }}
+          certificate-profile-name: ${{ vars.AZURE_SIGNING_CERT_PROFILE }}
+          files-folder: ${{ github.workspace }}\target\release
+          files-folder-filter: exe
+          file-digest: SHA256
+          timestamp-rfc3161: http://timestamp.acs.microsoft.com
+          timestamp-digest: SHA256
+
+      # WiX only accepts numeric versions, so a pre-release tag (v0.2.0-rc.1) cannot produce an
+      # .msi: pre-releases ship the NSIS installer only.
+      - name: Bundle (NSIS, MSI)
+        shell: bash
+        run: |
+          formats=nsis,wix
+          if [ "$PRERELEASE" = "true" ]; then formats=nsis; fi
+          cargo xtask bundle --no-build --formats "$formats"
+
+      - name: Sign the installers
+        uses: azure/trusted-signing-action@v2.0.0
+        with:
+          endpoint: ${{ vars.AZURE_SIGNING_ENDPOINT }}
+          trusted-signing-account-name: ${{ vars.AZURE_SIGNING_ACCOUNT }}
+          certificate-profile-name: ${{ vars.AZURE_SIGNING_CERT_PROFILE }}
+          files-folder: ${{ github.workspace }}\dist\packages
+          files-folder-filter: exe,msi
+          file-digest: SHA256
+          timestamp-rfc3161: http://timestamp.acs.microsoft.com
+          timestamp-digest: SHA256
+
+      - name: Package
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          New-Item -ItemType Directory -Force -Path dist-out | Out-Null
+          Copy-Item dist/packages/*.exe dist-out/
+          Copy-Item dist/packages/*.msi dist-out/ -ErrorAction SilentlyContinue
+          Get-ChildItem dist-out
+
+      - name: Verify the signatures
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $files = @(Get-Item target/release/pando-assistant.exe, target/release/pando-stt.exe, target/release/pando-tts.exe) +
+                   @(Get-ChildItem dist-out/*.exe) + @(Get-ChildItem dist-out/*.msi -ErrorAction SilentlyContinue)
+          $bad = 0
+          foreach ($f in $files) {
+            $sig = Get-AuthenticodeSignature $f.FullName
+            "-- $($f.Name): $($sig.Status) / $($sig.SignerCertificate.Subject)"
+            if ($sig.Status -ne 'Valid') {
+              Write-Output "::error::Unsigned or invalid: $($f.Name) ($($sig.Status))"
+              $bad = 1
+            }
+          }
+          exit $bad
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: dist-windows
+          path: dist-out/*
+          if-no-files-found: error
+
+  release:
+    name: draft release
+    needs: [meta, linux, macos, windows]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    env:
+      VERSION: ${{ needs.meta.outputs.version }}
+      PRERELEASE: ${{ needs.meta.outputs.prerelease }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      # dist-* only: every platform job uploads its signed (or, on Linux, final) files under that
+      # prefix, so nothing unsigned can reach the release.
+      - uses: actions/download-artifact@v7
+        with:
+          pattern: dist-*
+          path: release
+          merge-multiple: true
+
+      - name: SHA256SUMS
+        run: |
+          set -euo pipefail
+          cd release
+          sha256sum * > SHA256SUMS
+          cat SHA256SUMS
+
+      - name: Create the draft release
+        run: |
+          flags=(--draft --generate-notes --verify-tag --title "Pando Assistant $VERSION")
+          if [ "$PRERELEASE" = "true" ]; then flags+=(--prerelease); fi
+          gh release create "$TAG" -R "$GITHUB_REPOSITORY" "${flags[@]}" release/*
