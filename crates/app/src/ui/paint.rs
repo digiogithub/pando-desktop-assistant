@@ -82,6 +82,8 @@ pub mod raster_image {
 
 /// Window kinds for the floating mini window (PDA-T-0118, spike T-0025).
 pub mod mini_window {
+    /// Wayland layer shell is Linux-only in gpui (`all(target_os = "linux", feature = "wayland")`).
+    #[cfg(target_os = "linux")]
     pub use gpui_kit::gpui::layer_shell::{
         Anchor, KeyboardInteractivity, Layer, LayerShellOptions,
     };

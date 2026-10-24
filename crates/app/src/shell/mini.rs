@@ -24,9 +24,9 @@ use super::ipc::Command;
 use super::portal::Session;
 use crate::organism_view::OrganismView;
 use crate::ui::paint::MouseButton;
-use crate::ui::paint::mini_window::{
-    Anchor, KeyboardInteractivity, Layer, LayerShellOptions, WindowBackgroundAppearance, WindowKind,
-};
+#[cfg(target_os = "linux")]
+use crate::ui::paint::mini_window::{Anchor, KeyboardInteractivity, Layer, LayerShellOptions};
+use crate::ui::paint::mini_window::{WindowBackgroundAppearance, WindowKind};
 use crate::ui::theme::palette;
 use crate::ui::{
     AnyWindowHandle, App, AppContext as _, Bounds, Context, Entity, Global,
@@ -207,6 +207,10 @@ fn options(kind: MiniKind, origin: (f32, f32)) -> WindowOptions {
     let kind = match kind {
         MiniKind::Popup => WindowKind::PopUp,
         MiniKind::Normal => WindowKind::Normal,
+        // Layer shell only exists on Linux/Wayland; elsewhere it is a normal window.
+        #[cfg(not(target_os = "linux"))]
+        MiniKind::Layer => WindowKind::Normal,
+        #[cfg(target_os = "linux")]
         MiniKind::Layer => WindowKind::LayerShell(LayerShellOptions {
             namespace: "pando-mini".into(),
             layer: Layer::Overlay,
